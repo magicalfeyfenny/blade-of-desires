@@ -1,0 +1,47 @@
+name: Work item
+description: Define one bounded repository change.
+labels: []
+assignees: []
+
+body:
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What should change?
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: What must be true when this is complete?
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Important files, systems, or boundaries.
+    validations:
+      required: true
+
+  - type: dropdown
+    id: expected-risk
+    attributes:
+      label: Expected risk
+      options:
+        - Low
+        - High
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: Prior implementations, designs, related issues, or source evidence.
+    validations:
+      required: false
