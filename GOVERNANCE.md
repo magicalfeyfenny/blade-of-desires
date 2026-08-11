@@ -270,6 +270,27 @@ When a file approaches the limit, split it by responsibility.
 
 Changing the limit or adding an exception is high risk.
 
+## Imported dependencies
+
+GM-Testing-Library (GMTL) v1.2 is a pinned, read-only imported dependency.
+`project/gmtl.lock.json` is the sole ownership boundary for the imported
+snapshot. It records the upstream repository, import commit, exact 20 resource
+roots, exact 47-file inventory, and each file's SHA-256 digest and byte size.
+Names, prefixes, and broad path globs do not expand that boundary.
+
+Locked GMTL files must not be edited, reformatted, split, or upgraded during
+ordinary work. Only a fully verified snapshot receives the configured
+exemptions: its source files bypass the line-count limit, and the Format check
+ignores its existing whitespace. All other source-structure checks still
+apply, and the same line-count or whitespace defect in repository-owned code
+still fails.
+
+Updating GMTL is separate high-risk work and requires explicit human
+instruction. Import the directed upstream version without altering its bytes,
+then update the lock's version, snapshot commit, resource roots, counts, file
+inventory, hashes, and sizes atomically. The candidate receives no exemptions
+unless the complete replacement snapshot verifies.
+
 ## CI
 
 Required checks:
@@ -279,7 +300,7 @@ Required checks:
 - Tests
 - Format
 
-GM-Testing-Library (https://github.com/DAndrewBox/GM-Testing-Library) is used as the test framework for all GameMaker projects. When the project is initialized, download the latest release and pin it as the testing framework version -- do not update  it unless specifically instructed by a human.
+The pinned GMTL snapshot is used as the GameMaker test framework.
 
 Game-specific test suites are added to `Tests` as they become available.
 
