@@ -17,6 +17,11 @@ from typing import Iterator
 
 ROOT = Path(__file__).resolve().parents[2]
 
+if __package__:
+    from tools.ci.gmtl_lock import verify_gmtl_lock
+else:
+    from gmtl_lock import verify_gmtl_lock
+
 
 def load_policy(root: Path) -> dict:
     return tomllib.loads(
@@ -69,19 +74,16 @@ def validate_structure(
     policy: dict,
     files: list[Path],
     errors: list[str],
+    line_limit_exemptions: frozenset[str] = frozenset(),
 ) -> None:
     rules = policy["structure"]
 
     extensions = set(rules["source_extensions"])
     forbidden = set(rules["forbidden_generic_stems"])
-    exceptions = set(rules["large_file_exceptions"])
     max_lines = int(rules["max_source_lines"])
 
     for path in files:
         key = path.as_posix()
-
-        if key in exceptions:
-            continue
 
         if path.suffix.lower() not in extensions:
             continue
@@ -101,7 +103,7 @@ def validate_structure(
 
         count = len(text.splitlines())
 
-        if count > max_lines:
+        if count > max_lines and key not in line_limit_exemptions:
             errors.append(
                 f"{path}: {count} lines exceeds limit {max_lines}"
             )
@@ -353,8 +355,10 @@ def collect_errors(root: Path) -> list[str]:
     policy = load_policy(root)
     files = tracked_files(root)
     errors: list[str] = []
+    gmtl = verify_gmtl_lock(root, policy, files)
 
-    validate_structure(root, policy, files, errors)
+    errors.extend(gmtl.errors)
+    validate_structure(root, policy, files, errors, gmtl.files)
     validate_json(root, files, errors)
     validate_assets(root, policy, files, errors)
 
@@ -529,7 +533,9 @@ def main() -> int:
                 changed
                 & {
                     "PROJECT_POLICY.toml",
+                    "project/gmtl.lock.json",
                     "tools/ci/check_repo.py",
+                    "tools/ci/gmtl_lock.py",
                 }
             )
             errors = new_policy_errors(

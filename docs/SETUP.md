@@ -112,14 +112,29 @@ python3.12 -m unittest discover -s tools/tests -p 'test_*.py'
 git diff --check
 ```
 
+## Pinned GMTL dependency
+
+This repository uses GM-Testing-Library (GMTL) v1.2 as a pinned, read-only
+dependency. `project/gmtl.lock.json` is the canonical machine-readable
+boundary for its exact 20 resource roots and 47 files. The lock's inventory,
+SHA-256 hashes, and sizes must all verify before any locked file is exempted
+from the source line limit or Format whitespace findings.
+
+Do not download a newer GMTL release during routine setup. An update requires
+explicit human instruction and a separate high-risk issue. Import the directed
+upstream snapshot without editing it, atomically update the lock's version,
+snapshot commit, roots, counts, inventory, hashes, and sizes, then run the full
+repository validation. Until the complete new lock verifies, no GMTL
+exemptions apply.
+
 ## Remaining manual setup
 
 The GitHub bootstrap tool does not perform these project-specific or
 human-owned steps:
 
 1. Initialize the GameMaker project under `project/`.
-2. Download the latest GM-Testing-Library release when the GameMaker project
-   is initialized, pin that version, and add the project's GameMaker tests.
+2. Add project-owned GameMaker tests without modifying the pinned GMTL
+   snapshot.
 3. In Codex, manually create whichever scheduled automations the generated
    repository should use. Choose each automation's schedule and execution
    identity:

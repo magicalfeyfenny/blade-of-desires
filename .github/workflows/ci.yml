@@ -137,9 +137,15 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
       - name: Check whitespace
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          git diff --check "$BASE_SHA" "$HEAD_SHA"
+          python3 tools/ci/check_format.py \
+            --base-ref "$BASE_SHA" \
+            --head-ref "$HEAD_SHA"

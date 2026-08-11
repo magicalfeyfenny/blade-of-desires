@@ -5,12 +5,26 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from tools.ci.check_repo import new_policy_errors, validate_assets
+from tools.ci.check_repo import (
+    new_policy_errors,
+    validate_assets,
+    validate_structure,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryPolicyTests(unittest.TestCase):
+    @staticmethod
+    def structure_policy() -> dict:
+        return {
+            "structure": {
+                "max_source_lines": 800,
+                "source_extensions": [".gml"],
+                "forbidden_generic_stems": ["helpers"],
+            }
+        }
+
     @staticmethod
     def asset_policy() -> dict:
         return {
@@ -131,6 +145,74 @@ class RepositoryPolicyTests(unittest.TestCase):
                 "assets/exports.json: manifest is missing or "
                 "unreadable"
             ],
+        )
+
+    def test_verified_locked_839_line_gml_passes_line_limit(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = Path("vendor/GMTL_demo_tests.gml")
+            (root / path).parent.mkdir(parents=True)
+            (root / path).write_text(
+                "upstream line\n" * 839,
+                encoding="utf-8",
+            )
+            errors: list[str] = []
+
+            validate_structure(
+                root,
+                self.structure_policy(),
+                [path],
+                errors,
+                frozenset({path.as_posix()}),
+            )
+
+        self.assertEqual(errors, [])
+
+    def test_repository_owned_over_limit_gml_fails(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = Path("source/game.gml")
+            (root / path).parent.mkdir(parents=True)
+            (root / path).write_text(
+                "owned line\n" * 801,
+                encoding="utf-8",
+            )
+            errors: list[str] = []
+
+            validate_structure(
+                root,
+                self.structure_policy(),
+                [path],
+                errors,
+            )
+
+        self.assertEqual(
+            errors,
+            [f"{path}: 801 lines exceeds limit 800"],
+        )
+
+    def test_locked_file_still_receives_other_structure_checks(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            path = Path("vendor/helpers.gml")
+            (root / path).parent.mkdir(parents=True)
+            (root / path).write_text(
+                "upstream line\n" * 839,
+                encoding="utf-8",
+            )
+            errors: list[str] = []
+
+            validate_structure(
+                root,
+                self.structure_policy(),
+                [path],
+                errors,
+                frozenset({path.as_posix()}),
+            )
+
+        self.assertEqual(
+            errors,
+            [f"{path}: generic source filename is forbidden"],
         )
 
     def test_invalid_baseline_ref_fails_closed(self):

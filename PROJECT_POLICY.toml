@@ -25,14 +25,15 @@ forbidden_generic_stems = [
     "common",
 ]
 
-large_file_exceptions = []
-
 [assets]
 source_root = "assets/source"
 runtime_root = "assets/runtime"
 manifest = "assets/exports.json"
 content_root = "content"
 plain_runtime_svg = true
+
+[imports.gmtl]
+lock = "project/gmtl.lock.json"
 
 [assets.pipelines.vector]
 source_extensions = [".svg"]
@@ -70,6 +71,7 @@ high_risk_paths = [
     "skills/**",
     "tools/ci/**",
     "tools/assets/**",
+    "project/gmtl.lock.json",
     "project/*.yyp",
     "project/options/**",
     "project/extensions/**",
