@@ -28,7 +28,7 @@ Older games implement those boundaries through objects, globals, timelines, and 
 Sources:
 
 - `/Users/magicalfeyfenny/GameMakerProjects/TMoLaD`;
-- `/Users/magicalfeyfenny/GameMakerProjects/TemplateProjects/gm-packs/action/gmc-jam-3`.
+- `/Users/magicalfeyfenny/GameMakerProjects/TemplateProjects/gm-packs/archive/gmc-jam-3`.
 
 These are not merely similar games: normalized comparison found the selected GML implementation and relevant content payload byte-identical. Keep the distinct project/jam identities for provenance, but count the behavior once.
 
@@ -91,7 +91,7 @@ The game is excellent boss-beat evidence. It is not a production base without ex
 
 ## GMC Jam 7 polarity shooter
 
-Source: `/Users/magicalfeyfenny/GameMakerProjects/TemplateProjects/gm-packs/action/gmc-jam-7`.
+Source: `/Users/magicalfeyfenny/GameMakerProjects/TemplateProjects/gm-packs/archive/gmc-jam-7`.
 
 `Split Balance` contains 306 files, 96 GML files/2,756 lines, 21 objects, 31 scripts, 23 sprites, 19 sounds, four rooms, and three fonts. The 800×600 flow is start, tutorial, game, credits.
 
@@ -182,7 +182,7 @@ Arrow movement is normalized; Shift focuses. Both `Z` and `C` shoot right, resid
 
 Hyper accumulates passively and from hits/graze/kills, spans 0..300, and spends into tier 1–3. Duration is `240 + 60 * tier` in the source's gauge-derived policy. Hyper increases player damage/scale but also accelerates enemy timers and bullets; it is deliberately a risk/reward pressure amplifier.
 
-`X` bombs unless enough hyper selects hyper. During the 40-frame emergency window, bomb/hyper cancels death. A deathbomb consumes all bombs and grants tier-3 hyper for 420 frames. On ordinary death: lose a life, reset bombs to three, add hyper, halve multiplier, respawn. Zero lives records score and returns to title.
+`X` bombs unless enough hyper selects hyper. During the 40-frame emergency window, the response branches in priority order. If at least one hyper gauge is available and hyper is inactive, it consumes the entire current hyper amount, grants tier-3 hyper for 420 frames, and uses a 60-frame bomb/invulnerability gate. Otherwise, if any bombs remain, it consumes all bombs, creates the deathbomb field for 300 frames, and grants 360 frames of invulnerability without granting tier-3 hyper. On ordinary death: lose a life, reset bombs to three, add hyper, halve multiplier, respawn. Zero lives records score and returns to title.
 
 Bombs apply two damage to all enemies every Step for 180 frames; deathbomb lasts 300. This “global damage every tick” behavior needs a declared cadence and damage source rather than an unbounded object scan.
 

@@ -574,6 +574,6 @@ Use hosted/headless GameMaker validation under the repository's governed change 
 
 ## Suggested implementation order
 
-The canonical bounded issue order is maintained in the [extraction matrix](extraction-matrix.md#proposed-issue-sequence). Its first five issues deliberately establish, in order: Blade's current content contracts; the deterministic clock/RNG/input/replay-event kernel; run/pause/persistence ownership; damage/projectile/cleanup and the in-plane firing gate; then the declarative emitter executor with THPJ3 cardinalities and seeded TMoLaD, Tiny Girl, Split+Balance, and Ghost trajectory fixtures.
+The single documented proposed issue order is maintained in the [extraction matrix](extraction-matrix.md#proposed-issue-sequence). Its first five proposed issues deliberately establish, in order: Blade's current content contracts; the deterministic clock/RNG/input/replay-event kernel; run/pause/persistence ownership; damage/projectile/cleanup and the in-plane firing gate; then the declarative emitter executor with THPJ3 cardinalities and seeded TMoLaD, Tiny Girl, Split+Balance, and Ghost trajectory fixtures. This archaeology does not create or authorize those issues.
 
 Later issues layer stage/boss direction, Maynii and Ciela, scoring/economy, perspective/orthographic rendering, dialogue/persistence/replay, and production assets onto those foundations. Every issue must remain bounded, include proportionate characterization tests, and avoid importing an entire jam project as a shortcut.
