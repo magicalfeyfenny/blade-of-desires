@@ -5,6 +5,10 @@ Before modifying the repository, read:
 - GOVERNANCE.md
 - PROJECT_POLICY.toml
 
+For legacy-system, asset, and repository archaeology, start with:
+
+- [docs/archaeology/README.md](docs/archaeology/README.md)
+
 ## Tooling
 
 Repository tooling requires Python 3.12 or later.
