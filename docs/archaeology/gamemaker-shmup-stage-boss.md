@@ -304,7 +304,7 @@ The profile records focused speed first and unfocused speed second, matching the
 | Ciela | 2.3 / 5.2 | 4.5 / 1 | 110 | 18 / 54 | 5 / 12 | 9 | 0.95 |
 | Kolar | 1.8 / 4.7 | 6 / 1.8 | 118 | 12 / 34 | 0 / 6 | 1 | 1.15 |
 
-This is useful schema vocabulary: movement, primary/secondary power, option geometry, turn behavior, and meter efficiency belong in validated ship content. The generated values and role implications are not current Blade defaults; Maynii's tracking/forward all-rounder role, Ciela's spread role, and Kolar's deliberately unresolved role come from current product decisions and new playtesting.
+This is useful schema vocabulary: movement, primary/secondary power, option geometry, turn behavior, and meter efficiency belong in validated ship content. The generated values and role implications are not current Blade defaults; current product decisions instead bind Maynii's tracking/forward all-rounder role, Ciela's spread role, and Kolar's close-range-specialist role with close-range as her primary strength and meaningful ranged damage mandatory. Kolar's exact weapon, melee choice, emitters, formations, cadence, damage, distance bands, and balance remain #23 work.
 
 ### Active stage schedule
 

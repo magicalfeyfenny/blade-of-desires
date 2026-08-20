@@ -12,7 +12,7 @@ These explicit project decisions outrank suggestions inferred from the archive:
 
 - The logical output is `640x360`. A centered `270x360` (`3:4`) gameplay plane at x `185..455` preserves the visual identity established by Selkies Moon; enemies and scenery may remain visible outside it, but enemies may fire only while their declared gameplay anchor/hurtbox is inside it.
 - Gameplay is strictly a vertical-scrolling 2D shmup. Perspective 3D is presentation only.
-- Maynii is the all-around ship, mixing dependable forward damage with tracking coverage. Ciela is the spread specialist. Kolar retains a stable content slot, but her weapon identity is intentionally unresolved; melee is a candidate, not a commitment.
+- Maynii is the all-around ship, mixing dependable forward damage with tracking coverage. Ciela is the spread specialist. Kolar is the close-range specialist: fighting near targets is her primary strength, while dependable, meaningful ranged damage remains mandatory. This role cannot be interpreted as collision-only, melee-only, zero-range, or negligible-ranged gameplay; #23 owns her exact weapon form, melee use or non-use, emitters, option formation, cadence, damage, distance bands, and final balance.
 - Boss phase breaks receive a readable recharge telegraph lasting roughly two seconds, with a Selkies-like ring presentation. Large bosses may lose parts as phase transitions and may replace, regrow, or transform parts in later phases.
 - Ordinary enemy defeats should erupt into a generous burst of large, readable particles. Density remains accessibility-adjustable and cannot obscure dangerous bullets.
 - Stage 1 is a high-quality, somewhat photorealistic pixel-art forest. Camera-facing 3D billboards render softly floating balls of light and other particles so crunchy textures remain attractive from the moving perspective camera.
@@ -191,7 +191,7 @@ Object code consumes one normalized profile. It does not branch on ship name.
 
 - Maynii combines forward damage with tracking coverage and is the baseline all-arounder.
 - Ciela emphasizes broad field coverage and spread geometry.
-- Kolar's ID/reserved selection slot may exist in schemas, but implementation must not invent or freeze a loadout until her role is chosen. A deterministic swept-melee experiment is a future candidate only.
+- Kolar's close-range-specialist role and mandatory meaningful ranged damage are fixed, but implementation must not invent or freeze her exact weapon, melee use or non-use, emitters, option formation, cadence, damage, distance bands, or final balance before #23. A deterministic swept-melee experiment remains a non-binding candidate only.
 
 ### Difficulty profile
 

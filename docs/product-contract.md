@@ -25,15 +25,33 @@ without importing its obsolete implementation commitments.
 
 ## ID and schema rules
 
-Every record has `schema_version`, `id`, and `display_name`. IDs use lowercase
-dotted segments; each segment starts with a letter and continues with lowercase
-letters, digits, or underscores. IDs are globally unique and permanent: a
-display-name change never changes an ID, and a retired ID is never reassigned.
+Every canonical record has `schema_version`, `id`, and `display_name`. Stable
+IDs match `^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$` and are globally unique
+and never reused: a display-name change does not change an ID, and a retired ID
+is not reassigned.
 
-`content_version` versions the complete contract. Consumers must reject an
-unknown schema version rather than guessing a default. The focused validator
-reports the file/field/reason for malformed versions, duplicate or malformed
-IDs, dangling references, invalid playfield geometry, and any Kolar loadout.
+`schema_version` describes the shape and interpretation of a record. Removing
+or renaming a field, changing its type, or incompatibly changing its meaning
+requires a schema-version increment. Additive fields and content-value changes
+retain the schema version and advance `content_version`, which versions the
+complete contract. Version 1.1.0 adds structured policy while retaining all
+1.0.0 fields and types, so the schema remains version 1. Consumers reject an
+unknown schema version rather than guessing a default.
+
+`registry_extensions` is a versioned policy object, not a canonical record.
+Its ship, stage, and encounter ID lists are empty in the core contract. A later
+subordinate record must be explicitly declared in the matching list and must
+advance `content_version` beyond the 1.1.0 core baseline; core IDs cannot be
+redeclared. The progression record is closed, so an added ending or unknown
+root field requires a future schema rule instead of silently extending the
+registry.
+
+The focused validator reports `source: field.path: reason`. File validation
+uses the supplied filename and decoded in-memory validation uses the explicit
+`<in-memory>` source label. It rejects malformed versions and grammar,
+missing or invented core records, duplicate IDs or references, nonreciprocal
+topology, invalid geometry policy, malformed requirements, and undeclared ship
+fields.
 
 Run it with:
 
@@ -45,15 +63,34 @@ python3.12 tools/content/validate_product_contract.py content/product_contract.j
 
 The logical output is `640x360`; gameplay uses the centered `270x360` plane
 `[185,455) x [0,360)`. Gameplay is a vertical 2D shmup and the perspective 3D
-world is presentation only. Enemy emission is permitted only while the declared
-anchor or hurtbox lies inside that plane.
+world is presentation only.
+
+Geometry uses a binary 1/1024-logical-pixel grid. In grid units, a point anchor
+is eligible only when `189440 <= x < 465920` and `0 <= y < 368640`. A declared
+half-open hurtbox must have positive extent and be fully contained: its
+left/top meet or exceed the plane minima and its right/bottom do not exceed the
+exclusive maxima. Right/bottom anchor clamps are therefore `465919` and
+`368639`, equivalent to `454.9990234375` and `359.9990234375` logical pixels.
+Each emission attempt declares a point-anchor or hurtbox gate and is locked
+when that declared gate fails; another attempt or an enemy's earlier position
+does not grant authority.
 
 Maynii is the forward-and-tracking all-arounder and Ciela is the spread
-specialist. Kolar has a stable reserved ID but is deferred: this contract does
-not select a weapon, emitter, damage value, or melee commitment for her.
+specialist. Kolar is the close-range specialist: close-range combat is her
+primary strength, and dependable, meaningful ranged damage is mandatory.
+Collision-only, melee-only, zero-range, and negligible-ranged interpretations
+are forbidden. Issue #23 owns her exact weapon form, melee choice, emitters,
+option formation, cadence, damage values, distance bands, and final balance.
 
 The registry also binds the six-stage route, its extra stage, named GDD
-encounters, ending selection, and the any-difficulty one-credit-clear extra
-stage unlock. Bosses require a roughly two-second ring recharge between phases;
-large bosses may change parts during transitions. Stage 1 and the visual/UI
-requirements are product requirements, not shipped artwork or an asset export.
+encounters, reciprocal stage links, ending selection, and the any-difficulty
+main-campaign one-credit-clear extra-stage unlock. Progression conditions use
+validated enum tokens rather than behavior-bearing prose. Bosses require a
+roughly two-second ring recharge between phases; large bosses may change parts
+during transitions.
+
+All six `product_requirements` fields—gameplay, enemy-emission gate, boss-phase
+policy, defeat feedback, presentation, and asset authoring—are required
+nonempty strings. They bind requirements rather than shipped artwork, tuning,
+or an asset export; executable geometry and progression behavior remains in
+the structured fields above.
