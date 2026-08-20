@@ -1,0 +1,259 @@
+{
+  "schema_version": 1,
+  "id": "contract.blade",
+  "display_name": "Blade Product Contract",
+  "content_version": "1.0.0",
+  "id_grammar": {
+    "pattern": "lowercase dotted identifiers; every segment begins with a letter and then uses lowercase letters, digits, or underscores",
+    "collision_policy": "IDs are globally unique across this contract and are never reused for a different record. Renamed player-facing text keeps the same ID."
+  },
+  "project": {
+    "schema_version": 1,
+    "id": "project.blade_of_desires",
+    "display_name": "Blade of Desires"
+  },
+  "campaign": {
+    "schema_version": 1,
+    "id": "campaign.blade_main",
+    "display_name": "Blade main campaign",
+    "main_stage_ids": [
+      "stage.stage1.lost_forest_of_aurei",
+      "stage.stage2.waters_of_unyielding_life",
+      "stage.stage3.under_the_vultures_shadow",
+      "stage.stage4.assault_on_the_desert_rose",
+      "stage.stage5.banner_of_the_bloody_lion",
+      "stage.stage6.blade_of_desires"
+    ],
+    "extra_stage_id": "stage.extra.dreams_of_a_clockwork_angel",
+    "progression": {
+      "schema_version": 1,
+      "id": "progression.blade_endings",
+      "display_name": "Blade ending and extra-stage policy",
+      "canonical_ending_condition": "complete the main campaign without a Continue",
+      "continued_ending_condition": "use a Continue during the main campaign",
+      "extra_stage_unlock_condition": "complete the main campaign without a Continue on any difficulty",
+      "extra_stage_story_condition": "the canonical ending is complete"
+    }
+  },
+  "runtime_geometry": {
+    "schema_version": 1,
+    "id": "geometry.blade_playfield",
+    "display_name": "Blade logical output and gameplay plane",
+    "logical_output": {
+      "width": 640,
+      "height": 360
+    },
+    "gameplay_plane": {
+      "x_min": 185,
+      "x_max_exclusive": 455,
+      "y_min": 0,
+      "y_max_exclusive": 360,
+      "width": 270,
+      "height": 360,
+      "containment": "The left and top edges are inclusive; the right and bottom edges are exclusive. Clamp gameplay anchors to the greatest representable position inside this rectangle."
+    }
+  },
+  "product_requirements": {
+    "gameplay": "Gameplay is a strictly vertical-scrolling 2D shmup. Perspective 3D is presentation only and never owns collisions, bullets, player motion, or stage anchors.",
+    "enemy_emission_gate": "An enemy may appear outside the gameplay plane, but each attempted emission is locked unless its declared gameplay anchor or hurtbox is inside the gameplay plane.",
+    "boss_phase_policy": "Every boss phase break has a readable ring-style recharge telegraph lasting roughly two seconds. Large bosses may lose, replace, regrow, or transform parts between phases.",
+    "defeat_feedback": "Ordinary enemy defeats use generous, large, readable particles. Accessibility settings may reduce density but must not obscure dangerous bullets.",
+    "presentation": "Stage 1 is a high-quality, somewhat photorealistic pixel-art forest with softly floating camera-facing 3D billboard lights. The UI is ornate and Blade-specific, informed by Selkies rather than copied from it.",
+    "asset_authoring": "New assets use the governed editable-source to runtime-export pipeline. Codex-created raster art requires image generation and deliberate pixel-art finishing in KRA source; quick geometry stand-ins are not production art."
+  },
+  "ships": [
+    {
+      "schema_version": 1,
+      "id": "ship.maynii",
+      "display_name": "Maynii",
+      "selection_status": "available",
+      "combat_identity": "All-around ship with dependable forward damage and tracking coverage."
+    },
+    {
+      "schema_version": 1,
+      "id": "ship.ciela",
+      "display_name": "Ciela",
+      "selection_status": "available",
+      "combat_identity": "Spread specialist with broad field coverage."
+    },
+    {
+      "schema_version": 1,
+      "id": "ship.kolar",
+      "display_name": "Kolar",
+      "selection_status": "deferred",
+      "resolution": "Kolar has a stable reserved content slot, but her player weapon identity is unresolved. Melee is only a non-binding future design note."
+    }
+  ],
+  "stages": [
+    {
+      "schema_version": 1,
+      "id": "stage.stage1.lost_forest_of_aurei",
+      "display_name": "Lost Forest of Aurei",
+      "order": 1,
+      "environment": "Forest",
+      "encounter_ids": [
+        "encounter.stage1.unchosen_elemental_fae",
+        "encounter.stage1.asahi"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.stage2.waters_of_unyielding_life",
+      "display_name": "Waters of Unyielding Life",
+      "order": 2,
+      "environment": "River",
+      "encounter_ids": [
+        "encounter.stage2.great_turtle_of_aurei",
+        "encounter.stage2.lia"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.stage3.under_the_vultures_shadow",
+      "display_name": "Under the Vultures' Shadow",
+      "order": 3,
+      "environment": "Desert",
+      "encounter_ids": [
+        "encounter.stage3.galatine",
+        "encounter.stage3.ai_wanderer_of_duality"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.stage4.assault_on_the_desert_rose",
+      "display_name": "Assault on the Desert Rose",
+      "order": 4,
+      "environment": "City",
+      "encounter_ids": [
+        "encounter.stage4.divine_armor_bes_mk4",
+        "encounter.stage4.durandal"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.stage5.banner_of_the_bloody_lion",
+      "display_name": "Banner of the Bloody Lion",
+      "order": 5,
+      "environment": "Forest",
+      "encounter_ids": [
+        "encounter.stage5.raptor_rx_588_surtr",
+        "encounter.stage5.jackson"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.stage6.blade_of_desires",
+      "display_name": "Blade of Desires",
+      "order": 6,
+      "environment": "Forest",
+      "encounter_ids": [
+        "encounter.stage6.mira"
+      ]
+    },
+    {
+      "schema_version": 1,
+      "id": "stage.extra.dreams_of_a_clockwork_angel",
+      "display_name": "Dreams of a Clockwork Angel",
+      "order": "extra",
+      "environment": "City",
+      "encounter_ids": [
+        "encounter.extra.ai_keeper_of_duality",
+        "encounter.extra.desire_mechanical_fae"
+      ]
+    }
+  ],
+  "encounters": [
+    {
+      "schema_version": 1,
+      "id": "encounter.stage1.unchosen_elemental_fae",
+      "display_name": "Unchosen elemental fae",
+      "stage_id": "stage.stage1.lost_forest_of_aurei",
+      "kind": "midboss",
+      "resolution": "The two unchosen fae participate. Their names and Kolar's future player loadout remain unresolved by this contract."
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage1.asahi",
+      "display_name": "Asahi, Sunny Fae",
+      "stage_id": "stage.stage1.lost_forest_of_aurei",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage2.great_turtle_of_aurei",
+      "display_name": "Great Turtle of Aurei",
+      "stage_id": "stage.stage2.waters_of_unyielding_life",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage2.lia",
+      "display_name": "Lia, Witch of Asclepius",
+      "stage_id": "stage.stage2.waters_of_unyielding_life",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage3.galatine",
+      "display_name": "Galatine, Chosen of Lions",
+      "stage_id": "stage.stage3.under_the_vultures_shadow",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage3.ai_wanderer_of_duality",
+      "display_name": "Ai, Wanderer of Duality",
+      "stage_id": "stage.stage3.under_the_vultures_shadow",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage4.divine_armor_bes_mk4",
+      "display_name": "Divine Armor Bes MK-4",
+      "stage_id": "stage.stage4.assault_on_the_desert_rose",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage4.durandal",
+      "display_name": "Durandal, Damned of Lions",
+      "stage_id": "stage.stage4.assault_on_the_desert_rose",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage5.raptor_rx_588_surtr",
+      "display_name": "Raptor RX-588 Surtr",
+      "stage_id": "stage.stage5.banner_of_the_bloody_lion",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage5.jackson",
+      "display_name": "Jackson, the Bloody Lion",
+      "stage_id": "stage.stage5.banner_of_the_bloody_lion",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.stage6.mira",
+      "display_name": "Mira, Desire's Blade",
+      "stage_id": "stage.stage6.blade_of_desires",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.extra.ai_keeper_of_duality",
+      "display_name": "Ai, Keeper of Duality",
+      "stage_id": "stage.extra.dreams_of_a_clockwork_angel",
+      "kind": "boss"
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter.extra.desire_mechanical_fae",
+      "display_name": "Desire, Mechanical Fae",
+      "stage_id": "stage.extra.dreams_of_a_clockwork_angel",
+      "kind": "boss"
+    }
+  ]
+}
