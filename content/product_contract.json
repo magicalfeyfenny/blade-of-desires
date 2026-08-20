@@ -2,10 +2,16 @@
   "schema_version": 1,
   "id": "contract.blade",
   "display_name": "Blade Product Contract",
-  "content_version": "1.0.0",
+  "content_version": "1.1.0",
   "id_grammar": {
-    "pattern": "lowercase dotted identifiers; every segment begins with a letter and then uses lowercase letters, digits, or underscores",
-    "collision_policy": "IDs are globally unique across this contract and are never reused for a different record. Renamed player-facing text keeps the same ID."
+    "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
+    "collision_policy": "globally_unique_and_never_reused"
+  },
+  "registry_extensions": {
+    "schema_version": 1,
+    "ship_ids": [],
+    "stage_ids": [],
+    "encounter_ids": []
   },
   "project": {
     "schema_version": 1,
@@ -29,10 +35,10 @@
       "schema_version": 1,
       "id": "progression.blade_endings",
       "display_name": "Blade ending and extra-stage policy",
-      "canonical_ending_condition": "complete the main campaign without a Continue",
-      "continued_ending_condition": "use a Continue during the main campaign",
-      "extra_stage_unlock_condition": "complete the main campaign without a Continue on any difficulty",
-      "extra_stage_story_condition": "the canonical ending is complete"
+      "canonical_ending_condition": "main_campaign_no_continue",
+      "continued_ending_condition": "main_campaign_continue_used",
+      "extra_stage_unlock_condition": "main_campaign_1cc_any_difficulty",
+      "extra_stage_story_condition": "canonical_ending_complete"
     }
   },
   "runtime_geometry": {
@@ -50,12 +56,16 @@
       "y_max_exclusive": 360,
       "width": 270,
       "height": 360,
-      "containment": "The left and top edges are inclusive; the right and bottom edges are exclusive. Clamp gameplay anchors to the greatest representable position inside this rectangle."
+      "containment": "The plane is half-open. Point anchors must lie inside it, and declared hurtboxes must be fully contained. Coordinates use a binary 1/1024-logical-pixel grid; clamp right and bottom coordinates to the exclusive maximum minus one grid step.",
+      "anchor_containment": "point_inside_half_open_plane",
+      "hurtbox_containment": "fully_contained_in_half_open_plane",
+      "coordinate_grid": "binary_fixed_1_1024_logical_pixel",
+      "right_bottom_clamp": "exclusive_max_minus_one_grid_step"
     }
   },
   "product_requirements": {
     "gameplay": "Gameplay is a strictly vertical-scrolling 2D shmup. Perspective 3D is presentation only and never owns collisions, bullets, player motion, or stage anchors.",
-    "enemy_emission_gate": "An enemy may appear outside the gameplay plane, but each attempted emission is locked unless its declared gameplay anchor or hurtbox is inside the gameplay plane.",
+    "enemy_emission_gate": "An enemy may appear outside the gameplay plane, but each attempted emission declares one gate: either a point anchor or a hurtbox. A declared point must lie inside the half-open gameplay plane, and a declared hurtbox must be fully contained; otherwise that attempt remains locked.",
     "boss_phase_policy": "Every boss phase break has a readable ring-style recharge telegraph lasting roughly two seconds. Large bosses may lose, replace, regrow, or transform parts between phases.",
     "defeat_feedback": "Ordinary enemy defeats use generous, large, readable particles. Accessibility settings may reduce density but must not obscure dangerous bullets.",
     "presentation": "Stage 1 is a high-quality, somewhat photorealistic pixel-art forest with softly floating camera-facing 3D billboard lights. The UI is ornate and Blade-specific, informed by Selkies rather than copied from it.",
@@ -67,6 +77,7 @@
       "id": "ship.maynii",
       "display_name": "Maynii",
       "selection_status": "available",
+      "combat_role": "forward_tracking_all_rounder",
       "combat_identity": "All-around ship with dependable forward damage and tracking coverage."
     },
     {
@@ -74,14 +85,40 @@
       "id": "ship.ciela",
       "display_name": "Ciela",
       "selection_status": "available",
+      "combat_role": "spread_specialist",
       "combat_identity": "Spread specialist with broad field coverage."
     },
     {
       "schema_version": 1,
       "id": "ship.kolar",
       "display_name": "Kolar",
-      "selection_status": "deferred",
-      "resolution": "Kolar has a stable reserved content slot, but her player weapon identity is unresolved. Melee is only a non-binding future design note."
+      "selection_status": "available",
+      "combat_role": "close_range_specialist",
+      "combat_identity": "Close-range specialist whose primary payoff comes from fighting near targets while retaining dependable, meaningful ranged damage.",
+      "range_policy": {
+        "primary_strength": "close_range_combat",
+        "ranged_damage_requirement": "meaningful",
+        "forbidden_interpretations": [
+          "collision_only",
+          "melee_only",
+          "zero_range",
+          "negligible_ranged_damage"
+        ]
+      },
+      "implementation_boundary": {
+        "delegated_issue": 23,
+        "unresolved": [
+          "weapon_form",
+          "melee_choice",
+          "emitters",
+          "option_formation",
+          "cadence",
+          "damage_values",
+          "distance_bands",
+          "final_balance"
+        ]
+      },
+      "resolution": "The role and ranged-damage floor are binding; exact implementation and tuning remain delegated to Issue #23."
     }
   ],
   "stages": [
@@ -169,7 +206,7 @@
       "display_name": "Unchosen elemental fae",
       "stage_id": "stage.stage1.lost_forest_of_aurei",
       "kind": "midboss",
-      "resolution": "The two unchosen fae participate. Their names and Kolar's future player loadout remain unresolved by this contract."
+      "resolution": "The two unchosen fae participate. Their participant IDs remain unresolved for later Stage 1 content."
     },
     {
       "schema_version": 1,

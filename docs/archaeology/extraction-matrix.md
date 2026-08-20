@@ -34,7 +34,7 @@ This matrix ranks what the archive can contribute to Blade. “Extract” means 
 
 | Candidate | Best archive idea | Required adaptation | Important rejection test |
 |---|---|---|---|
-| Ship profiles/options | GDD/current decisions plus THPJ3 and legacy shot specimens | Canonical ship data: Maynii all-around tracking/forward, Ciela spread, Kolar deliberately unresolved; symmetric focus naming and action input | Profile cannot mutate defaults; Kolar cannot acquire an invented role by schema default |
+| Ship profiles/options | GDD/current decisions plus THPJ3 and legacy shot specimens | Canonical ship data: Maynii all-around tracking/forward, Ciela spread, Kolar close-range specialist with primary close-range strength and mandatory meaningful ranged damage while exact loadout/tuning remain #23 work; symmetric focus naming and action input | Profile cannot mutate defaults; Kolar cannot become collision-only, melee-only, zero-range, or negligible-ranged by schema default |
 | Hyper/deathbomb economy | THPJ3 risk/reward: three tiers, accelerated enemy pressure, 40-frame cancel | One meter policy, explicit spend/refund/death transaction, clear difficulty effects | Exactly one cost/outcome for bomb, hyper, deathbomb, and death |
 | Rank director | Blade GDD plus Selkies bounded director | One bounded value, named reasons, deterministic multipliers, practice lock | No enemy may change global rank directly |
 | Graze | THPJ3 proximity scoring concept | Per-player/per-projectile once-only record, declared reset/recycle semantics | Staying near one bullet cannot score repeatedly |
@@ -111,13 +111,13 @@ Do not select these as foundations:
 
 Each row below should become a separate bounded issue; this report does not create or authorize them.
 
-1. Record authoritative Blade content IDs/contracts and current product decisions: centered gameplay plane, ship roles with Kolar deferred, in-plane enemy firing, boss recharge/part rules, render/UI/art requirements, and GDD story seams.
+1. Record authoritative Blade content IDs/contracts and current product decisions: centered gameplay plane, ship roles including Kolar's close-range-specialist role and meaningful ranged floor, in-plane enemy firing, boss recharge/part rules, render/UI/art requirements, and GDD story seams.
 2. Implement deterministic clock, versioned RNG streams, immutable input snapshots, stable IDs, and reason-coded replay events.
 3. Implement run/player state, pause-domain ownership, and the isolated config/persistence skeleton.
 4. Implement damage/destruction/reward transactions, projectile identity, deterministic cleanup/cancellation, and the in-plane firing gate.
 5. Implement the declarative emitter executor and characterize the THPJ3 cardinalities plus selected TMoLaD/Tiny Girl/Split+Balance/Ghost trajectories.
 6. Implement stage executor, encounter registry, and boss phase/part plan using named anchors and recharge telegraphs.
-7. Implement Maynii, Ciela, focus/options/hyper/deathbomb, and score/rank/graze on those foundations; leave Kolar unimplemented pending a chosen role.
+7. Implement Maynii, Ciela, focus/options/hyper/deathbomb, and score/rank/graze on those foundations; defer Kolar's exact loadout and tuning to #23 under the fixed close-range-specialist and meaningful-ranged-damage contract.
 8. Implement two-pass render lifecycle, camera-facing light billboards, and offline model conversion/manifest path.
 9. Implement dialogue runtime, then save/profile/replay services and only then any authoring tool.
 10. Re-author or clear provenance for selected art, audio, fonts, 3D assets, ornate UI, and the high-quality Stage 1 forest before importing runtime derivatives.
