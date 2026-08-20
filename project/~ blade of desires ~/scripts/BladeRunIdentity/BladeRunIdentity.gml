@@ -9,6 +9,7 @@ enum BladeRunIdKind {
 	Event = 5
 }
 
+// Rejects values that are not version 1 identity allocators before allocator fields are used.
 function _BladeRunIdentityRequire(_identity) {
 	if (!is_struct(_identity)
 		|| !variable_struct_exists(_identity, "__blade_run_identity_version")
@@ -17,6 +18,7 @@ function _BladeRunIdentityRequire(_identity) {
 	}
 }
 
+// Converts an exact numeric enum value to int64 and rejects values outside the six ID kinds.
 function _BladeRunIdentityKind(_kind) {
 	var _type = typeof(_kind);
 	var _value;
@@ -38,6 +40,7 @@ function _BladeRunIdentityKind(_kind) {
 	return _value;
 }
 
+// Maps each validated kind to its stable three-letter ID prefix used in serialized IDs.
 function _BladeRunIdentityPrefix(_kind) {
 	switch (_BladeRunIdentityKind(_kind)) {
 		case BladeRunIdKind.Instance: return "ins";
@@ -50,6 +53,8 @@ function _BladeRunIdentityPrefix(_kind) {
 	throw("BladeRunIdentity: unreachable ID kind");
 }
 
+// Reads the selected kind's next ordinal without changing any counter.
+// Validation uses this shared allocation frontier instead of maintaining a second issued-ID set.
 function _BladeRunIdentityNextCounter(_identity, _kind) {
 	switch (_BladeRunIdentityKind(_kind)) {
 		case BladeRunIdKind.Instance: return _identity.next_instance;
@@ -62,6 +67,8 @@ function _BladeRunIdentityNextCounter(_identity, _kind) {
 	throw("BladeRunIdentity: unreachable ID kind");
 }
 
+// Returns the selected kind's current ordinal and advances only that kind's counter.
+// The capacity check leaves room for the incremented allocation frontier to remain an int64.
 function _BladeRunIdentityTakeCounter(_identity, _kind) {
 	var _validated_kind = _BladeRunIdentityKind(_kind);
 	if (_BladeRunIdentityNextCounter(_identity, _validated_kind)
@@ -101,6 +108,7 @@ function _BladeRunIdentityTakeCounter(_identity, _kind) {
 	throw("BladeRunIdentity: unreachable ID kind");
 }
 
+// Recognizes digits-only positive decimal text with no leading zero before int64 parsing.
 function _BladeRunIdentityPositiveDecimal(_text) {
 	if (!is_string(_text) || string_length(_text) == 0) {
 		return false;
@@ -116,6 +124,8 @@ function _BladeRunIdentityPositiveDecimal(_text) {
 
 /// @func BladeRunIdentityCreate(content_id_predicate)
 /// @param {Method} content_id_predicate Injected lookup sourced from the canonical content contract.
+/// Stores the caller's lookup method and initializes each independent typed counter at ordinal one.
+/// The injected method keeps content IDs outside this allocator, avoiding a duplicate registry.
 function BladeRunIdentityCreate(_content_id_predicate) {
 	if (typeof(_content_id_predicate) != "method") {
 		throw("BladeRunIdentity: content ID predicate must be a method");
@@ -133,6 +143,7 @@ function BladeRunIdentityCreate(_content_id_predicate) {
 }
 
 /// @func BladeRunIdentityReset(identity)
+/// Rewinds every typed allocation frontier to one while retaining the injected content predicate.
 function BladeRunIdentityReset(_identity) {
 	_BladeRunIdentityRequire(_identity);
 	_identity.next_instance = int64(1);
@@ -146,6 +157,7 @@ function BladeRunIdentityReset(_identity) {
 
 /// @func BladeRunIdentityAllocate(identity, kind)
 /// @returns {String} Immutable typed ID: ins/atk/blt/dmg/own/evt plus ordinal.
+/// Takes the next ordinal for one validated kind and formats it as prefix:positive-decimal.
 function BladeRunIdentityAllocate(_identity, _kind) {
 	_BladeRunIdentityRequire(_identity);
 	var _validated_kind = _BladeRunIdentityKind(_kind);
@@ -155,6 +167,7 @@ function BladeRunIdentityAllocate(_identity, _kind) {
 
 /// @func BladeRunIdentityRequireContent(identity, content_id)
 /// @returns {String} The known canonical content ID.
+/// Accepts a nonempty string only when the allocator's injected predicate recognizes it.
 function BladeRunIdentityRequireContent(_identity, _content_id) {
 	_BladeRunIdentityRequire(_identity);
 	if (!is_string(_content_id) || string_length(_content_id) == 0) {
@@ -168,6 +181,8 @@ function BladeRunIdentityRequireContent(_identity, _content_id) {
 
 /// @func BladeRunIdentityAllocateForContent(identity, kind, content_id)
 /// @description Validate content before advancing the typed counter.
+/// Runs kind and content validation before calling the counter-mutating allocator.
+/// If either validation throws, this function has not reached its allocation step.
 function BladeRunIdentityAllocateForContent(_identity, _kind, _content_id) {
 	_BladeRunIdentityRequire(_identity);
 	var _validated_kind = _BladeRunIdentityKind(_kind);
@@ -177,6 +192,8 @@ function BladeRunIdentityAllocateForContent(_identity, _kind, _content_id) {
 
 /// @func BladeRunIdentityRequireAllocated(identity, id, expected_kind)
 /// @returns {String} The validated canonical allocated ID.
+/// Checks prefix, positive decimal spelling, int64 round trip, and the selected counter frontier.
+/// The check treats ordinals below the frontier as allocated because typed counters have no gaps.
 function BladeRunIdentityRequireAllocated(_identity, _id, _expected_kind) {
 	_BladeRunIdentityRequire(_identity);
 	var _kind = _BladeRunIdentityKind(_expected_kind);
@@ -206,6 +223,7 @@ function BladeRunIdentityRequireAllocated(_identity, _id, _expected_kind) {
 
 /// @func BladeRunIdentityGetCounters(identity)
 /// @returns {Struct} Fresh fixed-order allocated-count diagnostics.
+/// Copies allocated counts as next ordinal minus one because every typed sequence begins at one.
 function BladeRunIdentityGetCounters(_identity) {
 	_BladeRunIdentityRequire(_identity);
 	return {
@@ -220,6 +238,7 @@ function BladeRunIdentityGetCounters(_identity) {
 
 /// @func BladeRunIdentityCountersCanonical(identity)
 /// @returns {String} Fixed-order identity-counter fragment for deterministic hashing.
+/// Serializes the six copied counts in explicit BRIC1 order instead of relying on struct key order.
 function BladeRunIdentityCountersCanonical(_identity) {
 	var _counters = BladeRunIdentityGetCounters(_identity);
 	return "BRIC1|" + string(_counters.instance)

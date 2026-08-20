@@ -1,6 +1,8 @@
 /// Project-owned exact assertions for the deterministic-kernel test runner.
 /// These assertions deliberately do not depend on GMTL matchers.
 
+/// Creates one shared result record so every test case contributes to the same
+/// final summary.
 function BladeKernelTestStateCreate() {
     return {
         passed: 0,
@@ -10,22 +12,30 @@ function BladeKernelTestStateCreate() {
     };
 }
 
+/// Stops the current test with a clear diagnostic so a failed check cannot
+/// look successful.
 function BladeKernelTestFail(_message) {
     throw "Blade kernel assertion failed: " + string(_message);
 }
 
+/// Requires the value to compare equal to true because Boolean expectations
+/// are reported separately from ordinary scalar equality.
 function BladeKernelTestAssertTrue(_value, _message) {
     if (_value != true) {
         BladeKernelTestFail(_message);
     }
 }
 
+/// Requires the value to compare equal to false because Boolean expectations
+/// are reported separately from ordinary scalar equality.
 function BladeKernelTestAssertFalse(_value, _message) {
     if (_value != false) {
         BladeKernelTestFail(_message);
     }
 }
 
+/// Compares two scalar values and reports both sides so a mismatch can be
+/// diagnosed directly.
 function BladeKernelTestAssertEqual(_actual, _expected, _message) {
     if (_actual != _expected) {
         BladeKernelTestFail(
@@ -36,6 +46,8 @@ function BladeKernelTestAssertEqual(_actual, _expected, _message) {
     }
 }
 
+/// Requires two scalar values to differ so tests can prove that changed inputs
+/// change output.
 function BladeKernelTestAssertNotEqual(_actual, _unexpected, _message) {
     if (_actual == _unexpected) {
         BladeKernelTestFail(
@@ -44,6 +56,8 @@ function BladeKernelTestAssertNotEqual(_actual, _unexpected, _message) {
     }
 }
 
+/// Checks array lengths and indexed values explicitly so a failure identifies
+/// the exact mismatch instead of relying on whole-array comparison behavior.
 function BladeKernelTestAssertArrayEqual(_actual, _expected, _message) {
     var _actual_length = array_length(_actual);
     var _expected_length = array_length(_expected);
@@ -68,6 +82,8 @@ function BladeKernelTestAssertArrayEqual(_actual, _expected, _message) {
     }
 }
 
+/// Runs invalid-input code and checks its message so the test proves the
+/// specific rejection occurred rather than accepting any unrelated error.
 function BladeKernelTestAssertThrows(_callback, _message_fragment, _message) {
     var _threw = false;
     var _caught_message = "";
@@ -92,6 +108,8 @@ function BladeKernelTestAssertThrows(_callback, _message_fragment, _message) {
     }
 }
 
+/// Records one case and catches its exception so later cases still run and
+/// expose all failures together.
 function BladeKernelTestRunCase(_state, _name, _callback) {
     _state.total += 1;
 
@@ -107,6 +125,8 @@ function BladeKernelTestRunCase(_state, _name, _callback) {
     }
 }
 
+/// Prints the aggregate counts and one final sentinel so the shell runner can
+/// distinguish a complete passing run from partial or misleading output.
 function BladeKernelTestFinish(_state) {
     show_debug_message(
         "BLADE_KERNEL_TESTS: "
@@ -116,8 +136,10 @@ function BladeKernelTestFinish(_state) {
     );
 
     var _result = (_state.total > 0) && (_state.failed == 0);
-    show_debug_message(
-        "BLADE_KERNEL_TEST_RESULT: " + (_result ? "PASS" : "FAIL")
-    );
+    var _result_text = "FAIL";
+    if (_result) {
+        _result_text = "PASS";
+    }
+    show_debug_message("BLADE_KERNEL_TEST_RESULT: " + _result_text);
     return _result;
 }

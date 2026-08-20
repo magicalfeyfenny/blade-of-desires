@@ -5,10 +5,14 @@ enum BladeEventChannel {
     Presentation = 1
 }
 
+/// Throw a field-specific event-log error so invalid deterministic data
+/// identifies the failed boundary.
 function _BladeEventLogFail(_field, _reason) {
     throw("BladeEventLog: " + _field + ": " + _reason);
 }
 
+/// Reject values that are not version 1 event-log structs before later code
+/// reads the expected fields.
 function _BladeEventLogRequire(_log) {
     if (!is_struct(_log)
         || !variable_struct_exists(_log, "__blade_event_log_version")
@@ -17,6 +21,8 @@ function _BladeEventLogRequire(_log) {
     }
 }
 
+/// Accept lowercase ASCII letters, digits, underscores, and optional dots so
+/// tokens have one allowed byte spelling.
 function _BladeEventLogAsciiToken(_value, _field, _allow_dot) {
     if (!is_string(_value) || string_length(_value) == 0) {
         _BladeEventLogFail(_field, "must be a nonempty ASCII token");
@@ -36,10 +42,14 @@ function _BladeEventLogAsciiToken(_value, _field, _allow_dot) {
     return _value;
 }
 
+/// Apply the shared canonical integer and bounds check so event fields follow
+/// the transcript's numeric rules.
 function _BladeEventLogInteger(_value, _minimum, _maximum, _field) {
     return BladeCanonicalRequireInteger(_value, _minimum, _maximum, _field);
 }
 
+/// Return the stored integer range for each supported payload type so value
+/// validation uses exact bounds.
 function _BladeEventLogPayloadTypeBounds(_type) {
     switch (_type) {
         case "i32":
@@ -56,6 +66,8 @@ function _BladeEventLogPayloadTypeBounds(_type) {
 
 /// @func BladeEventPayload(key, type, value)
 /// @desc Creates a typed numeric payload entry. q10 stores raw 1/1024 units.
+/// Validate and copy one typed value so queued payloads contain only supported
+/// key, type, and integer triples.
 function BladeEventPayload(_key, _type, _value) {
     var _validated_key = _BladeEventLogAsciiToken(_key, "payload key", false);
     var _validated_type = _BladeEventLogAsciiToken(_type, "payload type", false);
@@ -73,6 +85,8 @@ function BladeEventPayload(_key, _type, _value) {
     };
 }
 
+/// Compare ASCII strings byte by byte, including prefix length, so sorting
+/// does not use locale or engine collation.
 function _BladeEventLogAsciiCompare(_left, _right) {
     var _left_length = string_length(_left);
     var _right_length = string_length(_right);
@@ -88,6 +102,8 @@ function _BladeEventLogAsciiCompare(_left, _right) {
     return 0;
 }
 
+/// Copy, validate, and insertion-sort payload entries by key so caller order
+/// is irrelevant and duplicate keys fail.
 function _BladeEventLogSortPayload(_payload) {
     if (!is_array(_payload)) {
         _BladeEventLogFail("payload", "must be an array");
@@ -119,6 +135,8 @@ function _BladeEventLogSortPayload(_payload) {
     return _sorted;
 }
 
+/// Resolve a supported type and reason to its source and target ID kinds so
+/// invalid event relationships are rejected.
 function _BladeEventLogTypeSchema(_type, _reason) {
     switch (_type) {
         case "instance.spawned":
@@ -179,6 +197,8 @@ function _BladeEventLogTypeSchema(_type, _reason) {
     );
 }
 
+/// Require an allocated ID of the selected kind, or an empty value when the
+/// event schema has no such endpoint.
 function _BladeEventLogRequireOptionalId(_identity, _id, _kind, _field) {
     if (_kind < 0) {
         if (_id != "") {
@@ -192,6 +212,8 @@ function _BladeEventLogRequireOptionalId(_identity, _id, _kind, _field) {
     return BladeRunIdentityRequireAllocated(_identity, _id, _kind);
 }
 
+/// Encode a sorted payload with a bounded entry count so comparisons use a
+/// fixed field sequence instead of struct order.
 function _BladeEventLogPayloadCanonical(_payload) {
     var _fields = [
         BladeCanonicalIntegerString(
@@ -209,6 +231,8 @@ function _BladeEventLogPayloadCanonical(_payload) {
     return BladeCanonicalRecord("P1", _fields);
 }
 
+/// Validate every queued field and build a normalized record without mutating
+/// the log, allowing checks to finish first.
 function _BladeEventLogBuildQueued(
     _log,
     _tick,
@@ -303,6 +327,8 @@ function _BladeEventLogBuildQueued(
     };
 }
 
+/// Deep-copy payload entry structs so a returned queue view cannot mutate the
+/// log's stored payload entries.
 function _BladeEventLogCopyPayload(_payload) {
     var _copy = [];
     for (var i = 0; i < array_length(_payload); i++) {
@@ -315,6 +341,8 @@ function _BladeEventLogCopyPayload(_payload) {
     return _copy;
 }
 
+/// Copy a queued record and its payload so the public queue result does not
+/// expose the mutable pending record.
 function _BladeEventLogCopyQueued(_queued) {
     return {
         tick: _queued.tick,
@@ -332,6 +360,8 @@ function _BladeEventLogCopyQueued(_queued) {
     };
 }
 
+/// Check fields needed to rebuild a pending entry so commit rejects malformed
+/// state before reading those fields.
 function _BladeEventLogRequirePendingFields(_pending, _index) {
     if (!is_struct(_pending)) {
         _BladeEventLogFail("pending event", "entry " + string(_index) + " must be a struct");
@@ -359,6 +389,8 @@ function _BladeEventLogRequirePendingFields(_pending, _index) {
     }
 }
 
+/// Revalidate pending records, enforce unique in-range ordinals, and count
+/// channels before commit mutates IDs or logs.
 function _BladeEventLogRebuildPending(_log, _expected_count) {
     if (!is_array(_log.pending)) {
         _BladeEventLogFail("pending events", "must be an array");
@@ -418,6 +450,8 @@ function _BladeEventLogRebuildPending(_log, _expected_count) {
     };
 }
 
+/// Compare order, IDs, type, reason, content, and payload in sequence, using
+/// ordinal only as the final tie-breaker.
 function _BladeEventLogCompareQueued(_left, _right) {
     if (_left.order_key < _right.order_key) return -1;
     if (_left.order_key > _right.order_key) return 1;
@@ -449,6 +483,8 @@ function _BladeEventLogCompareQueued(_left, _right) {
     return 0;
 }
 
+/// Insertion-sort queued records with the explicit comparator so commit does
+/// not rely on engine sort stability.
 function _BladeEventLogSortQueued(_pending) {
     var _sorted = [];
     for (var i = 0; i < array_length(_pending); i++) {
@@ -464,6 +500,8 @@ function _BladeEventLogSortQueued(_pending) {
     return _sorted;
 }
 
+/// Encode one committed event in fixed field order with a payload count so
+/// struct field order cannot affect its bytes.
 function _BladeEventLogRecordCanonical(_record) {
     var _fields = [
         _record.event_id,
@@ -485,6 +523,8 @@ function _BladeEventLogRecordCanonical(_record) {
 }
 
 /// @func BladeEventLogCreate(identity)
+/// Create an empty version 1 log after confirming the shared identity exposes
+/// counters used for gameplay event IDs.
 function BladeEventLogCreate(_identity) {
     BladeRunIdentityGetCounters(_identity);
     return {
@@ -501,6 +541,8 @@ function BladeEventLogCreate(_identity) {
 }
 
 /// @func BladeEventLogReset(log)
+/// Clear tick, record, and presentation-number state while retaining the
+/// identity object reset separately by the kernel.
 function BladeEventLogReset(_log) {
     _BladeEventLogRequire(_log);
     _log.active_tick = int64(-1);
@@ -514,6 +556,8 @@ function BladeEventLogReset(_log) {
 }
 
 /// @func BladeEventLogBeginTick(log, tick)
+/// Open a strictly newer tick only with no prior work pending so records from
+/// separate ticks cannot share one commit.
 function BladeEventLogBeginTick(_log, _tick) {
     _BladeEventLogRequire(_log);
     if (_log.active_tick >= 0 || array_length(_log.pending) != 0) {
@@ -534,6 +578,8 @@ function BladeEventLogBeginTick(_log, _tick) {
 }
 
 /// @func BladeEventLogQueue(log, channel, order_key, type, reason, source_id, target_id, owner_id, content_id, payload)
+/// Validate and copy the complete event before appending or advancing its
+/// ordinal so rejection leaves pending state intact.
 function BladeEventLogQueue(
     _log,
     _channel,
@@ -594,6 +640,8 @@ function BladeEventLogQueue(
 }
 
 /// @func BladeEventLogCommitTick(log)
+/// Rebuild, sort, capacity-check, and encode records before allocation so
+/// pending validation precedes commit mutation.
 function BladeEventLogCommitTick(_log) {
     _BladeEventLogRequire(_log);
     var _maximum = int64("9223372036854775807");
@@ -695,6 +743,8 @@ function BladeEventLogCommitTick(_log) {
 }
 
 /// @func BladeEventLogGameplayCanonical(log)
+/// Serialize committed gameplay records only when no tick is active so active,
+/// uncommitted work is not silently omitted.
 function BladeEventLogGameplayCanonical(_log) {
     _BladeEventLogRequire(_log);
     if (_log.active_tick >= 0) {
@@ -704,6 +754,8 @@ function BladeEventLogGameplayCanonical(_log) {
 }
 
 /// @func BladeEventLogAllCanonical(log)
+/// Tag gameplay and presentation transcripts separately so the combined
+/// canonical record keeps both channels distinct.
 function BladeEventLogAllCanonical(_log) {
     _BladeEventLogRequire(_log);
     return BladeCanonicalRecord("A1", [
@@ -713,6 +765,8 @@ function BladeEventLogAllCanonical(_log) {
 }
 
 /// @func BladeEventLogGameplayHash(log)
+/// Hash the gameplay-only canonical transcript so presentation records do not
+/// affect deterministic gameplay comparison.
 function BladeEventLogGameplayHash(_log) {
     return BladeCanonicalHashUtf8(BladeEventLogGameplayCanonical(_log));
 }

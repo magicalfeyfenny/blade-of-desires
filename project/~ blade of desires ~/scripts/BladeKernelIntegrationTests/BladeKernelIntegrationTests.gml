@@ -1,11 +1,15 @@
 /// End-to-end deterministic-kernel fixture and invariance tests.
 
+/// Recognizes the three fixture IDs so the integration test keeps production
+/// identity validation active without copying the complete content registry.
 function _BladeKernelFixtureKnownContent(_content_id) {
     return _content_id == "ship.maynii"
         || _content_id == "stage.stage1.lost_forest_of_aurei"
         || _content_id == "encounter.stage1.asahi";
 }
 
+/// Performs the fixture's tick-specific allocations, random draws, and events
+/// so two runs execute the same gameplay script.
 function _BladeKernelFixtureSimulate(_kernel, _snapshot, _tick) {
     var _input = BladeInputSnapshotRead(_snapshot);
     var _frame = _tick.simulation_tick;
@@ -135,11 +139,18 @@ function _BladeKernelFixtureSimulate(_kernel, _snapshot, _tick) {
     ]);
 }
 
+/// Builds four injected input samples. Optional gameplay and prompt-only
+/// changes let the hash tests exercise each boundary separately.
 function _BladeKernelFixtureInputs(_input_variant, _prompt_variant) {
-    var _device = _prompt_variant
-        ? BladePromptDevice.Gamepad
-        : BladePromptDevice.KeyboardMouse;
-    var _second_move_y = _input_variant ? 256 : 0;
+    var _device = BladePromptDevice.KeyboardMouse;
+    if (_prompt_variant) {
+        _device = BladePromptDevice.Gamepad;
+    }
+
+    var _second_move_y = 0;
+    if (_input_variant) {
+        _second_move_y = 256;
+    }
     return [
         BladeInputRawStateCreate(
             1024,
@@ -172,6 +183,8 @@ function _BladeKernelFixtureInputs(_input_variant, _prompt_variant) {
     ];
 }
 
+/// Advances one kernel through the fixture and returns every canonical result
+/// that the invariance cases compare.
 function _BladeKernelFixtureDrive(
     _kernel,
     _input_variant,
@@ -186,6 +199,8 @@ function _BladeKernelFixtureDrive(
     var _domains = BladeClockDomain.Stage
         | BladeClockDomain.Actor
         | BladeClockDomain.Boss;
+    // The kernel accepts a GameMaker method value. This named callback needs no
+    // captured fixture state, so its bound context is intentionally empty.
     var _simulate = method({}, _BladeKernelFixtureSimulate);
     for (var i = 0; i < array_length(_inputs); i++) {
         BladeKernelStepDirect(
@@ -203,6 +218,8 @@ function _BladeKernelFixtureDrive(
     };
 }
 
+/// Creates a fresh seeded kernel before driving the fixture so separate runs
+/// cannot share mutable state accidentally.
 function _BladeKernelFixtureRun(
     _seed,
     _input_variant = false,
@@ -225,6 +242,8 @@ function _BladeKernelFixtureRun(
     return _result;
 }
 
+/// Registers end-to-end cases that prove repeatability and the implemented
+/// gameplay-versus-presentation hash boundary.
 function BladeKernelIntegrationTestsRun(_state) {
     BladeKernelTestRunCase(_state, "identical integration fixtures are byte identical", function() {
         var _first = _BladeKernelFixtureRun(305419896);

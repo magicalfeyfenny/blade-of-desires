@@ -5,6 +5,9 @@
 # parsed: the imported demo contains known-red cases and unsound matchers.
 set -euo pipefail
 
+# Run a command in its own process group so a timeout or interruption also
+# stops any child runner it created. macOS does not provide GNU timeout, so the
+# small Python wrapper handles that lifecycle explicitly.
 run_with_timeout() {
     local timeout_seconds=$1
     shift
@@ -17,10 +20,13 @@ import time
 
 timeout_seconds = int(sys.argv[1])
 command = sys.argv[2:]
+# A new session gives the command a process group that can be terminated
+# without touching this shell.
 process = subprocess.Popen(command, start_new_session=True)
 
 
 def process_group_exists() -> bool:
+    """Check the group because its leader can exit before its descendants."""
     process.poll()
     try:
         os.killpg(process.pid, 0)
@@ -32,6 +38,7 @@ def process_group_exists() -> bool:
 
 
 def terminate_process_group() -> None:
+    """Give the child group five seconds, then kill survivors to avoid orphans."""
     if not process_group_exists():
         return
     try:
@@ -54,6 +61,7 @@ def terminate_process_group() -> None:
 
 
 def handle_signal(signum: int, _frame: object) -> None:
+    """Clean up children before returning the shell status for this signal."""
     terminate_process_group()
     raise SystemExit(128 + signum)
 
@@ -62,6 +70,8 @@ signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
 try:
     command_status = process.wait(timeout=timeout_seconds)
+    # Python reports signal exits as negative numbers; shells expose them as
+    # 128 plus the signal number.
     if command_status < 0:
         command_status = 128 - command_status
     raise SystemExit(command_status)
@@ -137,6 +147,8 @@ build_log="$test_root/build.log"
 runner_log="$test_root/runner.log"
 debug_log="$test_root/debug.log"
 
+# Remove only the mktemp directory created above. The name and direct-parent
+# checks prevent a broader deletion if a path variable is ever malformed.
 cleanup() {
     if [[ "${test_root:h}" == "$temp_parent" && "${test_root:t}" == blade-kernel-tests.* ]]; then
         rm -rf -- "$test_root"
@@ -144,20 +156,23 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-max_compile_attempts=${BLADE_GM_COMPILE_ATTEMPTS:-6}
-compile_timeout_seconds=${BLADE_GM_COMPILE_TIMEOUT_SECONDS:-120}
-runner_timeout_seconds=${BLADE_GM_RUNNER_TIMEOUT_SECONDS:-60}
-for setting in \
-    "BLADE_GM_COMPILE_ATTEMPTS:$max_compile_attempts" \
-    "BLADE_GM_COMPILE_TIMEOUT_SECONDS:$compile_timeout_seconds" \
-    "BLADE_GM_RUNNER_TIMEOUT_SECONDS:$runner_timeout_seconds"; do
-    setting_name=${setting%%:*}
-    setting_value=${setting#*:}
+# Reject invalid numeric settings before passing them to loop bounds or timeout
+# arithmetic.
+require_positive_integer() {
+    local setting_name=$1
+    local setting_value=$2
     if [[ "$setting_value" != <-> || "$setting_value" -lt 1 ]]; then
         print -u2 "$setting_name must be a positive integer."
         exit 1
     fi
-done
+}
+
+max_compile_attempts=${BLADE_GM_COMPILE_ATTEMPTS:-6}
+compile_timeout_seconds=${BLADE_GM_COMPILE_TIMEOUT_SECONDS:-120}
+runner_timeout_seconds=${BLADE_GM_RUNNER_TIMEOUT_SECONDS:-60}
+require_positive_integer "BLADE_GM_COMPILE_ATTEMPTS" "$max_compile_attempts"
+require_positive_integer "BLADE_GM_COMPILE_TIMEOUT_SECONDS" "$compile_timeout_seconds"
+require_positive_integer "BLADE_GM_RUNNER_TIMEOUT_SECONDS" "$runner_timeout_seconds"
 
 game_data=""
 for (( attempt = 1; attempt <= max_compile_attempts; attempt++ )); do
@@ -178,6 +193,7 @@ for (( attempt = 1; attempt <= max_compile_attempts; attempt++ )); do
         --runtime=VM \
         --assetCompiler=--sdlm \
         mac Compile 2>&1 | tee -a "$build_log"
+    # Read Igor's status from the pipeline rather than tee's status.
     igor_status=${pipestatus[1]}
     set -e
 
@@ -190,6 +206,9 @@ for (( attempt = 1; attempt <= max_compile_attempts; attempt++ )); do
         print -u2 "GameMaker reported success without a nonempty game.zip; retrying."
         continue
     fi
+    # This bounded retry policy treats timeout, abort, and segmentation-fault
+    # statuses as compiler crashes. Every other failure stops immediately with
+    # its original diagnostic.
     if (( igor_status != 124 && igor_status != 134 && igor_status != 139 )); then
         print -u2 "GameMaker compilation failed with status $igor_status."
         exit "$igor_status"
@@ -215,6 +234,7 @@ set +e
         -output "$debug_log" \
         --run-test
 ) 2>&1 | tee "$runner_log"
+# Read the runner wrapper's status from the pipeline rather than tee's status.
 runner_status=${pipestatus[1]}
 set -e
 

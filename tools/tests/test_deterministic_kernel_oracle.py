@@ -17,13 +17,18 @@ STREAM_NAMES = (
 
 
 def _rotl32(value: int, count: int) -> int:
+    """Rotate one word and mask Python's unbounded integer to the GML width."""
     return ((value << count) | (value >> (32 - count))) & U32_MASK
 
 
 def _next_u32(state: list[int]) -> int:
+    """Advance the reference state so its outputs independently check GML."""
     result = (_rotl32((state[1] * 5) & U32_MASK, 7) * 9) & U32_MASK
     temporary = (state[1] << 9) & U32_MASK
 
+    # These XOR operations are the xoshiro128** transition in reference order;
+    # changing their order would read already-updated words and produce a
+    # different stream.
     state[2] ^= state[0]
     state[3] ^= state[1]
     state[1] ^= state[2]
@@ -35,26 +40,32 @@ def _next_u32(state: list[int]) -> int:
 
 
 def _derived_state(run_seed: int, stream_name: str) -> list[int]:
+    """Derive state from version, seed, and name exactly as the GML constructor."""
     normalized_seed = run_seed % (1 << 32)
     derivation = (
         f"{PRNG_VERSION}\n{normalized_seed}\n{stream_name}\n".encode("utf-8")
     )
     digest = hashlib.sha1(derivation).digest()
-    state = [
-        int.from_bytes(digest[offset : offset + 4], "big")
-        for offset in range(0, 16, 4)
-    ]
+    # Only the first 16 digest bytes are needed for four 32-bit state words.
+    # Big-endian parsing matches the byte order used by the GML implementation.
+    state = []
+    for offset in range(0, 16, 4):
+        state.append(int.from_bytes(digest[offset : offset + 4], "big"))
     if not any(state):
+        # xoshiro cannot advance from an all-zero state, so both implementations
+        # replace that one invalid digest result with the same nonzero word.
         state[0] = 0x9E3779B9
     return state
 
 
 def _length_prefix(value: object) -> str:
+    """Prefix UTF-8 text with its byte length to separate adjacent fields."""
     text = str(value)
     return f"{len(text.encode('utf-8'))}:{text}"
 
 
 def _record(prefix: str, *fields: object) -> str:
+    """Build a positional record so object key order cannot affect its bytes."""
     return prefix + "".join(_length_prefix(field) for field in fields)
 
 
@@ -69,6 +80,7 @@ def _event(
     content_id: str,
     payload: list[tuple[str, str, int]],
 ) -> str:
+    """Sort and serialize one event exactly like the GameMaker event format."""
     fields: list[object] = [
         event_id,
         tick,
@@ -86,7 +98,10 @@ def _event(
 
 
 class DeterministicKernelOracleTests(unittest.TestCase):
+    """Checks GameMaker goldens without calling the GML code under test."""
+
     def test_product_contract_fingerprint_and_fixture_ids(self):
+        """Bind the fixture to exact contract bytes and verify its content IDs."""
         contract_path = ROOT / "content" / "product_contract.json"
         contract_bytes = contract_path.read_bytes()
         self.assertEqual(len(contract_bytes), 10_418)
@@ -99,6 +114,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         stable_ids = set()
 
         def collect(value):
+            """Walk nested values because ID records occur at several schema depths."""
             if isinstance(value, dict):
                 identifier = value.get("id")
                 if isinstance(identifier, str):
@@ -119,6 +135,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         )
 
     def test_xoshiro_reference_transition(self):
+        """Lock the raw transition before derivation can obscure an algorithm error."""
         state = [1, 2, 3, 4]
         self.assertEqual(
             [_next_u32(state) for _ in range(10)],
@@ -137,6 +154,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         )
 
     def test_named_stream_derivation_is_order_independent(self):
+        """Derive in reverse order to prove state depends only on seed and name."""
         expected = {
             "stage_schedule": (
                 [0xFEEEFD1F, 0xDEE986F8, 0x78333891, 0x07518874],
@@ -167,6 +185,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
             self.assertEqual(_next_u32(state), expected_first)
 
     def test_seed_normalization_boundaries(self):
+        """Check signed and int64 boundaries against GML's modulo-2^32 rule."""
         cases = {
             0: 0,
             -1: U32_MASK,
@@ -181,6 +200,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
                 self.assertEqual(supplied % (1 << 32), expected)
 
     def test_integration_fixture_canonical_hashes(self):
+        """Rebuild fixture bytes independently so GML changes must match goldens."""
         seed = 0x12345678
         header = _record(
             "H1",
@@ -264,13 +284,10 @@ class DeterministicKernelOracleTests(unittest.TestCase):
                 [("amount", "i32", 10)],
             ),
         )
-        state_transcript = _record(
-            "ST1",
-            *(
-                _record("T1", tick, _record("F1", tick, held))
-                for tick, held in ((1, 5), (2, 5), (3, 4), (4, 0))
-            ),
-        )
+        state_records = []
+        for tick, held in ((1, 5), (2, 5), (3, 4), (4, 0)):
+            state_records.append(_record("T1", tick, _record("F1", tick, held)))
+        state_transcript = _record("ST1", *state_records)
         gameplay = _record(
             "G1",
             header,

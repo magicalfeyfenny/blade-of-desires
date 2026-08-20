@@ -9,6 +9,7 @@ enum BladeClockDomain {
 	All = 15
 }
 
+// Rejects values that are not version 1 clock structs before other clock fields are read.
 function _BladeSimulationClockRequire(_clock) {
 	if (!is_struct(_clock)
 		|| !variable_struct_exists(_clock, "__blade_simulation_clock_version")
@@ -17,6 +18,8 @@ function _BladeSimulationClockRequire(_clock) {
 	}
 }
 
+// Converts supported exact numeric values to int64 and enforces a lower bound,
+// excluding fractional or imprecise Real values from deterministic clock state.
 function _BladeSimulationClockInteger(_value, _field, _minimum) {
 	var _type = typeof(_value);
 	var _integer;
@@ -39,6 +42,7 @@ function _BladeSimulationClockInteger(_value, _field, _minimum) {
 	return _integer;
 }
 
+// Accepts only integer combinations of the declared domain bits so unknown bits fail loudly.
 function _BladeSimulationClockDomainMask(_domain_mask) {
 	var _mask = _BladeSimulationClockInteger(_domain_mask, "domain mask", 0);
 	if (_mask > BladeClockDomain.All) {
@@ -47,12 +51,15 @@ function _BladeSimulationClockDomainMask(_domain_mask) {
 	return _mask;
 }
 
+// Limits optional callbacks to callable methods because tick processing invokes them directly.
 function _BladeSimulationClockCallback(_callback, _field) {
 	if (!is_undefined(_callback) && typeof(_callback) != "method") {
 		throw("BladeSimulationClock: " + _field + " must be a method or undefined");
 	}
 }
 
+// Resolves a method against a fresh counter view on each tick, then validates its returned mask.
+// Numeric masks take the same validation path without invoking a provider.
 function _BladeSimulationClockResolveEligibility(_eligibility, _clock) {
 	if (typeof(_eligibility) == "method") {
 		return _BladeSimulationClockDomainMask(
@@ -62,16 +69,20 @@ function _BladeSimulationClockResolveEligibility(_eligibility, _clock) {
 	return _BladeSimulationClockDomainMask(_eligibility);
 }
 
+// Builds the signed int64 maximum from decimal text to avoid an imprecise Real literal.
 function _BladeSimulationClockInt64Maximum() {
 	return int64("9223372036854775807");
 }
 
+// Checks room for an increment by subtraction so the validation itself cannot overflow.
 function _BladeSimulationClockRequireCounterCapacity(_value, _increment, _field) {
 	if (_value > _BladeSimulationClockInt64Maximum() - _increment) {
 		throw("BladeSimulationClock: " + _field + " exceeds signed int64 range");
 	}
 }
 
+// Preflights the simulation counter and every counter selected by a known numeric mask.
+// This keeps a multi-counter tick from partially advancing when one counter is exhausted.
 function _BladeSimulationClockRequireTickCapacity(_clock, _domain_mask, _tick_count) {
 	_BladeSimulationClockRequireCounterCapacity(
 		_clock.simulation_tick,
@@ -108,6 +119,7 @@ function _BladeSimulationClockRequireTickCapacity(_clock, _domain_mask, _tick_co
 	}
 }
 
+// Verifies that one independent presentation increment fits before the clock is mutated.
 function _BladeSimulationClockRequirePresentationCapacity(_clock) {
 	_BladeSimulationClockRequire(_clock);
 	_BladeSimulationClockRequireCounterCapacity(
@@ -117,6 +129,8 @@ function _BladeSimulationClockRequirePresentationCapacity(_clock) {
 	);
 }
 
+// Validates a direct-step count and any fixed mask before sampling or stepping can begin.
+// Method masks stay deferred because their contract is to observe the real counters per tick.
 function _BladeSimulationClockPreflightDirect(
 	_clock,
 	_tick_count,
@@ -138,6 +152,8 @@ function _BladeSimulationClockPreflightDirect(
 	return _count;
 }
 
+// Computes catch-up, drop, accumulator, and fixed-domain capacity as a local plan.
+// Returning the plan lets callers reject invalid updates before any clock field changes.
 function _BladeSimulationClockPreflightAdvance(_clock, _delta_us, _eligibility) {
 	_BladeSimulationClockRequire(_clock);
 	var _delta = _BladeSimulationClockInteger(_delta_us, "delta microseconds", 0);
@@ -158,9 +174,10 @@ function _BladeSimulationClockPreflightAdvance(_clock, _delta_us, _eligibility) 
 		+ (_delta * int64(_clock.tick_rate));
 	var _available = _proposed_accumulator div _clock.accumulator_threshold;
 	var _ticks_to_run = min(_available, _clock.max_catch_up_ticks);
-	var _capacity_mask = _has_numeric_mask
-		? _numeric_mask & ~BladeClockDomain.Presentation
-		: BladeClockDomain.None;
+	var _capacity_mask = BladeClockDomain.None;
+	if (_has_numeric_mask) {
+		_capacity_mask = _numeric_mask & ~BladeClockDomain.Presentation;
+	}
 	_BladeSimulationClockRequireTickCapacity(_clock, _capacity_mask, _ticks_to_run);
 
 	var _after_run = _proposed_accumulator
@@ -183,6 +200,7 @@ function _BladeSimulationClockPreflightAdvance(_clock, _delta_us, _eligibility) 
 
 /// @func BladeSimulationClockCreate(max_catch_up_ticks)
 /// @param {Real} max_catch_up_ticks Maximum simulation ticks run per accumulator update.
+/// Creates a zeroed 60 Hz clock whose integer accumulator stores microseconds multiplied by 60.
 function BladeSimulationClockCreate(_max_catch_up_ticks = 8) {
 	var _maximum = _BladeSimulationClockInteger(
 		_max_catch_up_ticks,
@@ -207,6 +225,7 @@ function BladeSimulationClockCreate(_max_catch_up_ticks = 8) {
 
 /// @func BladeSimulationClockReset(clock)
 /// @param {Struct} clock
+/// Clears accumulated time, drops, and all counters while retaining the configured catch-up cap.
 function BladeSimulationClockReset(_clock) {
 	_BladeSimulationClockRequire(_clock);
 	_clock.accumulator_units = int64(0);
@@ -222,6 +241,7 @@ function BladeSimulationClockReset(_clock) {
 /// @func BladeSimulationClockGetCounters(clock)
 /// @param {Struct} clock
 /// @returns {Struct} A fresh diagnostic view of all integer counters.
+/// Copies the counters into a new struct so callers cannot mutate the clock through the view.
 function BladeSimulationClockGetCounters(_clock) {
 	_BladeSimulationClockRequire(_clock);
 	return {
@@ -235,6 +255,7 @@ function BladeSimulationClockGetCounters(_clock) {
 
 /// @func BladeSimulationClockMarkPresentation(clock)
 /// @desc Advances presentation time once, independently of simulation ticks.
+/// Capacity-checks and records one presentation update without advancing simulation domains.
 function BladeSimulationClockMarkPresentation(_clock) {
 	_BladeSimulationClockRequirePresentationCapacity(_clock);
 	_clock.presentation_tick += int64(1);
@@ -245,6 +266,8 @@ function BladeSimulationClockMarkPresentation(_clock) {
 /// @param {Struct} clock
 /// @param {Real} eligibility BladeClockDomain bit mask supplied by the caller.
 /// @param {Method} tick_callback Optional callback receiving the completed tick view.
+/// Advances simulation and each eligible domain once.
+/// An optional callback receives the completed tick view.
 function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = undefined) {
 	_BladeSimulationClockRequire(_clock);
 	_BladeSimulationClockCallback(_tick_callback, "tick callback");
@@ -278,6 +301,8 @@ function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = u
 /// @param {Real} tick_count Number of exact ticks to run without wall time.
 /// @param {Real|Method} eligibility Domain mask or a provider called before each tick.
 /// @param {Method} tick_callback Optional callback receiving each completed tick view.
+/// Runs an exact number of ticks without touching the wall-time accumulator or creating drops.
+/// Eligibility methods are resolved inside the loop so each one sees the preceding tick's counters.
 function BladeSimulationClockStepManyDirect(
 	_clock,
 	_tick_count,
@@ -316,6 +341,8 @@ function BladeSimulationClockStepManyDirect(
 /// @param {Real|Method} eligibility Domain mask or a provider called before each tick.
 /// @param {Method} tick_callback Optional callback receiving each completed tick view.
 /// @returns {Struct} Catch-up, drop, remainder, and counter diagnostics.
+/// Adds delta_us * 60 units, runs the capped whole ticks, and drops whole excess ticks.
+/// Presentation advances once per update, while the sub-tick remainder is retained exactly.
 function BladeSimulationClockAdvance(
 	_clock,
 	_delta_us,

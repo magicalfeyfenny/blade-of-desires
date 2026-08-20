@@ -16,6 +16,7 @@ enum BladePromptDevice {
 	Gamepad = 2
 }
 
+// Rejects values that are not version 1 samplers before sampler fields are read or changed.
 function _BladeInputRequireSampler(_sampler) {
 	if (!is_struct(_sampler)
 		|| !variable_struct_exists(_sampler, "__blade_input_sampler_version")
@@ -24,12 +25,15 @@ function _BladeInputRequireSampler(_sampler) {
 	}
 }
 
+// Stops a consecutive-frame addition at the signed int64 boundary before overflow can occur.
 function _BladeInputRequireFrameCapacity(_value, _field) {
 	if (_value >= int64("9223372036854775807")) {
 		throw("BladeInputSnapshot: " + _field + " exceeds signed int64 range");
 	}
 }
 
+// Converts supported exact numeric values to int64 and enforces the field's closed range.
+// The exact-Real check prevents rounded or fractional input from entering a snapshot.
 function _BladeInputInteger(_value, _field, _minimum, _maximum) {
 	var _type = typeof(_value);
 	var _integer;
@@ -55,6 +59,7 @@ function _BladeInputInteger(_value, _field, _minimum, _maximum) {
 	return _integer;
 }
 
+// Retrieves a required raw-state field; the field-specific validators constrain its returned value.
 function _BladeInputRawField(_raw, _name) {
 	if (!is_struct(_raw) || !variable_struct_exists(_raw, _name)) {
 		throw("BladeInputSnapshot: raw state requires scalar field " + _name);
@@ -62,6 +67,8 @@ function _BladeInputRawField(_raw, _name) {
 	return variable_struct_get(_raw, _name);
 }
 
+// Rejects values other than GML's true and false flags.
+// Accepted flags are normalized with bool() before storage or encoding.
 function _BladeInputBool(_value, _field) {
 	if (_value != true && _value != false) {
 		throw("BladeInputSnapshot: " + _field + " must be boolean");
@@ -69,6 +76,8 @@ function _BladeInputBool(_value, _field) {
 	return bool(_value);
 }
 
+// Parses optional-minus decimal text and requires an exact int64 string round trip.
+// This rejects alternate spellings such as plus signs and redundant leading zeroes.
 function _BladeInputSignedDecimal(_text, _field) {
 	if (!is_string(_text) || string_length(_text) == 0) {
 		throw("BladeInputSnapshot: " + _field + " is not a canonical integer");
@@ -95,6 +104,8 @@ function _BladeInputSignedDecimal(_text, _field) {
 	return _integer;
 }
 
+// Encodes every authoritative input field in a fixed-order BIS1 value string.
+// The string representation prevents later struct mutation from changing an earlier snapshot.
 function _BladeInputSnapshotEncode(
 	_simulation_frame,
 	_presentation_frame,
@@ -108,6 +119,10 @@ function _BladeInputSnapshotEncode(
 	_analog_x,
 	_analog_y
 ) {
+	var _analog_flag = 0;
+	if (_has_analog) {
+		_analog_flag = 1;
+	}
 	return "BIS1|" + string(_simulation_frame)
 		+ "|" + string(_presentation_frame)
 		+ "|" + string(_move_x)
@@ -116,13 +131,14 @@ function _BladeInputSnapshotEncode(
 		+ "|" + string(_pressed_actions)
 		+ "|" + string(_released_actions)
 		+ "|" + string(_prompt_device)
-		+ "|" + string(_has_analog ? 1 : 0)
+		+ "|" + string(_analog_flag)
 		+ "|" + string(_analog_x)
 		+ "|" + string(_analog_y);
 }
 
 /// @func BladeInputRawStateCreate(move_x, move_y, held_actions, prompt_device, has_analog, analog_x, analog_y)
 /// @description Create an injected semantic state. No platform key codes are retained.
+/// Validates the semantic scalar ranges and forces both analog axes to zero when analog is absent.
 function BladeInputRawStateCreate(
 	_move_x,
 	_move_y,
@@ -161,6 +177,7 @@ function BladeInputRawStateCreate(
 }
 
 /// @func BladeInputSamplerCreate()
+/// Creates an unsampled input latch with frame sentinels at -1 and all semantic state cleared.
 function BladeInputSamplerCreate() {
 	return {
 		__blade_input_sampler_version: 1,
@@ -180,6 +197,7 @@ function BladeInputSamplerCreate() {
 }
 
 /// @func BladeInputSamplerReset(sampler)
+/// Restores an existing sampler to the same unsampled state without replacing its struct.
 function BladeInputSamplerReset(_sampler) {
 	_BladeInputRequireSampler(_sampler);
 	_sampler.has_sample = false;
@@ -199,6 +217,8 @@ function BladeInputSamplerReset(_sampler) {
 
 /// @func BladeInputSamplePresentation(sampler, presentation_frame, raw_state)
 /// @description Sample exactly once for each consecutive presentation frame.
+/// Validates the full sample before mutation, then OR-latches edges and stores the latest state.
+/// OR-latching preserves short transitions until an eligible tick consumes them.
 function BladeInputSamplePresentation(_sampler, _presentation_frame, _raw_state) {
 	_BladeInputRequireSampler(_sampler);
 	var _frame = _BladeInputInteger(
@@ -285,6 +305,8 @@ function BladeInputSamplePresentation(_sampler, _presentation_frame, _raw_state)
 
 /// @func BladeInputSnapshotPublishTick(sampler, simulation_frame, input_eligible)
 /// @returns {String} Immutable authoritative version 1 snapshot.
+/// Publishes the next simulation frame as a BIS1 string and advances the publication frontier.
+/// Only eligible ticks copy and clear pending edges, so ineligible ticks do not lose them.
 function BladeInputSnapshotPublishTick(_sampler, _simulation_frame, _input_eligible) {
 	_BladeInputRequireSampler(_sampler);
 	if (!_sampler.has_sample) {
@@ -334,6 +356,8 @@ function BladeInputSnapshotPublishTick(_sampler, _simulation_frame, _input_eligi
 
 /// @func BladeInputSnapshotRead(snapshot)
 /// @returns {Struct} A fresh mutable view; mutating it cannot affect the snapshot string.
+/// Parses, range-checks, and re-encodes a BIS1 string before returning a fresh field view.
+/// The re-encode comparison rejects valid-looking text that is not the one canonical spelling.
 function BladeInputSnapshotRead(_snapshot) {
 	if (!is_string(_snapshot)) {
 		throw("BladeInputSnapshot: snapshot must be an immutable string");
@@ -419,6 +443,8 @@ function BladeInputSnapshotRead(_snapshot) {
 
 /// @func BladeInputSnapshotCanonical(snapshot)
 /// @returns {String} The validated immutable authoritative value.
+/// Runs full reader validation and returns the original string.
+/// No defensive copy is needed because strings are not mutable views.
 function BladeInputSnapshotCanonical(_snapshot) {
 	BladeInputSnapshotRead(_snapshot);
 	return _snapshot;
@@ -426,6 +452,7 @@ function BladeInputSnapshotCanonical(_snapshot) {
 
 /// @func BladeInputSamplerGetPendingEdges(sampler)
 /// @returns {Struct} Fresh diagnostics without consuming pending edges.
+/// Copies both pending edge masks into a diagnostic struct without clearing the sampler's latches.
 function BladeInputSamplerGetPendingEdges(_sampler) {
 	_BladeInputRequireSampler(_sampler);
 	return {

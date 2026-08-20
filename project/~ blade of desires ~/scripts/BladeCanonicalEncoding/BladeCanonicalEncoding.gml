@@ -1,9 +1,12 @@
 /// Deterministic UTF-8 framing and hashing for replay-auditable records.
 
+/// Prepends the module and field names to the reason, then throws the combined diagnostic.
 function __BladeCanonicalFail(_field, _reason) {
 	throw "BladeCanonicalEncoding: " + _field + ": " + _reason;
 }
 
+/// Converts integer types and exactly representable finite whole reals to int64.
+/// Values that conversion could round are rejected first.
 function __BladeCanonicalToInt64(_value, _field) {
 	var _type = typeof(_value);
 
@@ -29,6 +32,8 @@ function __BladeCanonicalToInt64(_value, _field) {
 
 /// @func BladeCanonicalRequireInteger(value, minimum, maximum, field)
 /// @desc Returns an exact int64 after validating its inclusive bounds.
+/// Converts the value and both bounds with the same exact-integer rules, then
+/// enforces the inclusive range.
 function BladeCanonicalRequireInteger(_value, _minimum, _maximum, _field = "value") {
 	var _integer = __BladeCanonicalToInt64(_value, _field);
 	var _minimum_integer = __BladeCanonicalToInt64(_minimum, _field + " minimum");
@@ -48,6 +53,8 @@ function BladeCanonicalRequireInteger(_value, _minimum, _maximum, _field = "valu
 	return _integer;
 }
 
+/// Rejects non-ASCII digits, leading zeroes, and negative zero so each accepted
+/// int64 decimal has one spelling.
 function __BladeCanonicalValidateDecimal(_text, _field) {
 	var _length = string_byte_length(_text);
 	if (_length < 1 || _length != string_length(_text)) {
@@ -81,6 +88,8 @@ function __BladeCanonicalValidateDecimal(_text, _field) {
 
 /// @func BladeCanonicalIntegerString(value, minimum, maximum, field)
 /// @desc Converts an exact bounded integer to canonical base-10 ASCII.
+/// Validates the number before conversion, then checks the runtime-produced decimal
+/// before it enters canonical bytes.
 function BladeCanonicalIntegerString(_value, _minimum, _maximum, _field = "value") {
 	var _integer = BladeCanonicalRequireInteger(_value, _minimum, _maximum, _field);
 	return __BladeCanonicalValidateDecimal(string(_integer), _field);
@@ -88,6 +97,8 @@ function BladeCanonicalIntegerString(_value, _minimum, _maximum, _field = "value
 
 /// @func BladeCanonicalLengthPrefix(value)
 /// @desc Frames a string as its UTF-8 byte length, a colon, and the string.
+/// Counts UTF-8 bytes, not characters, so adjacent fields remain unambiguous with
+/// non-ASCII text.
 function BladeCanonicalLengthPrefix(_value) {
 	if (!is_string(_value)) {
 		__BladeCanonicalFail("record field", "must already be a string");
@@ -95,6 +106,8 @@ function BladeCanonicalLengthPrefix(_value) {
 	return string(string_byte_length(_value)) + ":" + _value;
 }
 
+/// Restricts the unframed prefix to ASCII letters, digits, dots, and underscores so
+/// it cannot contain the field-length colon.
 function __BladeCanonicalValidatePrefix(_prefix) {
 	if (!is_string(_prefix) || string_length(_prefix) < 1) {
 		__BladeCanonicalFail("record prefix", "must be a nonempty ASCII token");
@@ -117,6 +130,8 @@ function __BladeCanonicalValidatePrefix(_prefix) {
 
 /// @func BladeCanonicalRecord(prefix, ordered_fields)
 /// @desc Encodes fields in caller-supplied order without struct iteration.
+/// Appends each array element as a length-prefixed string, preserving explicit order
+/// instead of relying on struct or JSON ordering.
 function BladeCanonicalRecord(_prefix, _ordered_fields) {
 	var _record = __BladeCanonicalValidatePrefix(_prefix);
 	if (!is_array(_ordered_fields)) {
@@ -134,6 +149,8 @@ function BladeCanonicalRecord(_prefix, _ordered_fields) {
 
 /// @func BladeCanonicalRequireSha1Fingerprint(value, field)
 /// @desc Validates the exact lowercase `sha1:<40 hex>` fingerprint form.
+/// Accepts one `sha1:` spelling so equivalent SHA-1 values cannot use different
+/// canonical text.
 function BladeCanonicalRequireSha1Fingerprint(_value, _field = "SHA-1 fingerprint") {
 	if (!is_string(_value) || string_length(_value) != 45) {
 		__BladeCanonicalFail(_field, "must use sha1 followed by 40 lowercase hex digits");
@@ -155,6 +172,8 @@ function BladeCanonicalRequireSha1Fingerprint(_value, _field = "SHA-1 fingerprin
 
 /// @func BladeCanonicalHashUtf8(canonical_value)
 /// @desc Returns a normalized lowercase SHA-1 of the exact UTF-8 string bytes.
+/// Removes spaces and case variation from the runtime digest, validates 40 hex
+/// digits, and returns the bare hash.
 function BladeCanonicalHashUtf8(_canonical_value) {
 	if (!is_string(_canonical_value)) {
 		__BladeCanonicalFail("canonical value", "must be a string");
@@ -165,6 +184,7 @@ function BladeCanonicalHashUtf8(_canonical_value) {
 }
 
 /// @func BladeCanonicalRecordHash(prefix, ordered_fields)
+/// Frames an ordered record first and hashes those exact bytes as a single convenience operation.
 function BladeCanonicalRecordHash(_prefix, _ordered_fields) {
 	return BladeCanonicalHashUtf8(BladeCanonicalRecord(_prefix, _ordered_fields));
 }

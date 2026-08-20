@@ -1,5 +1,9 @@
 /// Project-owned tests for the fixed clock and immutable input snapshots.
+/// When a callback needs fixture values, method(context, callback) exposes the
+/// context as self; this keeps the callback's dependencies visible in GML.
 
+/// Creates the same seeded kernel for each clock/input case. Content lookup is
+/// disabled because these cases never allocate a content-backed ID.
 function _BladeClockInputKernelCreate() {
     return BladeDeterministicKernelCreate(
         "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
@@ -10,6 +14,8 @@ function _BladeClockInputKernelCreate() {
     );
 }
 
+/// Serializes every mutable clock field used by these tests so a rejected call
+/// can be checked for side effects.
 function _BladeClockInputClockState(_clock) {
     var _counters = BladeSimulationClockGetCounters(_clock);
     return BladeCanonicalRecord("CLOCK_TEST_STATE", [
@@ -23,6 +29,8 @@ function _BladeClockInputClockState(_clock) {
     ]);
 }
 
+/// Serializes the sampler's stored input and edge state so failed validation
+/// cannot mutate it unnoticed.
 function _BladeClockInputSamplerState(_sampler) {
     return BladeCanonicalRecord("INPUT_TEST_STATE", [
         string(_sampler.has_sample),
@@ -40,6 +48,8 @@ function _BladeClockInputSamplerState(_sampler) {
     ]);
 }
 
+/// Combines kernel, clock, input, and gameplay state into one value so the
+/// rejection tests can compare all affected state at once.
 function _BladeClockInputKernelState(_kernel) {
     return BladeCanonicalRecord("KERNEL_TEST_STATE", [
         string(_kernel.presentation_frame),
@@ -49,12 +59,16 @@ function _BladeClockInputKernelState(_kernel) {
     ]);
 }
 
+/// Confirms a call rejects the expected error and leaves its captured state
+/// byte-for-byte unchanged.
 function _BladeClockInputAssertRejected(_callback, _fragment, _state_callback, _message) {
     var _before = _state_callback();
     BladeKernelTestAssertThrows(_callback, _fragment, _message);
     BladeKernelTestAssertEqual(_state_callback(), _before, _message + " preserves state");
 }
 
+/// Registers the clock and input cases together because input edge delivery is
+/// decided while the kernel advances clock ticks.
 function BladeClockInputTestsRun(_state) {
     BladeKernelTestRunCase(_state, "clock preserves exact 60 Hz remainders", function() {
         var _clock = BladeSimulationClockCreate();
@@ -415,9 +429,12 @@ function BladeClockInputTestsRun(_state) {
 
         for (var _index = 0; _index < array_length(_snapshots); ++_index) {
             var _view = BladeInputSnapshotRead(_snapshots[_index]);
-            var _expected_pressed = (_index == 0)
-                ? int64(BladeInputAction.Fire | BladeInputAction.Focus)
-                : int64(0);
+            var _expected_pressed = int64(0);
+            if (_index == 0) {
+                _expected_pressed = int64(
+                    BladeInputAction.Fire | BladeInputAction.Focus
+                );
+            }
             BladeKernelTestAssertEqual(
                 _view.pressed_actions,
                 _expected_pressed,

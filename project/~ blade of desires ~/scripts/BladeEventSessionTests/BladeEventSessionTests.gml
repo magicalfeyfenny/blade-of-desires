@@ -1,11 +1,15 @@
 /// Project-owned tests for session binding and reason-coded event records.
 
+/// Recognizes only the content IDs used by these event fixtures so their
+/// identity checks use the injected lookup seam.
 function _BladeEventSessionKnownContent(_content_id) {
     return _content_id == "ship.maynii"
         || _content_id == "stage.stage1.lost_forest_of_aurei"
         || _content_id == "encounter.stage1.asahi";
 }
 
+/// Allocates one valid ID of each needed kind so event tests exercise identity
+/// validation rather than relying on invented strings.
 function _BladeEventSessionIdentityFixture() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeEventSessionKnownContent)
@@ -29,11 +33,15 @@ function _BladeEventSessionIdentityFixture() {
     };
 }
 
+/// Queues the same two events in either order to prove the explicit order keys,
+/// not callback order, determine serialization.
 function _BladeEventSessionOrderedLog(_reverse_queue_order) {
     var _fixture = _BladeEventSessionIdentityFixture();
     var _log = BladeEventLogCreate(_fixture.identity);
     BladeEventLogBeginTick(_log, 7);
 
+    // Bind one explicit context for both callbacks. GameMaker exposes this
+    // struct as self when either stored method runs.
     var _queue_context = {
         log: _log,
         fixture: _fixture,
@@ -85,6 +93,8 @@ function _BladeEventSessionOrderedLog(_reverse_queue_order) {
     };
 }
 
+/// Registers session-header, event validation, ordering, copy-isolation, and
+/// overflow cases on the shared test state.
 function BladeEventSessionTestsRun(_state) {
     BladeKernelTestRunCase(_state, "session header binds compatibility fields", function() {
         var _header = new BladeSessionHeader(

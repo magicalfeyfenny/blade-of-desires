@@ -1,11 +1,15 @@
 /// Project-owned characterization for named RNG streams and run-local identity.
 
+/// Recognizes only the fixture IDs used below so identity tests exercise the
+/// injected contract lookup without duplicating the full production registry.
 function _BladeRandomIdentityFixtureContentIdKnown(_content_id) {
     return _content_id == "ship.maynii"
         || _content_id == "stage.stage1.lost_forest_of_aurei"
         || _content_id == "encounter.stage1.asahi";
 }
 
+/// Compares every typed counter so reset and rejection tests can detect a gap
+/// in any ID sequence.
 function _BladeRandomIdentityAssertCountersEqual(_actual, _expected, _message) {
     BladeKernelTestAssertEqual(_actual.instance, _expected.instance, _message + " instance");
     BladeKernelTestAssertEqual(_actual.attack, _expected.attack, _message + " attack");
@@ -23,6 +27,8 @@ function _BladeRandomIdentityAssertCountersEqual(_actual, _expected, _message) {
     BladeKernelTestAssertEqual(_actual.event, _expected.event, _message + " event");
 }
 
+/// Checks signed and full-int64 seed boundaries to lock the implemented
+/// modulo-2^32 normalization.
 function _BladeRandomIdentityTestSeedNormalization() {
     var _fixtures = [
         [int64(0), int64(0)],
@@ -43,6 +49,8 @@ function _BladeRandomIdentityTestSeedNormalization() {
     }
 }
 
+/// Checks each named stream's derived state and first draw against independent
+/// fixed vectors.
 function _BladeRandomIdentityTestNamedStreamGoldens() {
     var _fixtures = [
         {
@@ -104,6 +112,8 @@ function _BladeRandomIdentityTestNamedStreamGoldens() {
     }
 }
 
+/// Checks representative half-open ranges so bounded draws retain the exact
+/// sequence implemented by the stream.
 function _BladeRandomIdentityTestBoundedRangeGoldens() {
     var _stream = new BladeRandomStream(int64("305419896"), "pattern_geometry");
     BladeKernelTestAssertEqual(_stream.next_range(0, 1), int64(0), "unit span");
@@ -118,6 +128,8 @@ function _BladeRandomIdentityTestBoundedRangeGoldens() {
     BladeKernelTestAssertEqual(_stream.get_draw_count(), int64(5), "bounded draws consumed");
 }
 
+/// Creates streams in opposite orders to prove their state comes from name and
+/// seed rather than creation order.
 function _BladeRandomIdentityTestCreationOrderIndependence() {
     var _stage_first = new BladeRandomStream(int64("305419896"), "stage_schedule");
     var _pattern_second = new BladeRandomStream(int64("305419896"), "pattern_geometry");
@@ -146,6 +158,8 @@ function _BladeRandomIdentityTestCreationOrderIndependence() {
     );
 }
 
+/// Draws only from the cosmetic stream and verifies the separate gameplay
+/// stream never advances.
 function _BladeRandomIdentityTestCosmeticIsolation() {
     var _gameplay = new BladeRandomStream(int64("305419896"), "pattern_geometry");
     var _reference = new BladeRandomStream(int64("305419896"), "pattern_geometry");
@@ -175,6 +189,8 @@ function _BladeRandomIdentityTestCosmeticIsolation() {
     BladeKernelTestAssertEqual(_cosmetic.get_draw_count(), int64(7), "cosmetic diagnostics");
 }
 
+/// Sends invalid stream and range requests and verifies validation happens
+/// before any random state changes.
 function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     var _stream = new BladeRandomStream(int64("305419896"), "pattern_geometry");
     var _state = _stream.get_state();
@@ -188,6 +204,8 @@ function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     );
     BladeKernelTestAssertArrayEqual(_stream.get_state(), _state, "unknown stream state");
     BladeKernelTestAssertEqual(_stream.get_draw_count(), _count, "unknown stream count");
+    // Bind the stream as explicit callback context because AssertThrows calls
+    // through a method value, where that context is available as self.
     BladeKernelTestAssertThrows(
         method(
             { stream: _stream },
@@ -211,6 +229,8 @@ function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     BladeKernelTestAssertEqual(_stream.get_draw_count(), _count, "oversized range count");
 }
 
+/// Allocates every supported ID kind, then resets to prove each independent
+/// counter starts reproducibly at one.
 function _BladeRandomIdentityTestTypedAllocationAndReset() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeRandomIdentityFixtureContentIdKnown)
@@ -278,6 +298,8 @@ function _BladeRandomIdentityTestTypedAllocationAndReset() {
     );
 }
 
+/// Rejects an unknown content ID and checks the next known allocation has no
+/// skipped instance number.
 function _BladeRandomIdentityTestIdentityFailuresDoNotAllocate() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeRandomIdentityFixtureContentIdKnown)
@@ -316,6 +338,8 @@ function _BladeRandomIdentityTestIdentityFailuresDoNotAllocate() {
     );
 }
 
+/// Tries malformed, mistyped, future, and reset IDs so validation accepts only
+/// IDs this identity object allocated.
 function _BladeRandomIdentityTestIdentityValidation() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeRandomIdentityFixtureContentIdKnown)
@@ -396,6 +420,8 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
 }
 
+/// Places a counter at the int64 limit to prove exhaustion is reported before
+/// incrementing or allocating an ID.
 function _BladeRandomIdentityTestCounterOverflow() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeRandomIdentityFixtureContentIdKnown)
@@ -416,6 +442,8 @@ function _BladeRandomIdentityTestCounterOverflow() {
 }
 
 /// @func BladeRandomIdentityTestsRun(state)
+/// Registers the random-stream and run-identity cases on the shared
+/// project-owned test state.
 function BladeRandomIdentityTestsRun(_state) {
     BladeKernelTestRunCase(_state, "random seed normalization boundaries", function() {
         _BladeRandomIdentityTestSeedNormalization();

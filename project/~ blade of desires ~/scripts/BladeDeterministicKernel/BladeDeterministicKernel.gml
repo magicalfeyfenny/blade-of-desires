@@ -1,9 +1,11 @@
 /// @description Thin composition seam for deterministic Blade simulation.
 
+/// Throw a kernel error that names the invalid field so callers can locate failed validation.
 function _BladeKernelFail(_field, _reason) {
     throw("BladeDeterministicKernel: " + _field + ": " + _reason);
 }
 
+/// Reject values that are not version 1 kernel structs before composed systems are accessed.
 function _BladeKernelRequire(_kernel) {
     if (!is_struct(_kernel)
         || !variable_struct_exists(_kernel, "__blade_kernel_version")
@@ -12,12 +14,16 @@ function _BladeKernelRequire(_kernel) {
     }
 }
 
+/// Accept only a bound method or undefined because tick execution invokes
+/// callbacks with GameMaker method semantics.
 function _BladeKernelRequireCallback(_callback, _field) {
     if (!is_undefined(_callback) && typeof(_callback) != "method") {
         _BladeKernelFail(_field, "must be a method or undefined");
     }
 }
 
+/// Store kernel state in a method context, adapting simulation to the clock's
+/// one-argument callback without local capture.
 function _BladeKernelBindTickCallback(_kernel, _simulate_callback) {
     var _context = {
         kernel: _kernel,
@@ -28,6 +34,8 @@ function _BladeKernelBindTickCallback(_kernel, _simulate_callback) {
     });
 }
 
+/// Bind the caller's eligibility method and remove Presentation so direct
+/// multi-tick stepping marks it only once.
 function _BladeKernelBindEligibilityProvider(_eligibility) {
     var _context = { eligibility: _eligibility };
     return method(_context, function(_counters) {
@@ -36,12 +44,16 @@ function _BladeKernelBindEligibilityProvider(_eligibility) {
     });
 }
 
+/// Reject an exhausted kernel presentation counter before sampling would
+/// require an out-of-range increment.
 function _BladeKernelRequirePresentationCapacity(_kernel) {
     if (_kernel.presentation_frame >= int64("9223372036854775807")) {
         _BladeKernelFail("presentation frame", "exceeds signed int64 range");
     }
 }
 
+/// Select only a named RNG stream so deterministic domains remain explicit and
+/// unknown names cannot share state.
 function _BladeKernelStream(_kernel, _name) {
     switch (_name) {
         case "stage_schedule": return _kernel.stage_schedule;
@@ -53,8 +65,14 @@ function _BladeKernelStream(_kernel, _name) {
     _BladeKernelFail("random stream", "unknown stream " + string(_name));
 }
 
+/// Read a snapshot view and encode gameplay input in fixed order, storing
+/// analog presence as 0 or 1 so boolean rendering cannot affect the transcript.
 function _BladeKernelGameplayInputCanonical(_snapshot) {
     var _view = BladeInputSnapshotRead(_snapshot);
+    var _analog_flag = 0;
+    if (_view.has_analog) {
+        _analog_flag = 1;
+    }
     return BladeCanonicalRecord("S1", [
         string(_view.simulation_frame),
         string(_view.move_x),
@@ -62,12 +80,14 @@ function _BladeKernelGameplayInputCanonical(_snapshot) {
         string(_view.held_actions),
         string(_view.pressed_actions),
         string(_view.released_actions),
-        string(_view.has_analog ? 1 : 0),
+        string(_analog_flag),
         string(_view.analog_x),
         string(_view.analog_y),
     ]);
 }
 
+/// Encode simulation and domain counters without Presentation so presentation
+/// timing cannot alter the gameplay transcript.
 function _BladeKernelClockCanonical(_clock) {
     var _counters = BladeSimulationClockGetCounters(_clock);
     return BladeCanonicalRecord("C1", [
@@ -78,6 +98,8 @@ function _BladeKernelClockCanonical(_clock) {
     ]);
 }
 
+/// Encode a stream's name, four state words, and draw count so both state and
+/// consumption divergence remain visible.
 function _BladeKernelRandomStreamCanonical(_stream) {
     var _state = _stream.get_state();
     return BladeCanonicalRecord("RS1", [
@@ -90,6 +112,8 @@ function _BladeKernelRandomStreamCanonical(_stream) {
     ]);
 }
 
+/// Combine the four gameplay RNG streams in fixed order while omitting
+/// cosmetics from gameplay comparison.
 function _BladeKernelGameplayRandomCanonical(_kernel) {
     return BladeCanonicalRecord("R1", [
         _BladeKernelRandomStreamCanonical(_kernel.stage_schedule),
@@ -99,6 +123,8 @@ function _BladeKernelGameplayRandomCanonical(_kernel) {
     ]);
 }
 
+/// Sample raw input at the next presentation frame and advance the kernel
+/// counter only after the sampler accepts it.
 function _BladeKernelSamplePresentation(_kernel, _raw_state) {
     _BladeKernelRequirePresentationCapacity(_kernel);
     var _next_frame = _kernel.presentation_frame + int64(1);
@@ -110,6 +136,8 @@ function _BladeKernelSamplePresentation(_kernel, _raw_state) {
     _kernel.presentation_frame = _next_frame;
 }
 
+/// Process one clock tick in input, simulation/event, then state order so each
+/// transcript follows callback execution.
 function _BladeKernelRunTick(_kernel, _tick, _simulate_callback) {
     var _input_eligible = (_tick.domain_mask & BladeClockDomain.Actor) != 0;
     var _snapshot = BladeInputSnapshotPublishTick(
@@ -141,6 +169,8 @@ function _BladeKernelRunTick(_kernel, _tick, _simulate_callback) {
 }
 
 /// @func BladeDeterministicKernelCreate(content_fingerprint, run_seed, content_id_predicate, max_catch_up_ticks)
+/// Assemble a fresh kernel with shared identity and log state, named seeded RNG
+/// streams, and empty transcripts.
 function BladeDeterministicKernelCreate(
     _content_fingerprint,
     _run_seed,
@@ -167,6 +197,8 @@ function BladeDeterministicKernelCreate(
 }
 
 /// @func BladeDeterministicKernelReset(kernel)
+/// Restore composed systems and transcripts to their initial run state while
+/// retaining the existing session header.
 function BladeDeterministicKernelReset(_kernel) {
     _BladeKernelRequire(_kernel);
     BladeSimulationClockReset(_kernel.clock);
@@ -185,24 +217,32 @@ function BladeDeterministicKernelReset(_kernel) {
 }
 
 /// @func BladeKernelRandom(kernel, stream_name)
+/// Return a requested named stream after validating the kernel so simulation
+/// draws from an explicit RNG domain.
 function BladeKernelRandom(_kernel, _stream_name) {
     _BladeKernelRequire(_kernel);
     return _BladeKernelStream(_kernel, _stream_name);
 }
 
 /// @func BladeKernelAllocate(kernel, kind)
+/// Allocate the next kind-specific ID through shared identity state so the
+/// kernel and event log see the same counters.
 function BladeKernelAllocate(_kernel, _kind) {
     _BladeKernelRequire(_kernel);
     return BladeRunIdentityAllocate(_kernel.identity, _kind);
 }
 
 /// @func BladeKernelAllocateForContent(kernel, kind, content_id)
+/// Delegate content-aware ID allocation to shared identity state so its content
+/// validation and counters stay coordinated.
 function BladeKernelAllocateForContent(_kernel, _kind, _content_id) {
     _BladeKernelRequire(_kernel);
     return BladeRunIdentityAllocateForContent(_kernel.identity, _kind, _content_id);
 }
 
 /// @func BladeKernelQueueEvent(kernel, channel, order_key, type, reason, source_id, target_id, owner_id, content_id, payload)
+/// Forward an event to the kernel's log so simulation uses the same active tick
+/// and identity allocation context.
 function BladeKernelQueueEvent(
     _kernel,
     _channel,
@@ -231,6 +271,8 @@ function BladeKernelQueueEvent(
 }
 
 /// @func BladeKernelAdvancePresentation(kernel, delta_us, raw_state, eligibility, simulate_callback)
+/// Preflight detectable clock errors before sampling input once, then run due
+/// ticks through a context-bound callback.
 function BladeKernelAdvancePresentation(
     _kernel,
     _delta_us,
@@ -256,6 +298,8 @@ function BladeKernelAdvancePresentation(
 }
 
 /// @func BladeKernelStepManyDirect(kernel, raw_state, tick_count, eligibility, simulate_callback)
+/// Preflight count and fixed masks, mark one input sample, and strip Presentation
+/// per tick so a batch samples once.
 function BladeKernelStepManyDirect(
     _kernel,
     _raw_state,
@@ -290,6 +334,8 @@ function BladeKernelStepManyDirect(
 }
 
 /// @func BladeKernelStepDirect(kernel, raw_state, eligibility, simulate_callback)
+/// Delegate one direct tick to the batch path so sampling, eligibility masking,
+/// and callback behavior stay identical.
 function BladeKernelStepDirect(
     _kernel,
     _raw_state,
@@ -306,6 +352,8 @@ function BladeKernelStepDirect(
 }
 
 /// @func BladeKernelGameplayCanonical(kernel)
+/// Encode gameplay header, input, clock, RNG, identity, events, and state while
+/// excluding presentation-only state.
 function BladeKernelGameplayCanonical(_kernel) {
     _BladeKernelRequire(_kernel);
     return BladeCanonicalRecord("G1", [
@@ -320,11 +368,14 @@ function BladeKernelGameplayCanonical(_kernel) {
 }
 
 /// @func BladeKernelGameplayHash(kernel)
+/// Hash the complete gameplay canonical record to provide a compact deterministic comparison value.
 function BladeKernelGameplayHash(_kernel) {
     return BladeCanonicalHashUtf8(BladeKernelGameplayCanonical(_kernel));
 }
 
 /// @func BladeKernelDiagnostics(kernel)
+/// Return current subsystem counters, all RNG diagnostics, and gameplay hashes
+/// without mutating kernel state.
 function BladeKernelDiagnostics(_kernel) {
     _BladeKernelRequire(_kernel);
     return {
