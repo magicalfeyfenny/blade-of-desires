@@ -49,6 +49,42 @@ def _derived_state(run_seed: int, stream_name: str) -> list[int]:
     return state
 
 
+def _length_prefix(value: object) -> str:
+    text = str(value)
+    return f"{len(text.encode('utf-8'))}:{text}"
+
+
+def _record(prefix: str, *fields: object) -> str:
+    return prefix + "".join(_length_prefix(field) for field in fields)
+
+
+def _event(
+    event_id: str,
+    tick: int,
+    event_type: str,
+    reason: str,
+    source_id: str,
+    target_id: str,
+    owner_id: str,
+    content_id: str,
+    payload: list[tuple[str, str, int]],
+) -> str:
+    fields: list[object] = [
+        event_id,
+        tick,
+        event_type,
+        reason,
+        source_id,
+        target_id,
+        owner_id,
+        content_id,
+        len(payload),
+    ]
+    for key, payload_type, value in sorted(payload):
+        fields.extend((key, payload_type, value))
+    return _record("E1", *fields)
+
+
 class DeterministicKernelOracleTests(unittest.TestCase):
     def test_product_contract_fingerprint_and_fixture_ids(self):
         contract_path = ROOT / "content" / "product_contract.json"
@@ -143,6 +179,117 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         for supplied, expected in cases.items():
             with self.subTest(supplied=supplied):
                 self.assertEqual(supplied % (1 << 32), expected)
+
+    def test_integration_fixture_canonical_hashes(self):
+        seed = 0x12345678
+        header = _record(
+            "H1",
+            1,
+            "blade.simulation.v1",
+            "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
+            PRNG_VERSION,
+            60,
+            seed,
+        )
+        inputs = _record(
+            "I1",
+            _record("S1", 1, 1024, 0, 5, 5, 0, 0, 0, 0),
+            _record("S1", 2, 1024, 0, 5, 0, 0, 1, 12000, -4000),
+            _record("S1", 3, 1024, 0, 4, 0, 1, 0, 0, 0),
+            _record("S1", 4, 0, 0, 0, 0, 4, 0, 0, 0),
+        )
+        clock = _record("C1", 4, 4, 4, 4)
+
+        stream_draws = {
+            "stage_schedule": 1,
+            "enemy_spawn_variant": 1,
+            "pattern_geometry": 2,
+            "drop_selection": 1,
+        }
+        random_records = []
+        outputs = {}
+        for name, draws in stream_draws.items():
+            state = _derived_state(seed, name)
+            outputs[name] = [_next_u32(state) for _ in range(draws)]
+            random_records.append(_record("RS1", name, *state, draws))
+        random_state = _record("R1", *random_records)
+
+        events = _record(
+            "L1",
+            _event(
+                "evt:1",
+                1,
+                "instance.spawned",
+                "outcome.scheduled",
+                "",
+                "ins:1",
+                "own:1",
+                "ship.maynii",
+                [("x_q10", "q10", 189440), ("y_q10", "q10", 0)],
+            ),
+            _event(
+                "evt:2",
+                2,
+                "attack.started",
+                "outcome.input_pressed",
+                "ins:1",
+                "atk:1",
+                "own:1",
+                "ship.maynii",
+                [("power", "i32", 3)],
+            ),
+            _event(
+                "evt:3",
+                3,
+                "bullet.spawned",
+                "outcome.pattern_emitted",
+                "atk:1",
+                "blt:1",
+                "own:1",
+                "stage.stage1.lost_forest_of_aurei",
+                [
+                    ("rng_value", "u32", outputs["pattern_geometry"][0]),
+                    ("speed_q10", "q10", 2048),
+                ],
+            ),
+            _event(
+                "evt:4",
+                4,
+                "damage.applied",
+                "outcome.collision_confirmed",
+                "blt:1",
+                "ins:2",
+                "own:1",
+                "encounter.stage1.asahi",
+                [("amount", "i32", 10)],
+            ),
+        )
+        state_transcript = _record(
+            "ST1",
+            *(
+                _record("T1", tick, _record("F1", tick, held))
+                for tick, held in ((1, 5), (2, 5), (3, 4), (4, 0))
+            ),
+        )
+        gameplay = _record(
+            "G1",
+            header,
+            inputs,
+            clock,
+            random_state,
+            "BRIC1|2|1|1|1|1|4",
+            events,
+            state_transcript,
+        )
+
+        self.assertEqual(
+            hashlib.sha1(events.encode()).hexdigest(),
+            "a2ca10f5fba445635a90f0400fea807e2299b928",
+        )
+        self.assertEqual(
+            hashlib.sha1(gameplay.encode()).hexdigest(),
+            "26e97ec1441354bd518717a485356778fa35dc62",
+        )
 
 
 if __name__ == "__main__":

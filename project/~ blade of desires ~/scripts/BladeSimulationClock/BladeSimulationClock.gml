@@ -48,18 +48,137 @@ function _BladeSimulationClockDomainMask(_domain_mask) {
 }
 
 function _BladeSimulationClockCallback(_callback, _field) {
-	if (!is_undefined(_callback) && !is_callable(_callback)) {
-		throw("BladeSimulationClock: " + _field + " must be callable or undefined");
+	if (!is_undefined(_callback) && typeof(_callback) != "method") {
+		throw("BladeSimulationClock: " + _field + " must be a method or undefined");
 	}
 }
 
 function _BladeSimulationClockResolveEligibility(_eligibility, _clock) {
-	if (is_callable(_eligibility)) {
+	if (typeof(_eligibility) == "method") {
 		return _BladeSimulationClockDomainMask(
 			_eligibility(BladeSimulationClockGetCounters(_clock))
 		);
 	}
 	return _BladeSimulationClockDomainMask(_eligibility);
+}
+
+function _BladeSimulationClockInt64Maximum() {
+	return int64("9223372036854775807");
+}
+
+function _BladeSimulationClockRequireCounterCapacity(_value, _increment, _field) {
+	if (_value > _BladeSimulationClockInt64Maximum() - _increment) {
+		throw("BladeSimulationClock: " + _field + " exceeds signed int64 range");
+	}
+}
+
+function _BladeSimulationClockRequireTickCapacity(_clock, _domain_mask, _tick_count) {
+	_BladeSimulationClockRequireCounterCapacity(
+		_clock.simulation_tick,
+		_tick_count,
+		"simulation tick"
+	);
+	if ((_domain_mask & BladeClockDomain.Stage) != 0) {
+		_BladeSimulationClockRequireCounterCapacity(
+			_clock.stage_tick,
+			_tick_count,
+			"stage tick"
+		);
+	}
+	if ((_domain_mask & BladeClockDomain.Actor) != 0) {
+		_BladeSimulationClockRequireCounterCapacity(
+			_clock.actor_tick,
+			_tick_count,
+			"actor tick"
+		);
+	}
+	if ((_domain_mask & BladeClockDomain.Boss) != 0) {
+		_BladeSimulationClockRequireCounterCapacity(
+			_clock.boss_tick,
+			_tick_count,
+			"boss tick"
+		);
+	}
+	if ((_domain_mask & BladeClockDomain.Presentation) != 0) {
+		_BladeSimulationClockRequireCounterCapacity(
+			_clock.presentation_tick,
+			_tick_count,
+			"presentation tick"
+		);
+	}
+}
+
+function _BladeSimulationClockRequirePresentationCapacity(_clock) {
+	_BladeSimulationClockRequire(_clock);
+	_BladeSimulationClockRequireCounterCapacity(
+		_clock.presentation_tick,
+		int64(1),
+		"presentation tick"
+	);
+}
+
+function _BladeSimulationClockPreflightDirect(
+	_clock,
+	_tick_count,
+	_eligibility,
+	_strip_presentation = false
+) {
+	_BladeSimulationClockRequire(_clock);
+	var _count = _BladeSimulationClockInteger(_tick_count, "direct tick count", 0);
+	if (typeof(_eligibility) == "method") {
+		_BladeSimulationClockRequireTickCapacity(_clock, BladeClockDomain.None, _count);
+		return _count;
+	}
+
+	var _mask = _BladeSimulationClockDomainMask(_eligibility);
+	if (_strip_presentation) {
+		_mask &= ~BladeClockDomain.Presentation;
+	}
+	_BladeSimulationClockRequireTickCapacity(_clock, _mask, _count);
+	return _count;
+}
+
+function _BladeSimulationClockPreflightAdvance(_clock, _delta_us, _eligibility) {
+	_BladeSimulationClockRequire(_clock);
+	var _delta = _BladeSimulationClockInteger(_delta_us, "delta microseconds", 0);
+	var _numeric_mask = BladeClockDomain.None;
+	var _has_numeric_mask = typeof(_eligibility) != "method";
+	if (_has_numeric_mask) {
+		_numeric_mask = _BladeSimulationClockDomainMask(_eligibility);
+	}
+
+	var _remaining_range = _BladeSimulationClockInt64Maximum()
+		- _clock.accumulator_units;
+	var _maximum_delta = _remaining_range div int64(_clock.tick_rate);
+	if (_delta > _maximum_delta) {
+		throw("BladeSimulationClock: delta microseconds exceeds exact accumulator range");
+	}
+
+	var _proposed_accumulator = _clock.accumulator_units
+		+ (_delta * int64(_clock.tick_rate));
+	var _available = _proposed_accumulator div _clock.accumulator_threshold;
+	var _ticks_to_run = min(_available, _clock.max_catch_up_ticks);
+	var _capacity_mask = _has_numeric_mask
+		? _numeric_mask & ~BladeClockDomain.Presentation
+		: BladeClockDomain.None;
+	_BladeSimulationClockRequireTickCapacity(_clock, _capacity_mask, _ticks_to_run);
+
+	var _after_run = _proposed_accumulator
+		- (_ticks_to_run * _clock.accumulator_threshold);
+	var _dropped = _after_run div _clock.accumulator_threshold;
+	_BladeSimulationClockRequireCounterCapacity(
+		_clock.total_dropped_ticks,
+		_dropped,
+		"total dropped ticks"
+	);
+	_BladeSimulationClockRequirePresentationCapacity(_clock);
+
+	return {
+		delta: _delta,
+		available: _available,
+		ticks_to_run: _ticks_to_run,
+		dropped: _dropped,
+	};
 }
 
 /// @func BladeSimulationClockCreate(max_catch_up_ticks)
@@ -117,10 +236,7 @@ function BladeSimulationClockGetCounters(_clock) {
 /// @func BladeSimulationClockMarkPresentation(clock)
 /// @desc Advances presentation time once, independently of simulation ticks.
 function BladeSimulationClockMarkPresentation(_clock) {
-	_BladeSimulationClockRequire(_clock);
-	if (_clock.presentation_tick == int64("9223372036854775807")) {
-		throw("BladeSimulationClock: presentation tick exceeds signed int64 range");
-	}
+	_BladeSimulationClockRequirePresentationCapacity(_clock);
 	_clock.presentation_tick += int64(1);
 	return _clock.presentation_tick;
 }
@@ -128,11 +244,12 @@ function BladeSimulationClockMarkPresentation(_clock) {
 /// @func BladeSimulationClockStepDirect(clock, eligibility, tick_callback)
 /// @param {Struct} clock
 /// @param {Real} eligibility BladeClockDomain bit mask supplied by the caller.
-/// @param {Function} tick_callback Optional callback receiving the completed tick view.
+/// @param {Method} tick_callback Optional callback receiving the completed tick view.
 function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = undefined) {
 	_BladeSimulationClockRequire(_clock);
 	_BladeSimulationClockCallback(_tick_callback, "tick callback");
 	var _domain_mask = _BladeSimulationClockDomainMask(_eligibility);
+	_BladeSimulationClockRequireTickCapacity(_clock, _domain_mask, int64(1));
 
 	_clock.simulation_tick += int64(1);
 	if ((_domain_mask & BladeClockDomain.Stage) != 0) {
@@ -150,7 +267,7 @@ function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = u
 
 	var _tick = BladeSimulationClockGetCounters(_clock);
 	_tick.domain_mask = _domain_mask;
-	if (is_callable(_tick_callback)) {
+	if (typeof(_tick_callback) == "method") {
 		_tick_callback(_tick);
 	}
 	return _tick;
@@ -159,8 +276,8 @@ function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = u
 /// @func BladeSimulationClockStepManyDirect(clock, tick_count, eligibility, tick_callback)
 /// @param {Struct} clock
 /// @param {Real} tick_count Number of exact ticks to run without wall time.
-/// @param {Real|Function} eligibility Domain mask or a provider called before each tick.
-/// @param {Function} tick_callback Optional callback receiving each completed tick view.
+/// @param {Real|Method} eligibility Domain mask or a provider called before each tick.
+/// @param {Method} tick_callback Optional callback receiving each completed tick view.
 function BladeSimulationClockStepManyDirect(
 	_clock,
 	_tick_count,
@@ -169,10 +286,11 @@ function BladeSimulationClockStepManyDirect(
 ) {
 	_BladeSimulationClockRequire(_clock);
 	_BladeSimulationClockCallback(_tick_callback, "tick callback");
-	if (!is_callable(_eligibility)) {
-		_BladeSimulationClockDomainMask(_eligibility);
-	}
-	var _count = _BladeSimulationClockInteger(_tick_count, "direct tick count", 0);
+	var _count = _BladeSimulationClockPreflightDirect(
+		_clock,
+		_tick_count,
+		_eligibility
+	);
 	var _ran = int64(0);
 	while (_ran < _count) {
 		var _mask = _BladeSimulationClockResolveEligibility(_eligibility, _clock);
@@ -195,8 +313,8 @@ function BladeSimulationClockStepManyDirect(
 /// @func BladeSimulationClockAdvance(clock, delta_us, eligibility, tick_callback)
 /// @param {Struct} clock
 /// @param {Real} delta_us Nonnegative integer wall-time delta in microseconds.
-/// @param {Real|Function} eligibility Domain mask or a provider called before each tick.
-/// @param {Function} tick_callback Optional callback receiving each completed tick view.
+/// @param {Real|Method} eligibility Domain mask or a provider called before each tick.
+/// @param {Method} tick_callback Optional callback receiving each completed tick view.
 /// @returns {Struct} Catch-up, drop, remainder, and counter diagnostics.
 function BladeSimulationClockAdvance(
 	_clock,
@@ -206,27 +324,16 @@ function BladeSimulationClockAdvance(
 ) {
 	_BladeSimulationClockRequire(_clock);
 	_BladeSimulationClockCallback(_tick_callback, "tick callback");
-	if (!is_callable(_eligibility)) {
-		_BladeSimulationClockDomainMask(_eligibility);
-	}
+	var _plan = _BladeSimulationClockPreflightAdvance(
+		_clock,
+		_delta_us,
+		_eligibility
+	);
 	BladeSimulationClockMarkPresentation(_clock);
-
-	var _delta = _BladeSimulationClockInteger(_delta_us, "delta microseconds", 0);
-	var _remaining_range = int64("9223372036854775807") - _clock.accumulator_units;
-	var _maximum_delta = _remaining_range div int64(_clock.tick_rate);
-	if (_delta > _maximum_delta) {
-		throw("BladeSimulationClock: delta microseconds exceeds exact accumulator range");
-	}
-
-	_clock.accumulator_units += _delta * int64(_clock.tick_rate);
-	var _available = _clock.accumulator_units div _clock.accumulator_threshold;
-	var _ticks_to_run = _available;
-	if (_ticks_to_run > _clock.max_catch_up_ticks) {
-		_ticks_to_run = _clock.max_catch_up_ticks;
-	}
+	_clock.accumulator_units += _plan.delta * int64(_clock.tick_rate);
 
 	var _ran = int64(0);
-	while (_ran < _ticks_to_run) {
+	while (_ran < _plan.ticks_to_run) {
 		// The accumulator owns exactly one presentation increment per update;
 		// catch-up ticks cannot duplicate it.
 		var _mask = _BladeSimulationClockResolveEligibility(_eligibility, _clock)
@@ -236,12 +343,12 @@ function BladeSimulationClockAdvance(
 	}
 	_clock.accumulator_units -= _ran * _clock.accumulator_threshold;
 
-	var _dropped = _clock.accumulator_units div _clock.accumulator_threshold;
+	var _dropped = _plan.dropped;
 	_clock.accumulator_units -= _dropped * _clock.accumulator_threshold;
 	_clock.total_dropped_ticks += _dropped;
 
 	return {
-		ticks_available: _available,
+		ticks_available: _plan.available,
 		ticks_run: _ran,
 		dropped_ticks: _dropped,
 		overrun: _dropped > 0,

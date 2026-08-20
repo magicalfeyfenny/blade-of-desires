@@ -63,7 +63,16 @@ function _BladeRunIdentityNextCounter(_identity, _kind) {
 }
 
 function _BladeRunIdentityTakeCounter(_identity, _kind) {
-	switch (_BladeRunIdentityKind(_kind)) {
+	var _validated_kind = _BladeRunIdentityKind(_kind);
+	if (_BladeRunIdentityNextCounter(_identity, _validated_kind)
+		>= int64("9223372036854775807")) {
+		throw(
+			"BladeRunIdentity: " + _BladeRunIdentityPrefix(_validated_kind)
+			+ " counter exhausted signed int64 capacity"
+		);
+	}
+
+	switch (_validated_kind) {
 		case BladeRunIdKind.Instance:
 			var _instance = _identity.next_instance;
 			_identity.next_instance += int64(1);
@@ -106,10 +115,10 @@ function _BladeRunIdentityPositiveDecimal(_text) {
 }
 
 /// @func BladeRunIdentityCreate(content_id_predicate)
-/// @param {Function} content_id_predicate Injected lookup sourced from the canonical content contract.
+/// @param {Method} content_id_predicate Injected lookup sourced from the canonical content contract.
 function BladeRunIdentityCreate(_content_id_predicate) {
-	if (!is_callable(_content_id_predicate)) {
-		throw("BladeRunIdentity: content ID predicate must be callable");
+	if (typeof(_content_id_predicate) != "method") {
+		throw("BladeRunIdentity: content ID predicate must be a method");
 	}
 	return {
 		__blade_run_identity_version: 1,

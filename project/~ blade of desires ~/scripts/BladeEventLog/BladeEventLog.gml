@@ -209,6 +209,215 @@ function _BladeEventLogPayloadCanonical(_payload) {
     return BladeCanonicalRecord("P1", _fields);
 }
 
+function _BladeEventLogBuildQueued(
+    _log,
+    _tick,
+    _channel,
+    _order_key,
+    _type,
+    _reason,
+    _source_id,
+    _target_id,
+    _owner_id,
+    _content_id,
+    _payload,
+    _enqueue_ordinal
+) {
+    var _maximum = int64("9223372036854775807");
+    var _validated_tick = _BladeEventLogInteger(
+        _tick,
+        0,
+        _maximum,
+        "queued tick"
+    );
+    if (_validated_tick != _log.active_tick) {
+        _BladeEventLogFail("queued tick", "must match the active tick");
+    }
+    var _validated_channel = _BladeEventLogInteger(
+        _channel,
+        BladeEventChannel.Gameplay,
+        BladeEventChannel.Presentation,
+        "channel"
+    );
+    var _validated_order = _BladeEventLogInteger(
+        _order_key,
+        0,
+        int64("2147483647"),
+        "order key"
+    );
+    var _validated_type = _BladeEventLogAsciiToken(_type, "type", true);
+    var _validated_reason = _BladeEventLogAsciiToken(_reason, "reason", true);
+    var _schema = _BladeEventLogTypeSchema(_validated_type, _validated_reason);
+    if (_validated_channel == BladeEventChannel.Presentation
+        && _validated_type != "presentation.effect") {
+        _BladeEventLogFail("channel", "presentation channel requires a presentation event");
+    }
+    if (_validated_channel == BladeEventChannel.Gameplay
+        && _validated_type == "presentation.effect") {
+        _BladeEventLogFail("channel", "gameplay channel rejects presentation events");
+    }
+
+    var _validated_source = _BladeEventLogRequireOptionalId(
+        _log.identity,
+        _source_id,
+        _schema[0],
+        "source ID"
+    );
+    var _validated_target = _BladeEventLogRequireOptionalId(
+        _log.identity,
+        _target_id,
+        _schema[1],
+        "target ID"
+    );
+    var _validated_owner = BladeRunIdentityRequireAllocated(
+        _log.identity,
+        _owner_id,
+        BladeRunIdKind.EventOwner
+    );
+    var _validated_content = BladeRunIdentityRequireContent(
+        _log.identity,
+        _content_id
+    );
+    var _validated_payload = _BladeEventLogSortPayload(_payload);
+    var _payload_canonical = _BladeEventLogPayloadCanonical(_validated_payload);
+    var _validated_ordinal = _BladeEventLogInteger(
+        _enqueue_ordinal,
+        0,
+        _maximum - int64(1),
+        "enqueue ordinal"
+    );
+
+    return {
+        tick: _validated_tick,
+        channel: _validated_channel,
+        order_key: _validated_order,
+        type: _validated_type,
+        reason: _validated_reason,
+        source_id: _validated_source,
+        target_id: _validated_target,
+        owner_id: _validated_owner,
+        content_id: _validated_content,
+        payload: _validated_payload,
+        payload_canonical: _payload_canonical,
+        enqueue_ordinal: _validated_ordinal,
+    };
+}
+
+function _BladeEventLogCopyPayload(_payload) {
+    var _copy = [];
+    for (var i = 0; i < array_length(_payload); i++) {
+        array_push(_copy, {
+            key: _payload[i].key,
+            type: _payload[i].type,
+            value: _payload[i].value,
+        });
+    }
+    return _copy;
+}
+
+function _BladeEventLogCopyQueued(_queued) {
+    return {
+        tick: _queued.tick,
+        channel: _queued.channel,
+        order_key: _queued.order_key,
+        type: _queued.type,
+        reason: _queued.reason,
+        source_id: _queued.source_id,
+        target_id: _queued.target_id,
+        owner_id: _queued.owner_id,
+        content_id: _queued.content_id,
+        payload: _BladeEventLogCopyPayload(_queued.payload),
+        payload_canonical: _queued.payload_canonical,
+        enqueue_ordinal: _queued.enqueue_ordinal,
+    };
+}
+
+function _BladeEventLogRequirePendingFields(_pending, _index) {
+    if (!is_struct(_pending)) {
+        _BladeEventLogFail("pending event", "entry " + string(_index) + " must be a struct");
+    }
+    var _fields = [
+        "tick",
+        "channel",
+        "order_key",
+        "type",
+        "reason",
+        "source_id",
+        "target_id",
+        "owner_id",
+        "content_id",
+        "payload",
+        "enqueue_ordinal",
+    ];
+    for (var i = 0; i < array_length(_fields); i++) {
+        if (!variable_struct_exists(_pending, _fields[i])) {
+            _BladeEventLogFail(
+                "pending event",
+                "entry " + string(_index) + " is missing " + _fields[i]
+            );
+        }
+    }
+}
+
+function _BladeEventLogRebuildPending(_log, _expected_count) {
+    if (!is_array(_log.pending)) {
+        _BladeEventLogFail("pending events", "must be an array");
+    }
+    var _count = array_length(_log.pending);
+    if (int64(_count) != _expected_count) {
+        _BladeEventLogFail("pending events", "count must match the enqueue ordinal");
+    }
+
+    var _seen_ordinals = array_create(_count, false);
+    var _rebuilt = [];
+    var _gameplay_count = int64(0);
+    var _presentation_count = int64(0);
+    for (var i = 0; i < _count; i++) {
+        var _pending = _log.pending[i];
+        _BladeEventLogRequirePendingFields(_pending, i);
+        var _ordinal = _BladeEventLogInteger(
+            _pending.enqueue_ordinal,
+            0,
+            int64("9223372036854775806"),
+            "pending enqueue ordinal"
+        );
+        if (_ordinal >= int64(_count)) {
+            _BladeEventLogFail("pending enqueue ordinal", "must be within the pending array");
+        }
+        var _ordinal_index = real(_ordinal);
+        if (_seen_ordinals[_ordinal_index]) {
+            _BladeEventLogFail("pending enqueue ordinal", "must be unique");
+        }
+        _seen_ordinals[_ordinal_index] = true;
+
+        var _validated = _BladeEventLogBuildQueued(
+            _log,
+            _pending.tick,
+            _pending.channel,
+            _pending.order_key,
+            _pending.type,
+            _pending.reason,
+            _pending.source_id,
+            _pending.target_id,
+            _pending.owner_id,
+            _pending.content_id,
+            _pending.payload,
+            _ordinal
+        );
+        array_push(_rebuilt, _validated);
+        if (_validated.channel == BladeEventChannel.Gameplay) {
+            _gameplay_count += int64(1);
+        } else {
+            _presentation_count += int64(1);
+        }
+    }
+    return {
+        pending: _rebuilt,
+        gameplay_count: _gameplay_count,
+        presentation_count: _presentation_count,
+    };
+}
+
 function _BladeEventLogCompareQueued(_left, _right) {
     if (_left.order_key < _right.order_key) return -1;
     if (_left.order_key > _right.order_key) return 1;
@@ -338,92 +547,111 @@ function BladeEventLogQueue(
     _payload = []
 ) {
     _BladeEventLogRequire(_log);
-    if (_log.active_tick < 0) {
+    var _maximum = int64("9223372036854775807");
+    var _active_tick = _BladeEventLogInteger(
+        _log.active_tick,
+        -1,
+        _maximum,
+        "active tick"
+    );
+    if (_active_tick < 0) {
         _BladeEventLogFail("tick", "begin a tick before queuing events");
     }
-    var _validated_channel = _BladeEventLogInteger(
-        _channel,
-        BladeEventChannel.Gameplay,
-        BladeEventChannel.Presentation,
-        "channel"
-    );
-    var _validated_order = _BladeEventLogInteger(
-        _order_key,
+    var _ordinal = _BladeEventLogInteger(
+        _log.enqueue_ordinal,
         0,
-        int64("2147483647"),
-        "order key"
+        _maximum,
+        "enqueue ordinal"
     );
-    var _validated_type = _BladeEventLogAsciiToken(_type, "type", true);
-    var _validated_reason = _BladeEventLogAsciiToken(_reason, "reason", true);
-    var _schema = _BladeEventLogTypeSchema(_validated_type, _validated_reason);
-    if (_validated_channel == BladeEventChannel.Presentation
-        && _validated_type != "presentation.effect") {
-        _BladeEventLogFail("channel", "presentation channel requires a presentation event");
+    if (_ordinal == _maximum) {
+        _BladeEventLogFail("enqueue ordinal", "cannot exceed signed int64 range");
     }
-    if (_validated_channel == BladeEventChannel.Gameplay
-        && _validated_type == "presentation.effect") {
-        _BladeEventLogFail("channel", "gameplay channel rejects presentation events");
+    if (!is_array(_log.pending)) {
+        _BladeEventLogFail("pending events", "must be an array");
+    }
+    if (int64(array_length(_log.pending)) != _ordinal) {
+        _BladeEventLogFail("pending events", "count must match the enqueue ordinal");
     }
 
-    var _validated_source = _BladeEventLogRequireOptionalId(
-        _log.identity,
+    var _queued = _BladeEventLogBuildQueued(
+        _log,
+        _active_tick,
+        _channel,
+        _order_key,
+        _type,
+        _reason,
         _source_id,
-        _schema[0],
-        "source ID"
-    );
-    var _validated_target = _BladeEventLogRequireOptionalId(
-        _log.identity,
         _target_id,
-        _schema[1],
-        "target ID"
-    );
-    var _validated_owner = BladeRunIdentityRequireAllocated(
-        _log.identity,
         _owner_id,
-        BladeRunIdKind.EventOwner
+        _content_id,
+        _payload,
+        _ordinal
     );
-    var _validated_content = BladeRunIdentityRequireContent(
-        _log.identity,
-        _content_id
-    );
-    var _validated_payload = _BladeEventLogSortPayload(_payload);
-    var _payload_canonical = _BladeEventLogPayloadCanonical(_validated_payload);
-
-    var _queued = {
-        tick: _log.active_tick,
-        channel: _validated_channel,
-        order_key: _validated_order,
-        type: _validated_type,
-        reason: _validated_reason,
-        source_id: _validated_source,
-        target_id: _validated_target,
-        owner_id: _validated_owner,
-        content_id: _validated_content,
-        payload: _validated_payload,
-        payload_canonical: _payload_canonical,
-        enqueue_ordinal: _log.enqueue_ordinal,
-    };
-    _log.enqueue_ordinal += int64(1);
+    var _result = _BladeEventLogCopyQueued(_queued);
     array_push(_log.pending, _queued);
-    return _queued;
+    _log.enqueue_ordinal = _ordinal + int64(1);
+    return _result;
 }
 
 /// @func BladeEventLogCommitTick(log)
 function BladeEventLogCommitTick(_log) {
     _BladeEventLogRequire(_log);
-    if (_log.active_tick < 0) {
+    var _maximum = int64("9223372036854775807");
+    var _active_tick = _BladeEventLogInteger(
+        _log.active_tick,
+        -1,
+        _maximum,
+        "active tick"
+    );
+    if (_active_tick < 0) {
         _BladeEventLogFail("tick", "no active tick to commit");
     }
-    var _ordered = _BladeEventLogSortQueued(_log.pending);
-    var _committed = [];
+    var _enqueue_count = _BladeEventLogInteger(
+        _log.enqueue_ordinal,
+        0,
+        _maximum,
+        "enqueue ordinal"
+    );
+    if (!is_array(_log.gameplay_records) || !is_array(_log.presentation_records)) {
+        _BladeEventLogFail("committed records", "must remain arrays");
+    }
+
+    var _plan = _BladeEventLogRebuildPending(_log, _enqueue_count);
+    var _ordered = _BladeEventLogSortQueued(_plan.pending);
+    var _identity_counters = BladeRunIdentityGetCounters(_log.identity);
+    var _event_count = _BladeEventLogInteger(
+        _identity_counters.event,
+        0,
+        _maximum - int64(1),
+        "gameplay event count"
+    );
+    if (_plan.gameplay_count > (_maximum - int64(1)) - _event_count) {
+        _BladeEventLogFail("gameplay event counter", "cannot exceed signed int64 range");
+    }
+    var _next_presentation = _BladeEventLogInteger(
+        _log.next_presentation_event,
+        1,
+        _maximum,
+        "presentation event counter"
+    );
+    if (_plan.presentation_count > _maximum - _next_presentation) {
+        _BladeEventLogFail("presentation event counter", "cannot exceed signed int64 range");
+    }
+
+    var _prepared = [];
+    var _gameplay_offset = int64(0);
+    var _presentation_offset = int64(0);
     for (var i = 0; i < array_length(_ordered); i++) {
         var _queued = _ordered[i];
         var _event_id;
         if (_queued.channel == BladeEventChannel.Gameplay) {
-            _event_id = BladeRunIdentityAllocate(_log.identity, BladeRunIdKind.Event);
+            _event_id = "evt:" + string(
+                _event_count + _gameplay_offset + int64(1)
+            );
+            _gameplay_offset += int64(1);
         } else {
-            _event_id = "pev:" + string(_log.next_presentation_event);
-            _log.next_presentation_event += int64(1);
+            _event_id = "pev:" + string(_next_presentation + _presentation_offset);
+            _presentation_offset += int64(1);
         }
         var _record = {
             event_id: _event_id,
@@ -436,16 +664,30 @@ function BladeEventLogCommitTick(_log) {
             content_id: _queued.content_id,
             payload: _queued.payload,
         };
-        _record.canonical = _BladeEventLogRecordCanonical(_record);
-        array_push(_committed, _record.canonical);
-        if (_queued.channel == BladeEventChannel.Gameplay) {
-            array_push(_log.gameplay_records, _record.canonical);
+        array_push(_prepared, {
+            channel: _queued.channel,
+            canonical: _BladeEventLogRecordCanonical(_record),
+        });
+    }
+
+    var _allocated = int64(0);
+    while (_allocated < _plan.gameplay_count) {
+        BladeRunIdentityAllocate(_log.identity, BladeRunIdKind.Event);
+        _allocated += int64(1);
+    }
+    _log.next_presentation_event = _next_presentation + _plan.presentation_count;
+
+    var _committed = [];
+    for (var i = 0; i < array_length(_prepared); i++) {
+        array_push(_committed, _prepared[i].canonical);
+        if (_prepared[i].channel == BladeEventChannel.Gameplay) {
+            array_push(_log.gameplay_records, _prepared[i].canonical);
         } else {
-            array_push(_log.presentation_records, _record.canonical);
+            array_push(_log.presentation_records, _prepared[i].canonical);
         }
     }
 
-    _log.last_committed_tick = _log.active_tick;
+    _log.last_committed_tick = _active_tick;
     _log.active_tick = int64(-1);
     _log.enqueue_ordinal = int64(0);
     _log.pending = [];

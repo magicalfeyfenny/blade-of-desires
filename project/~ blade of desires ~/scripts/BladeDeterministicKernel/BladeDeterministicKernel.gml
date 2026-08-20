@@ -13,8 +13,32 @@ function _BladeKernelRequire(_kernel) {
 }
 
 function _BladeKernelRequireCallback(_callback, _field) {
-    if (!is_undefined(_callback) && !is_callable(_callback)) {
-        _BladeKernelFail(_field, "must be callable or undefined");
+    if (!is_undefined(_callback) && typeof(_callback) != "method") {
+        _BladeKernelFail(_field, "must be a method or undefined");
+    }
+}
+
+function _BladeKernelBindTickCallback(_kernel, _simulate_callback) {
+    var _context = {
+        kernel: _kernel,
+        simulate_callback: _simulate_callback,
+    };
+    return method(_context, function(_tick) {
+        _BladeKernelRunTick(self.kernel, _tick, self.simulate_callback);
+    });
+}
+
+function _BladeKernelBindEligibilityProvider(_eligibility) {
+    var _context = { eligibility: _eligibility };
+    return method(_context, function(_counters) {
+        var _mask = _BladeSimulationClockDomainMask(self.eligibility(_counters));
+        return _mask & ~BladeClockDomain.Presentation;
+    });
+}
+
+function _BladeKernelRequirePresentationCapacity(_kernel) {
+    if (_kernel.presentation_frame >= int64("9223372036854775807")) {
+        _BladeKernelFail("presentation frame", "exceeds signed int64 range");
     }
 }
 
@@ -76,12 +100,14 @@ function _BladeKernelGameplayRandomCanonical(_kernel) {
 }
 
 function _BladeKernelSamplePresentation(_kernel, _raw_state) {
-    _kernel.presentation_frame += int64(1);
+    _BladeKernelRequirePresentationCapacity(_kernel);
+    var _next_frame = _kernel.presentation_frame + int64(1);
     BladeInputSamplePresentation(
         _kernel.input_sampler,
-        _kernel.presentation_frame,
+        _next_frame,
         _raw_state
     );
+    _kernel.presentation_frame = _next_frame;
 }
 
 function _BladeKernelRunTick(_kernel, _tick, _simulate_callback) {
@@ -98,7 +124,7 @@ function _BladeKernelRunTick(_kernel, _tick, _simulate_callback) {
 
     BladeEventLogBeginTick(_kernel.event_log, _tick.simulation_tick);
     var _state_fragment = "";
-    if (is_callable(_simulate_callback)) {
+    if (typeof(_simulate_callback) == "method") {
         _state_fragment = _simulate_callback(_kernel, _snapshot, _tick);
         if (is_undefined(_state_fragment)) {
             _state_fragment = "";
@@ -214,14 +240,18 @@ function BladeKernelAdvancePresentation(
 ) {
     _BladeKernelRequire(_kernel);
     _BladeKernelRequireCallback(_simulate_callback, "simulation callback");
+    _BladeSimulationClockPreflightAdvance(
+        _kernel.clock,
+        _delta_us,
+        _eligibility
+    );
+    _BladeKernelRequirePresentationCapacity(_kernel);
     _BladeKernelSamplePresentation(_kernel, _raw_state);
     return BladeSimulationClockAdvance(
         _kernel.clock,
         _delta_us,
         _eligibility,
-        function(_tick) {
-            _BladeKernelRunTick(_kernel, _tick, _simulate_callback);
-        }
+        _BladeKernelBindTickCallback(_kernel, _simulate_callback)
     );
 }
 
@@ -235,13 +265,19 @@ function BladeKernelStepManyDirect(
 ) {
     _BladeKernelRequire(_kernel);
     _BladeKernelRequireCallback(_simulate_callback, "simulation callback");
+    _BladeSimulationClockPreflightDirect(
+        _kernel.clock,
+        _tick_count,
+        _eligibility,
+        true
+    );
+    _BladeSimulationClockRequirePresentationCapacity(_kernel.clock);
+    _BladeKernelRequirePresentationCapacity(_kernel);
     _BladeKernelSamplePresentation(_kernel, _raw_state);
     BladeSimulationClockMarkPresentation(_kernel.clock);
     var _step_eligibility;
-    if (is_callable(_eligibility)) {
-        _step_eligibility = function(_counters) {
-            return _eligibility(_counters) & ~BladeClockDomain.Presentation;
-        };
+    if (typeof(_eligibility) == "method") {
+        _step_eligibility = _BladeKernelBindEligibilityProvider(_eligibility);
     } else {
         _step_eligibility = _eligibility & ~BladeClockDomain.Presentation;
     }
@@ -249,9 +285,7 @@ function BladeKernelStepManyDirect(
         _kernel.clock,
         _tick_count,
         _step_eligibility,
-        function(_tick) {
-            _BladeKernelRunTick(_kernel, _tick, _simulate_callback);
-        }
+        _BladeKernelBindTickCallback(_kernel, _simulate_callback)
     );
 }
 

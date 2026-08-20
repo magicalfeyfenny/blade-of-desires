@@ -24,6 +24,12 @@ function _BladeInputRequireSampler(_sampler) {
 	}
 }
 
+function _BladeInputRequireFrameCapacity(_value, _field) {
+	if (_value >= int64("9223372036854775807")) {
+		throw("BladeInputSnapshot: " + _field + " exceeds signed int64 range");
+	}
+}
+
 function _BladeInputInteger(_value, _field, _minimum, _maximum) {
 	var _type = typeof(_value);
 	var _integer;
@@ -201,8 +207,14 @@ function BladeInputSamplePresentation(_sampler, _presentation_frame, _raw_state)
 		0,
 		int64("9223372036854775807")
 	);
-	if (_sampler.has_sample && _frame != _sampler.presentation_frame + int64(1)) {
-		throw("BladeInputSnapshot: presentation frames must be sampled once and consecutively");
+	if (_sampler.has_sample) {
+		_BladeInputRequireFrameCapacity(
+			_sampler.presentation_frame,
+			"presentation frame"
+		);
+		if (_frame != _sampler.presentation_frame + int64(1)) {
+			throw("BladeInputSnapshot: presentation frames must be sampled once and consecutively");
+		}
 	}
 
 	var _movement_x = _BladeInputInteger(
@@ -284,9 +296,14 @@ function BladeInputSnapshotPublishTick(_sampler, _simulation_frame, _input_eligi
 		0,
 		int64("9223372036854775807")
 	);
-	if (_sampler.last_simulation_frame >= 0
-		&& _frame != _sampler.last_simulation_frame + int64(1)) {
-		throw("BladeInputSnapshot: simulation frames must be published consecutively");
+	if (_sampler.last_simulation_frame >= 0) {
+		_BladeInputRequireFrameCapacity(
+			_sampler.last_simulation_frame,
+			"simulation frame"
+		);
+		if (_frame != _sampler.last_simulation_frame + int64(1)) {
+			throw("BladeInputSnapshot: simulation frames must be published consecutively");
+		}
 	}
 	var _eligible = _BladeInputBool(_input_eligible, "input eligibility");
 
