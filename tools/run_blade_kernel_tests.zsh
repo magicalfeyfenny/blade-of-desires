@@ -61,7 +61,10 @@ def handle_signal(signum: int, _frame: object) -> None:
 signal.signal(signal.SIGINT, handle_signal)
 signal.signal(signal.SIGTERM, handle_signal)
 try:
-    raise SystemExit(process.wait(timeout=timeout_seconds))
+    command_status = process.wait(timeout=timeout_seconds)
+    if command_status < 0:
+        command_status = 128 - command_status
+    raise SystemExit(command_status)
 except subprocess.TimeoutExpired:
     print(
         f"Command timed out after {timeout_seconds} seconds: {command[0]}",
