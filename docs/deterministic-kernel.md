@@ -11,6 +11,7 @@ game loop or replay service.
 | --- | --- |
 | `BladeCanonicalEncoding` | Exact integers, UTF-8 length framing, ordered records, and SHA-1 hashing. |
 | `BladeSimulationClock` | Rational 60 Hz accumulation, direct stepping, domain counters, and overrun reports. |
+| `BladeInputBindingRegistry` | Versioned stable binding IDs and their movement-axis or action-bit semantics. |
 | `BladeInputSnapshot` | Injected semantic input sampling, edge latching, and immutable per-tick values. |
 | `BladeRandomStream` | Versioned named PRNG streams and their diagnostics. |
 | `BladeRunIdentity` | Typed run-local allocation plus injected content-ID validation. |
@@ -69,6 +70,36 @@ codes. Movement is quantized to `[-1024, 1024]`; optional analog axes are
 quantized to `[-32767, 32767]` and forced to zero when absent. The fixed action
 bits are fire, bomb, focus, pause, confirm, and cancel. Prompt-device identity is
 carried for presentation diagnostics.
+
+The version 1 input-binding registry gives persisted bindings stable identity
+without storing platform key or button codes in the deterministic seam. Its
+canonical order and semantic mappings are:
+
+| Stable ID | Semantic kind | Mapping |
+| --- | --- | --- |
+| `input.move_up` | movement | `move_y = -1024` |
+| `input.move_down` | movement | `move_y = 1024` |
+| `input.move_left` | movement | `move_x = -1024` |
+| `input.move_right` | movement | `move_x = 1024` |
+| `input.fire` | action | `BladeInputAction.Fire` (`1`) |
+| `input.bomb` | action | `BladeInputAction.Bomb` (`2`) |
+| `input.focus` | action | `BladeInputAction.Focus` (`4`) |
+| `input.pause` | action | `BladeInputAction.Pause` (`8`) |
+| `input.confirm` | action | `BladeInputAction.Confirm` (`16`) |
+| `input.cancel` | action | `BladeInputAction.Cancel` (`32`) |
+
+`BladeInputBindingRecords` returns all records, or a requested subset, in that
+canonical order. Requests containing an unknown or duplicate ID fail closed.
+`BladeInputBindingRecord` returns one known record. Both APIs return detached
+records, so caller mutation cannot change later lookups. Movement records map to
+the existing `move_x` and `move_y` arguments and have no action-bit field. Action
+records map one-to-one to the existing six bits and have no movement fields, so
+the action mask and gameplay-hash encoding remain unchanged.
+
+These stable IDs name bindable semantics; they are not keyboard scancodes,
+gamepad button numbers, or display labels. Default keyboard/gamepad codes,
+conflict handling, serialization, and recovery belong to config persistence.
+Listening and remap UI belong to the input-settings presentation layer.
 
 The sampler requires exactly one sample for each monotonically consecutive
 presentation frame. It compares the new held mask with the previous one and ORs
@@ -143,10 +174,11 @@ excluded from the gameplay hash.
 
 ## Content and run-local identity
 
-`content/product_contract.json` from Issue #6 remains the sole stable-ID
-registry. Production constructs the kernel with a predicate backed by that
-loaded contract; `BladeRunIdentity` stores only the injected callable and never
-copies a second ID list. Unknown and empty content IDs fail closed.
+`content/product_contract.json` from Issue #6 remains the sole canonical
+content-ID registry. Production constructs the kernel with a predicate backed
+by that loaded contract; `BladeRunIdentity` stores only the injected callable
+and never copies a second content-ID list. Unknown and empty content IDs fail
+closed.
 `BladeRunIdentityAllocateForContent` validates the content ID before it advances
 the requested counter. The predicate must likewise be passed as a bound GML
 method.
@@ -155,12 +187,12 @@ The current raw-file fingerprint is the SHA-1 of the exact bytes of
 `content/product_contract.json`:
 
 ```text
-60bbf1e2436c7f0132be5877b2dc38a149d8ea72
+83bd8c5f78ed10dc92f60c1e95429a298cb720ce
 ```
 
 The production bootstrap caller owns hashing and verifying those exact raw
 bytes, then supplies the validated session-header form
-`sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72`. `BladeSessionHeader` does not
+`sha1:83bd8c5f78ed10dc92f60c1e95429a298cb720ce`. `BladeSessionHeader` does not
 read or re-hash the registry; it validates the lowercase `sha1:<40hex>` syntax
 and binds the supplied value. The `H1` header also binds format version 1,
 `blade.simulation.v1`, `blade.xoshiro128ss.v1`, tick rate 60, and the normalized

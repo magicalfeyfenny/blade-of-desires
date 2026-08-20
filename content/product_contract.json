@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "contract.blade",
   "display_name": "Blade Product Contract",
-  "content_version": "1.1.0",
+  "content_version": "1.2.0",
   "id_grammar": {
     "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
     "collision_policy": "globally_unique_and_never_reused"
@@ -71,6 +71,28 @@
     "presentation": "Stage 1 is a high-quality, somewhat photorealistic pixel-art forest with softly floating camera-facing 3D billboard lights. The UI is ornate and Blade-specific, informed by Selkies rather than copied from it.",
     "asset_authoring": "New assets use the governed editable-source to runtime-export pipeline. Codex-created raster art requires image generation and deliberate pixel-art finishing in KRA source; quick geometry stand-ins are not production art."
   },
+  "difficulties": [
+    {
+      "schema_version": 1,
+      "id": "difficulty.breeze",
+      "display_name": "Breeze"
+    },
+    {
+      "schema_version": 1,
+      "id": "difficulty.arcade",
+      "display_name": "Arcade"
+    },
+    {
+      "schema_version": 1,
+      "id": "difficulty.storm",
+      "display_name": "Storm"
+    },
+    {
+      "schema_version": 1,
+      "id": "difficulty.extra",
+      "display_name": "Extra"
+    }
+  ],
   "ships": [
     {
       "schema_version": 1,

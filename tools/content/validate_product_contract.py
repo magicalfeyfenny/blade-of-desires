@@ -14,7 +14,8 @@ IN_MEMORY_SOURCE = "<in-memory>"
 ID_PATTERN_TEXT = r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$"
 ID_PATTERN = re.compile(ID_PATTERN_TEXT)
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
-CORE_CONTENT_VERSION = (1, 1, 0)
+CORE_CONTENT_VERSION = (1, 2, 0)
+CORE_CONTENT_VERSION_TEXT = "1.2.0"
 COMMON_RECORD_FIELDS = {"schema_version", "id", "display_name"}
 REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "content_version",
@@ -23,6 +24,7 @@ REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "campaign",
     "runtime_geometry",
     "product_requirements",
+    "difficulties",
     "ships",
     "stages",
     "encounters",
@@ -36,6 +38,12 @@ PRODUCT_REQUIREMENT_FIELDS = {
     "presentation",
     "asset_authoring",
 }
+CORE_DIFFICULTY_IDS = (
+    "difficulty.breeze",
+    "difficulty.arcade",
+    "difficulty.storm",
+    "difficulty.extra",
+)
 MAIN_STAGE_IDS = (
     "stage.stage1.lost_forest_of_aurei",
     "stage.stage2.waters_of_unyielding_life",
@@ -272,6 +280,47 @@ def validate_registry(
         error(errors, source, f"registry_extensions.{field}", f"declares missing {stable_id}")
 
 
+def validate_difficulties(
+    value: Any,
+    source: str,
+    errors: list[str],
+    seen_ids: set[str],
+) -> None:
+    """Validate the closed, ordered difficulty identity registry without tuning."""
+    path = "product_contract.difficulties"
+    if not isinstance(value, list):
+        error(errors, source, path, "must be a list")
+        return
+
+    present_ids: set[str] = set()
+    for index, record in enumerate(value):
+        record_path = f"difficulties[{index}]"
+        stable_id = validate_record(record, source, record_path, errors, seen_ids)
+        if isinstance(record, dict):
+            validate_keys(
+                record,
+                COMMON_RECORD_FIELDS,
+                COMMON_RECORD_FIELDS,
+                source,
+                record_path,
+                errors,
+            )
+        if stable_id is None:
+            continue
+        present_ids.add(stable_id)
+        if stable_id not in CORE_DIFFICULTY_IDS:
+            error(errors, source, f"{record_path}.id", "is not a canonical difficulty ID")
+        if index >= len(CORE_DIFFICULTY_IDS):
+            error(errors, source, f"{record_path}.id", "is additional; the difficulty registry is closed")
+        elif stable_id != CORE_DIFFICULTY_IDS[index]:
+            expected = CORE_DIFFICULTY_IDS[index]
+            error(errors, source, f"{record_path}.id", f"must be {expected} at canonical position {index}")
+
+    for stable_id in CORE_DIFFICULTY_IDS:
+        if stable_id not in present_ids:
+            error(errors, source, path, f"requires core ID {stable_id}")
+
+
 def validate_campaign(value: Any, source: str, errors: list[str], seen_ids: set[str]) -> None:
     fields = COMMON_RECORD_FIELDS | {"main_stage_ids", "extra_stage_id", "progression"}
     if not validate_keys(value, fields, fields, source, "campaign", errors):
@@ -462,7 +511,12 @@ def validate_contract(contract: Any, source: str = IN_MEMORY_SOURCE) -> list[str
     else:
         parsed_content_version = tuple(int(part) for part in content_version.split("."))
         if parsed_content_version < CORE_CONTENT_VERSION:
-            error(errors, source, "product_contract.content_version", "must be at least 1.1.0")
+            error(
+                errors,
+                source,
+                "product_contract.content_version",
+                f"must be at least {CORE_CONTENT_VERSION_TEXT}",
+            )
     validate_id_grammar(contract.get("id_grammar"), source, errors)
     validate_text_table(
         contract.get("product_requirements"),
@@ -494,7 +548,7 @@ def validate_contract(contract: Any, source: str = IN_MEMORY_SOURCE) -> list[str
             errors,
             source,
             "product_contract.content_version",
-            "must advance beyond 1.1.0 when registry extensions are declared",
+            f"must advance beyond {CORE_CONTENT_VERSION_TEXT} when registry extensions are declared",
         )
     ships = collect_records(contract, "ships", source, errors, seen_ids)
     stages = collect_records(contract, "stages", source, errors, seen_ids)
@@ -504,6 +558,7 @@ def validate_contract(contract: Any, source: str = IN_MEMORY_SOURCE) -> list[str
     validate_registry(encounters, set(CORE_ENCOUNTERS), extensions["encounters"], "encounters", source, errors)
     validate_ships(ships, source, errors)
     validate_stages_and_encounters(stages, encounters, source, errors)
+    validate_difficulties(contract.get("difficulties"), source, errors, seen_ids)
     return errors
 
 

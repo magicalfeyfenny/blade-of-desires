@@ -33,12 +33,21 @@ class ProductContractValidatorTests(unittest.TestCase):
             encounter for encounter in contract["encounters"] if encounter["id"] == stable_id
         )
 
+    def difficulty(self, contract, stable_id):
+        """Return one canonical difficulty record by its stable ID."""
+        return next(
+            difficulty
+            for difficulty in contract["difficulties"]
+            if difficulty["id"] == stable_id
+        )
+
     def test_repository_contract_is_valid_and_versioned(self):
+        """The checked-in additive contract remains schema 1 at content 1.2.0."""
         contract = self.load_contract()
 
         self.assertEqual(validate_file(CONTRACT_PATH), [])
         self.assertEqual(contract["schema_version"], 1)
-        self.assertEqual(contract["content_version"], "1.1.0")
+        self.assertEqual(contract["content_version"], "1.2.0")
         self.assertEqual(contract["registry_extensions"]["schema_version"], 1)
 
     def test_diagnostics_bind_file_or_in_memory_source(self):
@@ -59,6 +68,7 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
 
     def test_rejects_malformed_versions_and_ids(self):
+        """Malformed schema, content versions, and stable IDs fail closed."""
         contract = self.load_contract()
         contract["schema_version"] = 2
         self.assert_error(contract, "product_contract.schema_version", "must be 1")
@@ -72,8 +82,8 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
 
         contract = self.load_contract()
-        contract["content_version"] = "1.0.0"
-        self.assert_error(contract, "product_contract.content_version", "must be at least 1.1.0")
+        contract["content_version"] = "1.1.0"
+        self.assert_error(contract, "product_contract.content_version", "must be at least 1.2.0")
 
         contract = self.load_contract()
         contract["ships"][0]["id"] = "Ship Maynii"
@@ -131,6 +141,7 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(contract, "ships[3].id", "duplicates ship.maynii")
 
     def test_versioned_extension_rule_allows_only_declared_subordinate_records(self):
+        """Subordinate extensions must advance beyond the current core version."""
         contract = self.load_contract()
         extension = {
             "schema_version": 1,
@@ -145,9 +156,9 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "product_contract.content_version",
-            "must advance beyond 1.1.0 when registry extensions are declared",
+            "must advance beyond 1.2.0 when registry extensions are declared",
         )
-        contract["content_version"] = "1.1.1"
+        contract["content_version"] = "1.2.1"
         self.assertEqual(self.errors(contract), [])
 
         contract["ships"][3]["combat_role"] = None
@@ -168,6 +179,168 @@ class ProductContractValidatorTests(unittest.TestCase):
             "product_contract.ending",
             "is not declared by schema version 1",
         )
+
+    def test_binds_ordered_difficulty_ids_separately_from_display_names(self):
+        """Difficulty order and persisted IDs do not depend on display text."""
+        contract = self.load_contract()
+        self.assertEqual(
+            [record["id"] for record in contract["difficulties"]],
+            [
+                "difficulty.breeze",
+                "difficulty.arcade",
+                "difficulty.storm",
+                "difficulty.extra",
+            ],
+        )
+        self.assertEqual(
+            [record["display_name"] for record in contract["difficulties"]],
+            ["Breeze", "Arcade", "Storm", "Extra"],
+        )
+        for record in contract["difficulties"]:
+            self.assertEqual(set(record), {"schema_version", "id", "display_name"})
+            self.assertEqual(record["schema_version"], 1)
+        self.assertNotEqual(
+            self.difficulty(contract, "difficulty.extra")["id"],
+            contract["campaign"]["extra_stage_id"],
+        )
+
+        self.difficulty(contract, "difficulty.breeze")["display_name"] = "Brise"
+        self.assertEqual(self.errors(contract), [])
+
+    def test_requires_difficulties_to_be_a_root_list(self):
+        """A missing or wrongly typed difficulty registry fails at its root path."""
+        contract = self.load_contract()
+        del contract["difficulties"]
+        self.assert_error(contract, "product_contract.difficulties", "is required")
+
+        for value in (None, {}, "difficulty.breeze"):
+            with self.subTest(value=value):
+                contract = self.load_contract()
+                contract["difficulties"] = value
+                self.assert_error(
+                    contract,
+                    "product_contract.difficulties",
+                    "must be a list",
+                )
+
+    def test_rejects_missing_duplicate_reordered_and_malformed_difficulty_ids(self):
+        """Every closed-registry identity failure reports its canonical path."""
+        contract = self.load_contract()
+        contract["difficulties"].pop(1)
+        self.assert_error(
+            contract,
+            "product_contract.difficulties",
+            "requires core ID difficulty.arcade",
+        )
+
+        contract = self.load_contract()
+        contract["difficulties"][1]["id"] = "difficulty.breeze"
+        self.assert_error(
+            contract,
+            "difficulties[1].id",
+            "duplicates difficulty.breeze",
+        )
+
+        contract = self.load_contract()
+        contract["difficulties"][0], contract["difficulties"][1] = (
+            contract["difficulties"][1],
+            contract["difficulties"][0],
+        )
+        self.assert_error(
+            contract,
+            "difficulties[0].id",
+            "must be difficulty.breeze at canonical position 0",
+        )
+
+        contract = self.load_contract()
+        contract["difficulties"][0]["id"] = "Difficulty Breeze"
+        self.assert_error(
+            contract,
+            "difficulties[0].id",
+            "must be a lowercase dotted stable ID",
+        )
+
+    def test_rejects_undeclared_and_additional_difficulty_ids(self):
+        """Unknown identities and surplus records cannot extend the closed registry."""
+        contract = self.load_contract()
+        contract["difficulties"][0]["id"] = "difficulty.nightmare"
+        self.assert_error(
+            contract,
+            "difficulties[0].id",
+            "is not a canonical difficulty ID",
+        )
+
+        contract = self.load_contract()
+        additional = copy.deepcopy(contract["difficulties"][0])
+        additional.update({"id": "difficulty.nightmare", "display_name": "Nightmare"})
+        contract["difficulties"].append(additional)
+        self.assert_error(
+            contract,
+            "difficulties[4].id",
+            "is additional; the difficulty registry is closed",
+        )
+
+    def test_rejects_malformed_difficulty_records_and_tuning_fields(self):
+        """Difficulty records expose identity fields only and use schema version 1."""
+        contract = self.load_contract()
+        contract["difficulties"][0]["schema_version"] = 2
+        self.assert_error(contract, "difficulties[0].schema_version", "must be 1")
+
+        contract = self.load_contract()
+        contract["difficulties"][0]["display_name"] = ""
+        self.assert_error(
+            contract,
+            "difficulties[0].display_name",
+            "must be a nonempty string",
+        )
+
+        tuning_fields = (
+            "bullet_speed",
+            "density",
+            "hp",
+            "rank",
+            "score",
+            "practice",
+            "encounter_tuning",
+        )
+        for field in tuning_fields:
+            with self.subTest(field=field):
+                contract = self.load_contract()
+                contract["difficulties"][0][field] = 1
+                self.assert_error(
+                    contract,
+                    f"difficulties[0].{field}",
+                    "is not declared by schema version 1",
+                )
+
+    def test_difficulty_ids_share_global_uniqueness_with_every_record_family(self):
+        """Every difficulty ID collides with every canonical record family."""
+        collision_targets = (
+            ("contract", ("id",)),
+            ("project", ("project", "id")),
+            ("campaign", ("campaign", "id")),
+            ("progression", ("campaign", "progression", "id")),
+            ("geometry", ("runtime_geometry", "id")),
+            ("ship", ("ships", 0, "id")),
+            ("stage", ("stages", 0, "id")),
+            ("encounter", ("encounters", 0, "id")),
+        )
+        difficulty_ids = [
+            record["id"] for record in self.load_contract()["difficulties"]
+        ]
+        for difficulty_index, difficulty_id in enumerate(difficulty_ids):
+            for family, target_path in collision_targets:
+                with self.subTest(difficulty_id=difficulty_id, family=family):
+                    contract = self.load_contract()
+                    target = contract
+                    for path_part in target_path[:-1]:
+                        target = target[path_part]
+                    target[target_path[-1]] = difficulty_id
+                    self.assert_error(
+                        contract,
+                        f"difficulties[{difficulty_index}].id",
+                        f"duplicates {difficulty_id}",
+                    )
 
     def test_requires_canonical_project_campaign_and_stage_order(self):
         contract = self.load_contract()
