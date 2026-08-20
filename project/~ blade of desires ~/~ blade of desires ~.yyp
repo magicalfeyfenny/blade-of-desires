@@ -33,6 +33,8 @@
     {"id":{"name":"BladeEventLog","path":"scripts/BladeEventLog/BladeEventLog.yy",},},
     {"id":{"name":"BladeEventSessionTests","path":"scripts/BladeEventSessionTests/BladeEventSessionTests.yy",},},
     {"id":{"name":"BladeInputSnapshot","path":"scripts/BladeInputSnapshot/BladeInputSnapshot.yy",},},
+    {"id":{"name":"BladeInputBindingRegistry","path":"scripts/BladeInputBindingRegistry/BladeInputBindingRegistry.yy",},},
+    {"id":{"name":"BladeInputBindingTests","path":"scripts/BladeInputBindingTests/BladeInputBindingTests.yy",},},
     {"id":{"name":"BladeClockInputTests","path":"scripts/BladeClockInputTests/BladeClockInputTests.yy",},},
     {"id":{"name":"BladeKernelIntegrationTests","path":"scripts/BladeKernelIntegrationTests/BladeKernelIntegrationTests.yy",},},
     {"id":{"name":"BladeKernelTestAssertions","path":"scripts/BladeKernelTestAssertions/BladeKernelTestAssertions.yy",},},

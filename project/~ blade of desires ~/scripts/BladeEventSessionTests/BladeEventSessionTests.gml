@@ -101,7 +101,7 @@ function BladeEventSessionTestsRun(_state) {
     BladeKernelTestRunCase(_state, "session header binds compatibility fields", function() {
         // Check header fields, golden hash, and the detached diagnostic view together.
         var _header = new BladeSessionHeader(
-            "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
+            "sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b",
             305419896
         );
         BladeKernelTestAssertEqual(_header.get_format_version(), 1, "format version");
@@ -123,7 +123,7 @@ function BladeEventSessionTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             _header.hash(),
-            "6b5a4fa97fc45004d30bb6a516aaa5781c7430e0",
+            "70beecdf20b03cb990aef29c5d0f7b0037817e80",
             "header golden hash"
         );
 
@@ -141,7 +141,7 @@ function BladeEventSessionTestsRun(_state) {
         BladeKernelTestAssertThrows(function() {
             // Construct the invalid header inside AssertThrows so it captures the error.
             var _invalid_header = new BladeSessionHeader(
-                "sha1:60BBF1E2436C7F0132BE5877B2DC38A149D8EA72",
+                "sha1:D9A345101D9FA9971924BB2B9138A39DD5FD7C0B",
                 1
             );
         }, "lowercase hex", "uppercase content fingerprint must fail");

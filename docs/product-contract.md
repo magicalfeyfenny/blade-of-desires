@@ -34,14 +34,16 @@ is not reassigned.
 or renaming a field, changing its type, or incompatibly changing its meaning
 requires a schema-version increment. Additive fields and content-value changes
 retain the schema version and advance `content_version`, which versions the
-complete contract. Version 1.1.0 adds structured policy while retaining all
-1.0.0 fields and types, so the schema remains version 1. Consumers reject an
-unknown schema version rather than guessing a default.
+complete contract. Version 1.1.0 added structured policy while retaining all
+1.0.0 fields and types. Version 1.2.0 adds the ordered difficulty identity
+registry without changing any existing field or record shape, so the schema
+remains version 1. Consumers reject an unknown schema version rather than
+guessing a default.
 
 `registry_extensions` is a versioned policy object, not a canonical record.
 Its ship, stage, and encounter ID lists are empty in the core contract. A later
 subordinate record must be explicitly declared in the matching list and must
-advance `content_version` beyond the 1.1.0 core baseline; core IDs cannot be
+advance `content_version` beyond the 1.2.0 core baseline; core IDs cannot be
 redeclared. The progression record is closed, so an added ending or unknown
 root field requires a future schema rule instead of silently extending the
 registry.
@@ -58,6 +60,22 @@ Run it with:
 ```sh
 python3.12 tools/content/validate_product_contract.py content/product_contract.json
 ```
+
+## Difficulty identity
+
+The closed difficulty registry contains the three role IDs, in canonical order,
+`difficulty.easy`, `difficulty.normal`, and `difficulty.hard`. Their current
+player-facing `display_name` content is Breeze, Arcade, and Storm. Persisted run
+and configuration data uses the role ID; renaming display text never migrates
+or replaces that ID.
+
+These records establish identity only. They intentionally contain no bullet
+speed, density, HP, rank, score, practice, encounter, or other tuning fields;
+Issue #20 owns content-driven difficulty profiles and balance.
+
+There is no `difficulty.extra` identity. Extra remains solely the existing
+`stage.extra.dreams_of_a_clockwork_angel` stage identity; campaign progression
+remains the authority for its unlock and story conditions.
 
 ## Current binding decisions
 
