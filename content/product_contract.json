@@ -74,23 +74,18 @@
   "difficulties": [
     {
       "schema_version": 1,
-      "id": "difficulty.breeze",
+      "id": "difficulty.easy",
       "display_name": "Breeze"
     },
     {
       "schema_version": 1,
-      "id": "difficulty.arcade",
+      "id": "difficulty.normal",
       "display_name": "Arcade"
     },
     {
       "schema_version": 1,
-      "id": "difficulty.storm",
+      "id": "difficulty.hard",
       "display_name": "Storm"
-    },
-    {
-      "schema_version": 1,
-      "id": "difficulty.extra",
-      "display_name": "Extra"
     }
   ],
   "ships": [

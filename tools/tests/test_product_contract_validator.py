@@ -180,31 +180,34 @@ class ProductContractValidatorTests(unittest.TestCase):
             "is not declared by schema version 1",
         )
 
-    def test_binds_ordered_difficulty_ids_separately_from_display_names(self):
-        """Difficulty order and persisted IDs do not depend on display text."""
+    def test_binds_ordered_difficulty_role_ids_separately_from_display_names(self):
+        """Difficulty roles stay stable while their player-facing names remain content."""
         contract = self.load_contract()
         self.assertEqual(
             [record["id"] for record in contract["difficulties"]],
             [
-                "difficulty.breeze",
-                "difficulty.arcade",
-                "difficulty.storm",
-                "difficulty.extra",
+                "difficulty.easy",
+                "difficulty.normal",
+                "difficulty.hard",
             ],
         )
         self.assertEqual(
             [record["display_name"] for record in contract["difficulties"]],
-            ["Breeze", "Arcade", "Storm", "Extra"],
+            ["Breeze", "Arcade", "Storm"],
         )
         for record in contract["difficulties"]:
             self.assertEqual(set(record), {"schema_version", "id", "display_name"})
             self.assertEqual(record["schema_version"], 1)
-        self.assertNotEqual(
-            self.difficulty(contract, "difficulty.extra")["id"],
+        self.assertNotIn(
+            "difficulty.extra",
+            {record["id"] for record in contract["difficulties"]},
+        )
+        self.assertEqual(
             contract["campaign"]["extra_stage_id"],
+            "stage.extra.dreams_of_a_clockwork_angel",
         )
 
-        self.difficulty(contract, "difficulty.breeze")["display_name"] = "Brise"
+        self.difficulty(contract, "difficulty.easy")["display_name"] = "Brise"
         self.assertEqual(self.errors(contract), [])
 
     def test_requires_difficulties_to_be_a_root_list(self):
@@ -213,7 +216,7 @@ class ProductContractValidatorTests(unittest.TestCase):
         del contract["difficulties"]
         self.assert_error(contract, "product_contract.difficulties", "is required")
 
-        for value in (None, {}, "difficulty.breeze"):
+        for value in (None, {}, "difficulty.easy"):
             with self.subTest(value=value):
                 contract = self.load_contract()
                 contract["difficulties"] = value
@@ -230,15 +233,15 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "product_contract.difficulties",
-            "requires core ID difficulty.arcade",
+            "requires core ID difficulty.normal",
         )
 
         contract = self.load_contract()
-        contract["difficulties"][1]["id"] = "difficulty.breeze"
+        contract["difficulties"][1]["id"] = "difficulty.easy"
         self.assert_error(
             contract,
             "difficulties[1].id",
-            "duplicates difficulty.breeze",
+            "duplicates difficulty.easy",
         )
 
         contract = self.load_contract()
@@ -249,11 +252,11 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "difficulties[0].id",
-            "must be difficulty.breeze at canonical position 0",
+            "must be difficulty.easy at canonical position 0",
         )
 
         contract = self.load_contract()
-        contract["difficulties"][0]["id"] = "Difficulty Breeze"
+        contract["difficulties"][0]["id"] = "Difficulty Easy"
         self.assert_error(
             contract,
             "difficulties[0].id",
@@ -272,11 +275,11 @@ class ProductContractValidatorTests(unittest.TestCase):
 
         contract = self.load_contract()
         additional = copy.deepcopy(contract["difficulties"][0])
-        additional.update({"id": "difficulty.nightmare", "display_name": "Nightmare"})
+        additional.update({"id": "difficulty.extra", "display_name": "Extra"})
         contract["difficulties"].append(additional)
         self.assert_error(
             contract,
-            "difficulties[4].id",
+            "difficulties[3].id",
             "is additional; the difficulty registry is closed",
         )
 
@@ -325,9 +328,11 @@ class ProductContractValidatorTests(unittest.TestCase):
             ("stage", ("stages", 0, "id")),
             ("encounter", ("encounters", 0, "id")),
         )
-        difficulty_ids = [
-            record["id"] for record in self.load_contract()["difficulties"]
-        ]
+        difficulty_ids = (
+            "difficulty.easy",
+            "difficulty.normal",
+            "difficulty.hard",
+        )
         for difficulty_index, difficulty_id in enumerate(difficulty_ids):
             for family, target_path in collision_targets:
                 with self.subTest(difficulty_id=difficulty_id, family=family):

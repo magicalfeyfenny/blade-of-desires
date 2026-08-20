@@ -39,10 +39,9 @@ PRODUCT_REQUIREMENT_FIELDS = {
     "asset_authoring",
 }
 CORE_DIFFICULTY_IDS = (
-    "difficulty.breeze",
-    "difficulty.arcade",
-    "difficulty.storm",
-    "difficulty.extra",
+    "difficulty.easy",
+    "difficulty.normal",
+    "difficulty.hard",
 )
 MAIN_STAGE_IDS = (
     "stage.stage1.lost_forest_of_aurei",

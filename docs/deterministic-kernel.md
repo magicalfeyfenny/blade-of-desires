@@ -187,12 +187,12 @@ The current raw-file fingerprint is the SHA-1 of the exact bytes of
 `content/product_contract.json`:
 
 ```text
-83bd8c5f78ed10dc92f60c1e95429a298cb720ce
+d9a345101d9fa9971924bb2b9138a39dd5fd7c0b
 ```
 
 The production bootstrap caller owns hashing and verifying those exact raw
 bytes, then supplies the validated session-header form
-`sha1:83bd8c5f78ed10dc92f60c1e95429a298cb720ce`. `BladeSessionHeader` does not
+`sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b`. `BladeSessionHeader` does not
 read or re-hash the registry; it validates the lowercase `sha1:<40hex>` syntax
 and binds the supplied value. The `H1` header also binds format version 1,
 `blade.simulation.v1`, `blade.xoshiro128ss.v1`, tick rate 60, and the normalized

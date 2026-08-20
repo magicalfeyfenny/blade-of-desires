@@ -63,20 +63,19 @@ python3.12 tools/content/validate_product_contract.py content/product_contract.j
 
 ## Difficulty identity
 
-The closed difficulty registry contains, in canonical order,
-`difficulty.breeze`, `difficulty.arcade`, `difficulty.storm`, and
-`difficulty.extra`. Each record keeps its player-facing `display_name`
-separate from its stable ID. Persisted run and configuration data uses the ID;
-renaming display text never migrates or replaces that ID.
+The closed difficulty registry contains the three role IDs, in canonical order,
+`difficulty.easy`, `difficulty.normal`, and `difficulty.hard`. Their current
+player-facing `display_name` content is Breeze, Arcade, and Storm. Persisted run
+and configuration data uses the role ID; renaming display text never migrates
+or replaces that ID.
 
 These records establish identity only. They intentionally contain no bullet
 speed, density, HP, rank, score, practice, encounter, or other tuning fields;
 Issue #20 owns content-driven difficulty profiles and balance.
 
-`difficulty.extra` is a difficulty selection. It is distinct from the
-`stage.extra.dreams_of_a_clockwork_angel` stage identity and does not select,
-unlock, or imply an extra-stage route. Campaign progression remains the sole
-authority for the extra-stage unlock and story conditions.
+There is no `difficulty.extra` identity. Extra remains solely the existing
+`stage.extra.dreams_of_a_clockwork_angel` stage identity; campaign progression
+remains the authority for its unlock and story conditions.
 
 ## Current binding decisions
 

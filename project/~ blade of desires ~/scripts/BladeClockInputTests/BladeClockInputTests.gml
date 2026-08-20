@@ -6,7 +6,7 @@
 /// disabled because these cases never allocate a content-backed ID.
 function _BladeClockInputKernelCreate() {
     return BladeDeterministicKernelCreate(
-        "sha1:83bd8c5f78ed10dc92f60c1e95429a298cb720ce",
+        "sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b",
         305419896,
         function(_content_id) {
             // Rejects every content ID because these input cases never allocate
