@@ -47,6 +47,7 @@ function _BladeEventSessionOrderedLog(_reverse_queue_order) {
         fixture: _fixture,
     };
     var _queue_attack = method(_queue_context, function() {
+        // Queue the lower-order attack so sorting can override callback order.
         BladeEventLogQueue(
             self.log,
             BladeEventChannel.Gameplay,
@@ -61,6 +62,7 @@ function _BladeEventSessionOrderedLog(_reverse_queue_order) {
         );
     });
     var _queue_bullet = method(_queue_context, function() {
+        // Queue the higher-order bullet so reversed callbacks keep canonical order.
         BladeEventLogQueue(
             self.log,
             BladeEventChannel.Gameplay,
@@ -97,6 +99,7 @@ function _BladeEventSessionOrderedLog(_reverse_queue_order) {
 /// overflow cases on the shared test state.
 function BladeEventSessionTestsRun(_state) {
     BladeKernelTestRunCase(_state, "session header binds compatibility fields", function() {
+        // Check header fields, golden hash, and the detached diagnostic view together.
         var _header = new BladeSessionHeader(
             "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
             305419896
@@ -134,7 +137,9 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "session header rejects unknown fingerprint form", function() {
+        // Supply uppercase fingerprint hex to exercise canonical spelling rejection.
         BladeKernelTestAssertThrows(function() {
+            // Construct the invalid header inside AssertThrows so it captures the error.
             var _invalid_header = new BladeSessionHeader(
                 "sha1:60BBF1E2436C7F0132BE5877B2DC38A149D8EA72",
                 1
@@ -143,6 +148,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "event ordering ignores queue order", function() {
+        // Compare forward and reversed queue fixtures to check canonical order and IDs.
         var _forward = _BladeEventSessionOrderedLog(false);
         var _reverse = _BladeEventSessionOrderedLog(true);
         BladeKernelTestAssertEqual(
@@ -158,6 +164,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "unknown event reason fails before allocation", function() {
+        // Reject an invalid damage reason and verify no gameplay event ID is consumed.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -166,6 +173,7 @@ function BladeEventSessionTestsRun(_state) {
             fixture: _fixture,
         };
         BladeKernelTestAssertThrows(method(_invalid_event_context, function() {
+            // Submit the invalid type and reason pair through the bound fixture context.
             BladeEventLogQueue(
                 self.log,
                 BladeEventChannel.Gameplay,
@@ -187,6 +195,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "cleanup reason cannot impersonate success", function() {
+        // Reject a success reason for removal, then commit the permitted cleanup reason.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -195,6 +204,7 @@ function BladeEventSessionTestsRun(_state) {
             fixture: _fixture,
         };
         BladeKernelTestAssertThrows(method(_invalid_cleanup_context, function() {
+            // Submit the invalid removal reason through the bound fixture context.
             BladeEventLogQueue(
                 self.log,
                 BladeEventChannel.Gameplay,
@@ -229,6 +239,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "unknown event content fails closed", function() {
+        // Reject unknown event content and verify gameplay event allocation stays at zero.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -237,6 +248,7 @@ function BladeEventSessionTestsRun(_state) {
             fixture: _fixture,
         };
         BladeKernelTestAssertThrows(method(_unknown_content_context, function() {
+            // Queue the invented content ID through the bound fixture context.
             BladeEventLogQueue(
                 self.log,
                 BladeEventChannel.Gameplay,
@@ -258,6 +270,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "presentation events never enter gameplay log", function() {
+        // Compare gameplay state before and after one isolated presentation event.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -319,6 +332,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "queue result is detached from pending state", function() {
+        // Mutate the returned queue view and verify the pending record remains unchanged.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -364,6 +378,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "commit rejects mutated pending schema before allocation", function() {
+        // Corrupt a queued channel and verify commit revalidates it before ID allocation.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -382,6 +397,7 @@ function BladeEventSessionTestsRun(_state) {
         _log.pending[0].channel = BladeEventChannel.Presentation;
         var _commit_context = { log: _log };
         BladeKernelTestAssertThrows(method(_commit_context, function() {
+            // Commit the tampered channel through bound log context to capture rejection.
             BladeEventLogCommitTick(self.log);
         }), "presentation channel requires", "commit must rebuild the channel schema");
         BladeKernelTestAssertEqual(
@@ -397,6 +413,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "commit rejects mutated pending payload before allocation", function() {
+        // Corrupt a payload type and verify commit revalidates it before ID allocation.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -415,6 +432,7 @@ function BladeEventSessionTestsRun(_state) {
         _log.pending[0].payload[0].type = "invented";
         var _commit_context = { log: _log };
         BladeKernelTestAssertThrows(method(_commit_context, function() {
+            // Commit the tampered payload through bound log context to capture rejection.
             BladeEventLogCommitTick(self.log);
         }), "unknown type", "commit must rebuild and validate payload data");
         BladeKernelTestAssertEqual(
@@ -425,6 +443,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "enqueue ordinal overflow fails before mutation", function() {
+        // Exhaust the enqueue ordinal and verify queueing changes neither records nor IDs.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -434,6 +453,7 @@ function BladeEventSessionTestsRun(_state) {
             fixture: _fixture,
         };
         BladeKernelTestAssertThrows(method(_queue_context, function() {
+            // Attempt the overflowing queue operation through the bound fixture context.
             BladeEventLogQueue(
                 self.log,
                 BladeEventChannel.Gameplay,
@@ -460,6 +480,7 @@ function BladeEventSessionTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "presentation counter overflow preflights all event IDs", function() {
+        // Exhaust presentation IDs and verify commit stops before gameplay allocation.
         var _fixture = _BladeEventSessionIdentityFixture();
         var _log = BladeEventLogCreate(_fixture.identity);
         BladeEventLogBeginTick(_log, 1);
@@ -490,6 +511,7 @@ function BladeEventSessionTestsRun(_state) {
         _log.next_presentation_event = int64("9223372036854775807");
         var _commit_context = { log: _log };
         BladeKernelTestAssertThrows(method(_commit_context, function() {
+            // Commit both channels through bound log context to capture overflow rejection.
             BladeEventLogCommitTick(self.log);
         }), "presentation event counter", "presentation overflow must preflight commit");
         BladeKernelTestAssertEqual(

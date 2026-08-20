@@ -197,6 +197,7 @@ function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     var _count = _stream.get_draw_count();
     BladeKernelTestAssertThrows(
         function() {
+            // Construct an unregistered stream so the assertion captures registry rejection.
             var _unused = new BladeRandomStream(1, "stage_shedule");
         },
         "is not registered",
@@ -209,7 +210,10 @@ function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     BladeKernelTestAssertThrows(
         method(
             { stream: _stream },
-            function() { self.stream.next_range(5, 5); }
+            function() {
+                // Request an empty range so its rejection can be checked before any draw.
+                self.stream.next_range(5, 5);
+            }
         ),
         "maximum must be greater",
         "empty range fails closed"
@@ -220,7 +224,10 @@ function _BladeRandomIdentityTestRandomFailuresDoNotDraw() {
     BladeKernelTestAssertThrows(
         method(
             { stream: _stream },
-            function() { self.stream.next_range(0, int64("4294967297")); }
+            function() {
+                // Request a span above 2^32 so validation can reject it before any draw.
+                self.stream.next_range(0, int64("4294967297"));
+            }
         ),
         "span cannot exceed 2^32",
         "oversized range fails closed"
@@ -317,6 +324,7 @@ function _BladeRandomIdentityTestIdentityFailuresDoNotAllocate() {
 
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Attempt an unknown content allocation so counter stability can be checked.
             BladeRunIdentityAllocateForContent(
                 self.identity,
                 BladeRunIdKind.Instance,
@@ -338,8 +346,8 @@ function _BladeRandomIdentityTestIdentityFailuresDoNotAllocate() {
     );
 }
 
-/// Tries malformed, mistyped, future, and reset IDs so validation accepts only
-/// IDs this identity object allocated.
+/// Tries malformed, mistyped, future, and reset IDs to show validation checks
+/// canonical type and spelling against the identity's current counter frontier.
 function _BladeRandomIdentityTestIdentityValidation() {
     var _identity = BladeRunIdentityCreate(
         method({}, _BladeRandomIdentityFixtureContentIdKnown)
@@ -352,6 +360,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Check an attack prefix as an instance ID to exercise typed rejection.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 "atk:1",
@@ -363,6 +372,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Check ordinal zero to exercise the positive-decimal boundary.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 "ins:0",
@@ -374,6 +384,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Check a leading-zero ordinal to exercise canonical spelling rejection.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 "ins:01",
@@ -385,6 +396,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Check the next ordinal to exercise the current counter frontier.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 "ins:2",
@@ -396,6 +408,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     );
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Pass a number instead of an ID string to exercise type rejection.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 1,
@@ -409,6 +422,7 @@ function _BladeRandomIdentityTestIdentityValidation() {
     BladeRunIdentityReset(_identity);
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Recheck the former ID after reset lowers the counter frontier.
             BladeRunIdentityRequireAllocated(
                 self.identity,
                 "ins:1",
@@ -429,6 +443,7 @@ function _BladeRandomIdentityTestCounterOverflow() {
     _identity.next_instance = int64("9223372036854775807");
     BladeKernelTestAssertThrows(
         method({ identity: _identity }, function() {
+            // Attempt allocation at the int64 frontier so the counter cannot wrap.
             BladeRunIdentityAllocate(self.identity, BladeRunIdKind.Instance);
         }),
         "counter exhausted",
@@ -446,33 +461,43 @@ function _BladeRandomIdentityTestCounterOverflow() {
 /// project-owned test state.
 function BladeRandomIdentityTestsRun(_state) {
     BladeKernelTestRunCase(_state, "random seed normalization boundaries", function() {
+        // Run the seed boundary fixtures inside the shared case accounting callback.
         _BladeRandomIdentityTestSeedNormalization();
     });
     BladeKernelTestRunCase(_state, "named random stream goldens", function() {
+        // Run the named-stream vectors inside the shared case accounting callback.
         _BladeRandomIdentityTestNamedStreamGoldens();
     });
     BladeKernelTestRunCase(_state, "bounded random range goldens", function() {
+        // Run the bounded-range vectors inside the shared case accounting callback.
         _BladeRandomIdentityTestBoundedRangeGoldens();
     });
     BladeKernelTestRunCase(_state, "random stream creation order", function() {
+        // Compare opposite creation orders inside one reported test case.
         _BladeRandomIdentityTestCreationOrderIndependence();
     });
     BladeKernelTestRunCase(_state, "cosmetic random stream isolation", function() {
+        // Check cosmetic isolation inside one reported test case.
         _BladeRandomIdentityTestCosmeticIsolation();
     });
     BladeKernelTestRunCase(_state, "random validation is fail-before-draw", function() {
+        // Check invalid random requests without splitting their state assertions.
         _BladeRandomIdentityTestRandomFailuresDoNotDraw();
     });
     BladeKernelTestRunCase(_state, "typed identity allocation and reset", function() {
+        // Check every typed counter and reset sequence inside one reported case.
         _BladeRandomIdentityTestTypedAllocationAndReset();
     });
     BladeKernelTestRunCase(_state, "unknown content is fail-before-allocation", function() {
+        // Check unknown content rejection and the following allocation for a gap.
         _BladeRandomIdentityTestIdentityFailuresDoNotAllocate();
     });
     BladeKernelTestRunCase(_state, "run-local identity validation", function() {
+        // Check ID type, spelling, and the current counter frontier without provenance claims.
         _BladeRandomIdentityTestIdentityValidation();
     });
     BladeKernelTestRunCase(_state, "identity counters fail before overflow", function() {
+        // Check counter exhaustion and retained state inside one reported case.
         _BladeRandomIdentityTestCounterOverflow();
     });
     return _state;

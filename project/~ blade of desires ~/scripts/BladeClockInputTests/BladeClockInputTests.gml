@@ -1,4 +1,4 @@
-/// Project-owned tests for the fixed clock and immutable input snapshots.
+/// Project-owned tests for kernel input delivery and immutable input snapshots.
 /// When a callback needs fixture values, method(context, callback) exposes the
 /// context as self; this keeps the callback's dependencies visible in GML.
 
@@ -9,6 +9,8 @@ function _BladeClockInputKernelCreate() {
         "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
         305419896,
         function(_content_id) {
+            // Rejects every content ID because these input cases never allocate
+            // content-backed IDs; the kernel still requires an injected predicate.
             return false;
         }
     );
@@ -67,269 +69,12 @@ function _BladeClockInputAssertRejected(_callback, _fragment, _state_callback, _
     BladeKernelTestAssertEqual(_state_callback(), _before, _message + " preserves state");
 }
 
-/// Registers the clock and input cases together because input edge delivery is
-/// decided while the kernel advances clock ticks.
+/// Runs kernel-input, snapshot, and rejection cases in the shared test state.
+/// Keeping these cases together makes their sampler and kernel fixtures local to one suite.
 function BladeClockInputTestsRun(_state) {
-    BladeKernelTestRunCase(_state, "clock preserves exact 60 Hz remainders", function() {
-        var _clock = BladeSimulationClockCreate();
-        var _first = BladeSimulationClockAdvance(
-            _clock,
-            16666,
-            BladeClockDomain.All
-        );
-        BladeKernelTestAssertEqual(_first.ticks_run, int64(0), "first short delta ticks");
-        BladeKernelTestAssertEqual(
-            _first.remainder_units,
-            int64(999960),
-            "first short delta remainder"
-        );
-
-        var _second = BladeSimulationClockAdvance(
-            _clock,
-            16667,
-            BladeClockDomain.All
-        );
-        BladeKernelTestAssertEqual(_second.ticks_run, int64(1), "second delta ticks");
-        BladeKernelTestAssertEqual(
-            _second.remainder_units,
-            int64(999980),
-            "second delta remainder"
-        );
-
-        var _third = BladeSimulationClockAdvance(
-            _clock,
-            16667,
-            BladeClockDomain.All
-        );
-        BladeKernelTestAssertEqual(_third.ticks_run, int64(2), "third delta ticks");
-        BladeKernelTestAssertEqual(
-            _third.remainder_units,
-            int64(0),
-            "three deltas total exactly fifty milliseconds"
-        );
-        BladeKernelTestAssertEqual(
-            _third.interpolation_denominator,
-            int64(1000000),
-            "fixed interpolation denominator"
-        );
-        BladeKernelTestAssertEqual(
-            _third.counters.simulation_tick,
-            int64(3),
-            "three exact simulation ticks"
-        );
-        BladeKernelTestAssertEqual(
-            _third.counters.presentation_tick,
-            int64(3),
-            "one presentation tick per accumulator update"
-        );
-    });
-
-    BladeKernelTestRunCase(_state, "equal clock delta sequences stay identical", function() {
-        var _left = BladeSimulationClockCreate(8);
-        var _right = BladeSimulationClockCreate(8);
-        var _deltas = [16666, 16667, 0, 33334, 1, 99999];
-
-        for (var _index = 0; _index < array_length(_deltas); ++_index) {
-            var _left_result = BladeSimulationClockAdvance(
-                _left,
-                _deltas[_index],
-                BladeClockDomain.Stage | BladeClockDomain.Actor
-            );
-            var _right_result = BladeSimulationClockAdvance(
-                _right,
-                _deltas[_index],
-                BladeClockDomain.Stage | BladeClockDomain.Actor
-            );
-            var _context = "equal sequence result " + string(_index);
-            BladeKernelTestAssertEqual(
-                _left_result.ticks_run,
-                _right_result.ticks_run,
-                _context + " ticks"
-            );
-            BladeKernelTestAssertEqual(
-                _left_result.dropped_ticks,
-                _right_result.dropped_ticks,
-                _context + " drops"
-            );
-            BladeKernelTestAssertEqual(
-                _left_result.remainder_units,
-                _right_result.remainder_units,
-                _context + " remainder"
-            );
-            BladeKernelTestAssertEqual(
-                _left_result.overrun,
-                _right_result.overrun,
-                _context + " overrun"
-            );
-            BladeKernelTestAssertEqual(
-                _left_result.counters.simulation_tick,
-                _right_result.counters.simulation_tick,
-                _context + " simulation counter"
-            );
-            BladeKernelTestAssertEqual(
-                _left_result.counters.presentation_tick,
-                _right_result.counters.presentation_tick,
-                _context + " presentation counter"
-            );
-        }
-    });
-
-    BladeKernelTestRunCase(_state, "clock caps catch-up and reports dropped ticks", function() {
-        var _clock = BladeSimulationClockCreate(2);
-        var _overrun = BladeSimulationClockAdvance(
-            _clock,
-            100001,
-            BladeClockDomain.All
-        );
-        BladeKernelTestAssertEqual(
-            _overrun.ticks_available,
-            int64(6),
-            "available ticks before cap"
-        );
-        BladeKernelTestAssertEqual(_overrun.ticks_run, int64(2), "catch-up cap");
-        BladeKernelTestAssertEqual(
-            _overrun.dropped_ticks,
-            int64(4),
-            "explicit dropped ticks"
-        );
-        BladeKernelTestAssertTrue(_overrun.overrun, "overrun flag");
-        BladeKernelTestAssertEqual(
-            _overrun.total_dropped_ticks,
-            int64(4),
-            "cumulative drop count"
-        );
-        BladeKernelTestAssertEqual(
-            _overrun.remainder_units,
-            int64(60),
-            "sub-tick remainder survives dropping"
-        );
-
-        var _idle = BladeSimulationClockAdvance(
-            _clock,
-            0,
-            BladeClockDomain.All
-        );
-        BladeKernelTestAssertFalse(_idle.overrun, "zero delta is not an overrun");
-        BladeKernelTestAssertEqual(_idle.dropped_ticks, int64(0), "no new drops");
-        BladeKernelTestAssertEqual(
-            _idle.total_dropped_ticks,
-            int64(4),
-            "prior drops remain diagnostic"
-        );
-    });
-
-    BladeKernelTestRunCase(_state, "clock domains and presentation count separately", function() {
-        var _clock = BladeSimulationClockCreate();
-        var _catch_up = BladeSimulationClockAdvance(
-            _clock,
-            50000,
-            BladeClockDomain.Stage
-                | BladeClockDomain.Actor
-                | BladeClockDomain.Presentation
-        );
-        BladeKernelTestAssertEqual(
-            _catch_up.counters.simulation_tick,
-            int64(3),
-            "simulation catch-up count"
-        );
-        BladeKernelTestAssertEqual(
-            _catch_up.counters.stage_tick,
-            int64(3),
-            "stage domain count"
-        );
-        BladeKernelTestAssertEqual(
-            _catch_up.counters.actor_tick,
-            int64(3),
-            "actor domain count"
-        );
-        BladeKernelTestAssertEqual(
-            _catch_up.counters.boss_tick,
-            int64(0),
-            "ineligible boss domain"
-        );
-        BladeKernelTestAssertEqual(
-            _catch_up.counters.presentation_tick,
-            int64(1),
-            "catch-up does not duplicate presentation"
-        );
-
-        var _zero = BladeSimulationClockAdvance(
-            _clock,
-            0,
-            BladeClockDomain.Boss | BladeClockDomain.Presentation
-        );
-        BladeKernelTestAssertEqual(_zero.ticks_run, int64(0), "zero delta ticks");
-        BladeKernelTestAssertEqual(
-            _zero.counters.presentation_tick,
-            int64(2),
-            "zero-tick update still presents once"
-        );
-        BladeKernelTestAssertEqual(
-            BladeSimulationClockMarkPresentation(_clock),
-            int64(3),
-            "presentation may advance independently"
-        );
-    });
-
-    BladeKernelTestRunCase(_state, "clock supports exact direct stepping", function() {
-        var _clock = BladeSimulationClockCreate();
-        var _masks = [];
-        var _capture_context = { masks: _masks };
-        var _result = BladeSimulationClockStepManyDirect(
-            _clock,
-            3,
-            function(_counters) {
-                if (_counters.simulation_tick == 0) {
-                    return BladeClockDomain.Stage;
-                }
-                if (_counters.simulation_tick == 1) {
-                    return BladeClockDomain.Actor;
-                }
-                return BladeClockDomain.Boss;
-            },
-            method(_capture_context, function(_tick) {
-                array_push(self.masks, _tick.domain_mask);
-            })
-        );
-        BladeKernelTestAssertEqual(_result.ticks_run, int64(3), "direct tick count");
-        BladeKernelTestAssertEqual(_result.dropped_ticks, int64(0), "direct drops");
-        BladeKernelTestAssertFalse(_result.overrun, "direct steps cannot overrun");
-        BladeKernelTestAssertEqual(
-            _result.remainder_units,
-            int64(0),
-            "direct steps leave accumulator unchanged"
-        );
-        BladeKernelTestAssertArrayEqual(
-            _masks,
-            [BladeClockDomain.Stage, BladeClockDomain.Actor, BladeClockDomain.Boss],
-            "eligibility is resolved before each direct tick"
-        );
-
-        var _counters = BladeSimulationClockGetCounters(_clock);
-        BladeKernelTestAssertEqual(_counters.stage_tick, int64(1), "direct stage count");
-        BladeKernelTestAssertEqual(_counters.actor_tick, int64(1), "direct actor count");
-        BladeKernelTestAssertEqual(_counters.boss_tick, int64(1), "direct boss count");
-        BladeKernelTestAssertEqual(
-            _counters.presentation_tick,
-            int64(0),
-            "direct simulation domains do not imply presentation"
-        );
-
-        BladeSimulationClockStepDirect(
-            _clock,
-            BladeClockDomain.Stage | BladeClockDomain.Presentation
-        );
-        _counters = BladeSimulationClockGetCounters(_clock);
-        BladeKernelTestAssertEqual(_counters.simulation_tick, int64(4), "single direct step");
-        BladeKernelTestAssertEqual(_counters.stage_tick, int64(2), "single step domain");
-        BladeKernelTestAssertEqual(
-            _counters.presentation_tick,
-            int64(1),
-            "explicit direct presentation domain"
-        );
-    });
-
     BladeKernelTestRunCase(_state, "input edges survive zero and ineligible ticks", function() {
+        // Drives zero, actor-ineligible, and actor-eligible ticks in one case callback
+        // so the runner reports the entire edge-latching sequence under this name.
         var _kernel = _BladeClockInputKernelCreate();
         var _held_fire = BladeInputRawStateCreate(
             0,
@@ -353,14 +98,20 @@ function BladeClockInputTestsRun(_state) {
 
         var _ineligible_snapshots = [];
         var _ineligible_context = { snapshots: _ineligible_snapshots };
+        var _capture_ineligible = method(
+            _ineligible_context,
+            function(_active_kernel, _snapshot, _tick) {
+                // Saves the Stage-only snapshot and returns an empty state fragment.
+                // Method binding exposes this callback's local array through self.
+                array_push(self.snapshots, _snapshot);
+                return "";
+            }
+        );
         BladeKernelStepDirect(
             _kernel,
             _held_fire,
             BladeClockDomain.Stage,
-            method(_ineligible_context, function(_active_kernel, _snapshot, _tick) {
-                array_push(self.snapshots, _snapshot);
-                return "";
-            })
+            _capture_ineligible
         );
         var _ineligible = BladeInputSnapshotRead(_ineligible_snapshots[0]);
         BladeKernelTestAssertEqual(
@@ -382,14 +133,20 @@ function BladeClockInputTestsRun(_state) {
 
         var _eligible_snapshots = [];
         var _eligible_context = { snapshots: _eligible_snapshots };
+        var _capture_eligible = method(
+            _eligible_context,
+            function(_active_kernel, _snapshot, _tick) {
+                // Saves the Actor-eligible snapshot and returns an empty state fragment.
+                // Method binding exposes this callback's local array through self.
+                array_push(self.snapshots, _snapshot);
+                return "";
+            }
+        );
         BladeKernelStepDirect(
             _kernel,
             _held_fire,
             BladeClockDomain.Actor,
-            method(_eligible_context, function(_active_kernel, _snapshot, _tick) {
-                array_push(self.snapshots, _snapshot);
-                return "";
-            })
+            _capture_eligible
         );
         var _eligible = BladeInputSnapshotRead(_eligible_snapshots[0]);
         BladeKernelTestAssertEqual(
@@ -402,6 +159,8 @@ function BladeClockInputTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "catch-up delivers edges only on its first tick", function() {
+        // Captures every snapshot from one three-tick catch-up inside a case callback
+        // so edge consumption and carried state are checked as one sequence.
         var _kernel = _BladeClockInputKernelCreate();
         var _raw = BladeInputRawStateCreate(
             512,
@@ -414,15 +173,21 @@ function BladeClockInputTestsRun(_state) {
         );
         var _snapshots = [];
         var _capture_context = { snapshots: _snapshots };
+        var _capture_catch_up = method(
+            _capture_context,
+            function(_active_kernel, _snapshot, _tick) {
+                // Appends each catch-up snapshot and returns an empty state fragment.
+                // Method binding exposes the case's local array through self.
+                array_push(self.snapshots, _snapshot);
+                return "";
+            }
+        );
         var _advance = BladeKernelAdvancePresentation(
             _kernel,
             50000,
             _raw,
             BladeClockDomain.All,
-            method(_capture_context, function(_active_kernel, _snapshot, _tick) {
-                array_push(self.snapshots, _snapshot);
-                return "";
-            })
+            _capture_catch_up
         );
         BladeKernelTestAssertEqual(_advance.ticks_run, int64(3), "catch-up tick count");
         BladeKernelTestAssertEqual(array_length(_snapshots), 3, "captured snapshots");
@@ -468,6 +233,8 @@ function BladeClockInputTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "press and release queue before an eligible tick", function() {
+        // Samples a press and release before one eligible tick in a case callback
+        // so the runner groups both queued-edge assertions under this scenario.
         var _kernel = _BladeClockInputKernelCreate();
         var _pressed = BladeInputRawStateCreate(
             0,
@@ -507,14 +274,20 @@ function BladeClockInputTestsRun(_state) {
 
         var _snapshots = [];
         var _capture_context = { snapshots: _snapshots };
+        var _capture_queued_edges = method(
+            _capture_context,
+            function(_active_kernel, _snapshot, _tick) {
+                // Saves the consuming snapshot and returns an empty state fragment.
+                // Method binding exposes the case's local array through self.
+                array_push(self.snapshots, _snapshot);
+                return "";
+            }
+        );
         BladeKernelStepDirect(
             _kernel,
             _released,
             BladeClockDomain.Actor,
-            method(_capture_context, function(_active_kernel, _snapshot, _tick) {
-                array_push(self.snapshots, _snapshot);
-                return "";
-            })
+            _capture_queued_edges
         );
         var _view = BladeInputSnapshotRead(_snapshots[0]);
         BladeKernelTestAssertEqual(_view.held_actions, int64(0), "released held state");
@@ -531,6 +304,8 @@ function BladeClockInputTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "presentation input samples at most once", function() {
+        // Attempts duplicate and skipped presentation frames in one case callback
+        // so both rejection paths and the following valid sample are tested together.
         var _sampler = BladeInputSamplerCreate();
         var _raw = BladeInputRawStateCreate(
             0,
@@ -540,12 +315,26 @@ function BladeClockInputTestsRun(_state) {
         );
         BladeInputSamplePresentation(_sampler, 0, _raw);
         var _sample_context = { sampler: _sampler, raw: _raw };
-        BladeKernelTestAssertThrows(method(_sample_context, function() {
+        var _repeat_same_frame = method(_sample_context, function() {
+            // Repeats frame zero through self because the throw assertion callback
+            // needs explicit access to the sampler and raw-state fixtures.
             BladeInputSamplePresentation(self.sampler, 0, self.raw);
-        }), "once and consecutively", "duplicate presentation sample must fail");
-        BladeKernelTestAssertThrows(method(_sample_context, function() {
+        });
+        BladeKernelTestAssertThrows(
+            _repeat_same_frame,
+            "once and consecutively",
+            "duplicate presentation sample must fail"
+        );
+        var _skip_presentation_frame = method(_sample_context, function() {
+            // Jumps from frame zero to frame two through self because the throw
+            // assertion callback needs the same explicitly bound fixtures.
             BladeInputSamplePresentation(self.sampler, 2, self.raw);
-        }), "once and consecutively", "skipped presentation sample must fail");
+        });
+        BladeKernelTestAssertThrows(
+            _skip_presentation_frame,
+            "once and consecutively",
+            "skipped presentation sample must fail"
+        );
 
         BladeInputSamplePresentation(_sampler, 1, _raw);
         var _snapshot = BladeInputSnapshotPublishTick(_sampler, 0, true);
@@ -558,6 +347,8 @@ function BladeClockInputTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "snapshots preserve earlier immutable values", function() {
+        // Creates two snapshots and mutates only a parsed view in one case callback
+        // so the runner attributes every value-semantics check to this scenario.
         var _sampler = BladeInputSamplerCreate();
         var _first_raw = BladeInputRawStateCreate(
             64,
@@ -637,71 +428,145 @@ function BladeClockInputTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "clock and input failures preserve counters", function() {
+        // Runs clock and sampler rejection probes in one case callback so the
+        // shared preservation checks retain this original cross-boundary case name.
         var _clock = BladeSimulationClockCreate(1);
         var _context = { clock: _clock };
         var _state_view = method(_context, function() {
-            return _BladeClockInputClockState(self.clock);
+            // Serializes whichever clock self currently references; method binding
+            // lets this state callback follow later fixture replacements.
+            var _serialized = _BladeClockInputClockState(self.clock);
+            return _serialized;
         });
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_negative_delta = method(_context, function() {
+            // Submits a negative delta through self so the rejection callback uses
+            // the same explicitly bound clock as the state callback.
             BladeSimulationClockAdvance(self.clock, -1, BladeClockDomain.All);
-        }), "must be at least", _state_view, "negative delta");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        });
+        _BladeClockInputAssertRejected(
+            _reject_negative_delta,
+            "must be at least",
+            _state_view,
+            "negative delta"
+        );
+        var _reject_boolean_mask = method(_context, function() {
+            // Supplies a boolean mask through self so this callback isolates the
+            // clock's original-mask type validation.
             BladeSimulationClockAdvance(self.clock, 0, true);
-        }), "domain mask must be an integer", _state_view, "boolean clock mask");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        });
+        _BladeClockInputAssertRejected(
+            _reject_boolean_mask,
+            "domain mask must be an integer",
+            _state_view,
+            "boolean clock mask"
+        );
+        var _reject_negative_count = method(_context, function() {
+            // Supplies a negative direct-step count through self so this callback
+            // targets count preflight without changing the shared clock fixture.
             BladeSimulationClockStepManyDirect(
                 self.clock,
                 -1,
                 BladeClockDomain.All
             );
-        }), "must be at least", _state_view, "negative direct count");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_negative_count,
+            "must be at least",
+            _state_view,
+            "negative direct count"
+        );
 
         _clock.accumulator_units = int64("9223372036854775807");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_accumulator_overflow = method(_context, function() {
+            // Adds one microsecond to the full accumulator through self so the
+            // callback reaches the exact-range preflight guard.
             BladeSimulationClockAdvance(self.clock, 1, BladeClockDomain.None);
-        }), "exact accumulator range", _state_view, "accumulator overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_accumulator_overflow,
+            "exact accumulator range",
+            _state_view,
+            "accumulator overflow"
+        );
 
         _clock = BladeSimulationClockCreate(1);
         _clock.total_dropped_ticks = int64("9223372036854775807");
         _context.clock = _clock;
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_drop_overflow = method(_context, function() {
+            // Creates one dropped tick on the rebound clock through self so this
+            // callback targets the full cumulative-drop counter.
             BladeSimulationClockAdvance(self.clock, 33334, BladeClockDomain.None);
-        }), "total dropped ticks exceeds", _state_view, "drop counter overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_drop_overflow,
+            "total dropped ticks exceeds",
+            _state_view,
+            "drop counter overflow"
+        );
 
         _clock = BladeSimulationClockCreate();
         _clock.stage_tick = int64("9223372036854775807");
         _context.clock = _clock;
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_stage_overflow = method(_context, function() {
+            // Requests one Stage step through self so the callback isolates the
+            // exhausted domain counter before any other counter advances.
             BladeSimulationClockStepDirect(self.clock, BladeClockDomain.Stage);
-        }), "stage tick exceeds", _state_view, "domain counter overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_stage_overflow,
+            "stage tick exceeds",
+            _state_view,
+            "domain counter overflow"
+        );
 
         var _sampler = BladeInputSamplerCreate();
         var _raw = BladeInputRawStateCreate(0, 0, BladeInputAction.Fire);
         BladeInputSamplePresentation(_sampler, 0, _raw);
         var _input_context = { sampler: _sampler, raw: _raw };
         var _input_state = method(_input_context, function() {
-            return _BladeClockInputSamplerState(self.sampler);
+            // Re-serializes the bound sampler through self so the rejection helper
+            // can compare its pending edges and frame counters before and after.
+            var _serialized = _BladeClockInputSamplerState(self.sampler);
+            return _serialized;
         });
         _sampler.presentation_frame = int64("9223372036854775807");
-        _BladeClockInputAssertRejected(method(_input_context, function() {
+        var _reject_presentation_overflow = method(_input_context, function() {
+            // Attempts the impossible successor of a full presentation counter;
+            // method binding exposes the sampler and raw state through self.
             BladeInputSamplePresentation(
                 self.sampler,
                 int64("9223372036854775807"),
                 self.raw
             );
-        }), "presentation frame exceeds", _input_state, "input presentation overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_presentation_overflow,
+            "presentation frame exceeds",
+            _input_state,
+            "input presentation overflow"
+        );
         _sampler.presentation_frame = int64(0);
         _sampler.last_simulation_frame = int64("9223372036854775807");
-        _BladeClockInputAssertRejected(method(_input_context, function() {
+        var _reject_simulation_overflow = method(_input_context, function() {
+            // Attempts to publish after a full simulation-frame counter through
+            // self so the callback reuses the explicitly bound sampler fixture.
             BladeInputSnapshotPublishTick(
                 self.sampler,
                 int64("9223372036854775807"),
                 true
             );
-        }), "simulation frame exceeds", _input_state, "input simulation overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_simulation_overflow,
+            "simulation frame exceeds",
+            _input_state,
+            "input simulation overflow"
+        );
     });
 
     BladeKernelTestRunCase(_state, "kernel rejects invalid updates without sampling", function() {
+        // Exercises every kernel preflight rejection in one case callback so all
+        // no-sampling state comparisons retain this original scenario name.
         var _kernel = _BladeClockInputKernelCreate();
         var _raw = BladeInputRawStateCreate(0, 0, BladeInputAction.Fire);
         var _bad_raw = {
@@ -715,45 +580,88 @@ function BladeClockInputTestsRun(_state) {
         };
         var _context = { kernel: _kernel, raw: _raw, bad_raw: _bad_raw };
         var _state_view = method(_context, function() {
-            return _BladeClockInputKernelState(self.kernel);
+            // Re-serializes the bound kernel through self so the rejection helper
+            // compares clock, input, presentation, and gameplay state together.
+            var _serialized = _BladeClockInputKernelState(self.kernel);
+            return _serialized;
         });
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_kernel_delta = method(_context, function() {
+            // Submits a negative presentation delta through self so this callback
+            // targets kernel preflight before input sampling can occur.
             BladeKernelAdvancePresentation(
                 self.kernel,
                 -1,
                 self.raw,
                 BladeClockDomain.All
             );
-        }), "must be at least", _state_view, "kernel negative delta");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        });
+        _BladeClockInputAssertRejected(
+            _reject_kernel_delta,
+            "must be at least",
+            _state_view,
+            "kernel negative delta"
+        );
+        var _reject_kernel_count = method(_context, function() {
+            // Submits a negative direct count through self so this callback reaches
+            // count preflight before the kernel samples presentation input.
             BladeKernelStepManyDirect(
                 self.kernel,
                 self.raw,
                 -1,
                 BladeClockDomain.All
             );
-        }), "must be at least", _state_view, "kernel negative count");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        });
+        _BladeClockInputAssertRejected(
+            _reject_kernel_count,
+            "must be at least",
+            _state_view,
+            "kernel negative count"
+        );
+        var _reject_kernel_mask = method(_context, function() {
+            // Supplies a boolean domain mask through self so the callback proves
+            // validation happens before Presentation is stripped from the mask.
             BladeKernelStepManyDirect(self.kernel, self.raw, 1, true);
-        }), "domain mask must be an integer", _state_view, "kernel boolean mask");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        });
+        _BladeClockInputAssertRejected(
+            _reject_kernel_mask,
+            "domain mask must be an integer",
+            _state_view,
+            "kernel boolean mask"
+        );
+        var _reject_bad_raw_state = method(_context, function() {
+            // Supplies the bound out-of-range movement sample through self so this
+            // callback checks that failed sampling leaves the kernel unchanged.
             BladeKernelAdvancePresentation(
                 self.kernel,
                 0,
                 self.bad_raw,
                 BladeClockDomain.All
             );
-        }), "movement x must be in", _state_view, "kernel invalid raw sample");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_bad_raw_state,
+            "movement x must be in",
+            _state_view,
+            "kernel invalid raw sample"
+        );
 
         _kernel.presentation_frame = int64("9223372036854775807");
-        _BladeClockInputAssertRejected(method(_context, function() {
+        var _reject_kernel_presentation_overflow = method(_context, function() {
+            // Requests a zero-tick presentation through self so this callback
+            // isolates the kernel's exhausted presentation-frame guard.
             BladeKernelStepManyDirect(
                 self.kernel,
                 self.raw,
                 0,
                 BladeClockDomain.None
             );
-        }), "presentation frame", _state_view, "kernel presentation overflow");
+        });
+        _BladeClockInputAssertRejected(
+            _reject_kernel_presentation_overflow,
+            "presentation frame",
+            _state_view,
+            "kernel presentation overflow"
+        );
     });
 
 }

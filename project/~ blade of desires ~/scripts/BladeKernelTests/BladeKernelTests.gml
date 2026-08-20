@@ -6,6 +6,7 @@ function BladeKernelTestsRun() {
     var _state = BladeKernelTestStateCreate();
     show_debug_message("BLADE_KERNEL_TEST_ENTRY: v1");
 
+    BladeSimulationClockTestsRun(_state);
     BladeClockInputTestsRun(_state);
     BladeRandomIdentityTestsRun(_state);
     BladeEventSessionTestsRun(_state);

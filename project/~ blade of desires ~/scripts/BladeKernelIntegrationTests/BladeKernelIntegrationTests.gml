@@ -246,6 +246,7 @@ function _BladeKernelFixtureRun(
 /// gameplay-versus-presentation hash boundary.
 function BladeKernelIntegrationTestsRun(_state) {
     BladeKernelTestRunCase(_state, "identical integration fixtures are byte identical", function() {
+        // Run two equal fixtures to compare bytes, hashes, and final ID counts.
         var _first = _BladeKernelFixtureRun(305419896);
         var _second = _BladeKernelFixtureRun(305419896);
         BladeKernelTestAssertEqual(
@@ -284,6 +285,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "seed and gameplay input changes alter output", function() {
+        // Vary the seed and one gameplay input independently to check both hash inputs.
         var _baseline = _BladeKernelFixtureRun(305419896);
         var _changed_seed = _BladeKernelFixtureRun(305419897);
         var _changed_input = _BladeKernelFixtureRun(305419896, true);
@@ -305,6 +307,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "cosmetic draws are isolated from gameplay", function() {
+        // Add cosmetic-only draws and compare gameplay bytes, hashes, and events.
         var _baseline = _BladeKernelFixtureRun(305419896);
         var _with_cosmetics = _BladeKernelFixtureRun(305419896, false, 7);
         BladeKernelTestAssertEqual(
@@ -330,6 +333,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "prompt device is presentation-only hash data", function() {
+        // Change only the prompt device to verify it stays outside the gameplay hash.
         var _keyboard = _BladeKernelFixtureRun(305419896, false, 0, false);
         var _gamepad = _BladeKernelFixtureRun(305419896, false, 0, true);
         BladeKernelTestAssertEqual(
@@ -340,6 +344,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "kernel reset reproduces IDs events and hash", function() {
+        // Drive, reset, and drive one kernel again to compare its reproducible outputs.
         var _kernel = BladeDeterministicKernelCreate(
             "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
             305419896,
@@ -355,6 +360,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "kernel rejects unknown content before ID allocation", function() {
+        // Attempt an unknown content allocation and verify the instance counter stays zero.
         var _kernel = BladeDeterministicKernelCreate(
             "sha1:60bbf1e2436c7f0132be5877b2dc38a149d8ea72",
             1,
@@ -363,6 +369,7 @@ function BladeKernelIntegrationTestsRun(_state) {
         );
         var _allocation_context = { kernel: _kernel };
         BladeKernelTestAssertThrows(method(_allocation_context, function() {
+            // Allocate the invented content ID through bound kernel context.
             BladeKernelAllocateForContent(
                 self.kernel,
                 BladeRunIdKind.Instance,

@@ -59,13 +59,13 @@ def _derived_state(run_seed: int, stream_name: str) -> list[int]:
 
 
 def _length_prefix(value: object) -> str:
-    """Prefix UTF-8 text with its byte length to separate adjacent fields."""
+    """Stringify a fixture field and byte-prefix it so adjacent goldens stay distinct."""
     text = str(value)
     return f"{len(text.encode('utf-8'))}:{text}"
 
 
 def _record(prefix: str, *fields: object) -> str:
-    """Build a positional record so object key order cannot affect its bytes."""
+    """Frame fixture fields in caller-supplied positions for stable golden bytes."""
     return prefix + "".join(_length_prefix(field) for field in fields)
 
 
@@ -80,7 +80,7 @@ def _event(
     content_id: str,
     payload: list[tuple[str, str, int]],
 ) -> str:
-    """Sort and serialize one event exactly like the GameMaker event format."""
+    """Sort fixture payload tuples and frame fixed event positions for stable bytes."""
     fields: list[object] = [
         event_id,
         tick,

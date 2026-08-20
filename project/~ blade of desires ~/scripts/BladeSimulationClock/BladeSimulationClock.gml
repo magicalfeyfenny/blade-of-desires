@@ -153,7 +153,8 @@ function _BladeSimulationClockPreflightDirect(
 }
 
 // Computes catch-up, drop, accumulator, and fixed-domain capacity as a local plan.
-// Returning the plan lets callers reject invalid updates before any clock field changes.
+// Arithmetic and fixed-mask failures are rejected before mutation. Method eligibility
+// stays deferred so each call sees live counters and can fail after earlier updates.
 function _BladeSimulationClockPreflightAdvance(_clock, _delta_us, _eligibility) {
 	_BladeSimulationClockRequire(_clock);
 	var _delta = _BladeSimulationClockInteger(_delta_us, "delta microseconds", 0);
@@ -343,6 +344,8 @@ function BladeSimulationClockStepManyDirect(
 /// @returns {Struct} Catch-up, drop, remainder, and counter diagnostics.
 /// Adds delta_us * 60 units, runs the capped whole ticks, and drops whole excess ticks.
 /// Presentation advances once per update, while the sub-tick remainder is retained exactly.
+/// On each catch-up tick, method eligibility and any callback run after mutation begins.
+/// Their failures can leave earlier work applied; deferral lets eligibility see live counters.
 function BladeSimulationClockAdvance(
 	_clock,
 	_delta_us,

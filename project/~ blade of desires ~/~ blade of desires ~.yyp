@@ -42,6 +42,7 @@
     {"id":{"name":"BladeRunIdentity","path":"scripts/BladeRunIdentity/BladeRunIdentity.yy",},},
     {"id":{"name":"BladeSessionHeader","path":"scripts/BladeSessionHeader/BladeSessionHeader.yy",},},
     {"id":{"name":"BladeSimulationClock","path":"scripts/BladeSimulationClock/BladeSimulationClock.yy",},},
+    {"id":{"name":"BladeSimulationClockTests","path":"scripts/BladeSimulationClockTests/BladeSimulationClockTests.yy",},},
     {"id":{"name":"fnt_gmtl_demo","path":"fonts/fnt_gmtl_demo/fnt_gmtl_demo.yy",},},
     {"id":{"name":"o_gmtl_demo_async","path":"objects/o_gmtl_demo_async/o_gmtl_demo_async.yy",},},
     {"id":{"name":"o_gmtl_demo_draw","path":"objects/o_gmtl_demo_draw/o_gmtl_demo_draw.yy",},},

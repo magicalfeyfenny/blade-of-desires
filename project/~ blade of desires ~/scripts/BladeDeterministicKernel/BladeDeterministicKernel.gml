@@ -30,6 +30,7 @@ function _BladeKernelBindTickCallback(_kernel, _simulate_callback) {
         simulate_callback: _simulate_callback,
     };
     return method(_context, function(_tick) {
+        // Add bound kernel state because the clock supplies only its completed tick.
         _BladeKernelRunTick(self.kernel, _tick, self.simulate_callback);
     });
 }
@@ -39,6 +40,7 @@ function _BladeKernelBindTickCallback(_kernel, _simulate_callback) {
 function _BladeKernelBindEligibilityProvider(_eligibility) {
     var _context = { eligibility: _eligibility };
     return method(_context, function(_counters) {
+        // Resolve the caller's live mask, then remove Presentation already marked by the batch.
         var _mask = _BladeSimulationClockDomainMask(self.eligibility(_counters));
         return _mask & ~BladeClockDomain.Presentation;
     });

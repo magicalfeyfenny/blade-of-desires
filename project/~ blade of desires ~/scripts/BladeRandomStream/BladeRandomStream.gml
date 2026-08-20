@@ -122,8 +122,13 @@ function __BladeRandomDeriveState(_run_seed, _stream_name) {
 		__BladeRandomHexWord(_digest, 25)
 	];
 
-	// xoshiro cannot leave an all-zero state, so replace lane zero only in that case.
-	if ((_state[0] | _state[1] | _state[2] | _state[3]) == 0) {
+	// The all-zero xoshiro state is absorbing. Compare each lane directly so this
+	// exceptional digest case remains visible instead of hiding it in a bitwise expression.
+	var _all_zero_state = _state[0] == 0
+		&& _state[1] == 0
+		&& _state[2] == 0
+		&& _state[3] == 0;
+	if (_all_zero_state) {
 		_state[0] = int64("2654435769");
 	}
 	return _state;
