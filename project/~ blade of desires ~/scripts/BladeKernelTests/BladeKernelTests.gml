@@ -1,0 +1,16 @@
+/// Synchronous project-owned entry point for deterministic-kernel tests.
+
+/// Runs every Blade suite through exact assertions and returns one aggregate
+/// pass/fail result so the test object emits only one final outcome.
+function BladeKernelTestsRun() {
+    var _state = BladeKernelTestStateCreate();
+    show_debug_message("BLADE_KERNEL_TEST_ENTRY: v1");
+
+    BladeSimulationClockTestsRun(_state);
+    BladeClockInputTestsRun(_state);
+    BladeRandomIdentityTestsRun(_state);
+    BladeEventSessionTestsRun(_state);
+    BladeKernelIntegrationTestsRun(_state);
+
+    return BladeKernelTestFinish(_state);
+}
