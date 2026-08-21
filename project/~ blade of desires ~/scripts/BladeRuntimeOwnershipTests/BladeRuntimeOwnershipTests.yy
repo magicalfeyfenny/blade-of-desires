@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeRuntimeOwnershipTests",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeRuntimeOwnershipTests",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/Blade/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
