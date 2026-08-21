@@ -137,6 +137,8 @@ function _BladeRunCoordinatorRequire(_coordinator) {
 		"__content_id_predicate",
 		"__max_catch_up_ticks",
 		"__kernel",
+		"__is_advancing",
+		"__pause_registry",
 		"__state",
 	];
 	for (var _index = 0; _index < array_length(_fields); ++_index) {
@@ -149,6 +151,9 @@ function _BladeRunCoordinatorRequire(_coordinator) {
 	}
 	if (typeof(_coordinator.__content_id_predicate) != "method") {
 		_BladeRunCoordinatorFail("content ID predicate", "must remain a method");
+	}
+	if (typeof(_coordinator.__is_advancing) != "bool") {
+		_BladeRunCoordinatorFail("advancing guard", "must remain a boolean");
 	}
 	return _coordinator;
 }
@@ -204,6 +209,7 @@ function _BladeRunCoordinatorBuildAttempt(
 
 	return {
 		kernel: _kernel,
+		pause_registry: BladePauseRegistryCreate(_kernel.identity),
 		state: {
 			__blade_run_state_version: 1,
 			mode: _mode,
@@ -342,6 +348,7 @@ function _BladeRunCoordinatorStateView(_coordinator) {
 		event_owner_id: _owner_id,
 		started_tick: _started_tick,
 		terminal_tick: _terminal_tick,
+		pause: BladePauseRegistrySnapshot(_coordinator.__pause_registry),
 		player: {
 			schema_version: 1,
 			instance_id: _player_id,
@@ -422,24 +429,53 @@ function _BladeRunCoordinatorRequireActive(_coordinator) {
 	return _view;
 }
 
+/// Rejects lifecycle replacement and nested advance commands while a kernel batch is executing.
+function _BladeRunCoordinatorRequireNotAdvancing(_coordinator, _command) {
+	_BladeRunCoordinatorRequire(_coordinator);
+	if (_coordinator.__is_advancing) {
+		_BladeRunCoordinatorFail(
+			"advancing guard",
+			_command + " cannot run while coordinator is advancing"
+		);
+	}
+	return _coordinator;
+}
+
+/// Validates one active non-reentrant advance before setting its transient execution guard.
+function _BladeRunCoordinatorBeginAdvance(_coordinator) {
+	_BladeRunCoordinatorRequireNotAdvancing(_coordinator, "advance command");
+	_BladeRunCoordinatorRequireActive(_coordinator);
+	_coordinator.__is_advancing = true;
+}
+
 /// Applies one terminal lifecycle only after all current state and clock values are validated.
 function _BladeRunCoordinatorTransitionTerminal(_coordinator, _target_lifecycle) {
+	_BladeRunCoordinatorRequireNotAdvancing(_coordinator, "terminal command");
 	_BladeRunCoordinatorRequireActive(_coordinator);
 	var _target = _BladeRunCoordinatorLifecycle(_target_lifecycle);
 	if (_target != BladeRunLifecycle.Completed
 		&& _target != BladeRunLifecycle.Aborted) {
 		_BladeRunCoordinatorFail("run lifecycle", "terminal command requires completed or aborted");
 	}
-	var _tick = BladeSimulationClockGetCounters(
-		_coordinator.__kernel.clock
-	).simulation_tick;
+	var _tick = _BladeRunCoordinatorCurrentTick(_coordinator);
+	var _boundary = BladePauseRunBoundary.Completed;
+	if (_target == BladeRunLifecycle.Aborted) {
+		_boundary = BladePauseRunBoundary.Aborted;
+	}
+	var _pause_report = BladePauseRegistryRunBoundary(
+		_coordinator.__pause_registry,
+		_boundary,
+		_tick
+	);
 
-	// No validation remains after this point, so run and player terminal state change together.
+	// Pause cleanup preflight passed, so terminal run/player state now changes together.
 	_coordinator.__state.lifecycle = _target;
 	_coordinator.__state.terminal_tick = _tick;
 	_coordinator.__state.player.lifecycle = BladePlayerLifecycle.Released;
 	_coordinator.__state.player.terminal_tick = _tick;
-	return BladeRunCoordinatorSnapshot(_coordinator);
+	var _result = BladeRunCoordinatorSnapshot(_coordinator);
+	_result.pause_boundary_report = _pause_report;
+	return _result;
 }
 
 /// @func BladeRunCoordinatorCreate(content_fingerprint, content_id_predicate, ship_id, difficulty_id, run_mode, run_seed, max_catch_up_ticks)
@@ -468,12 +504,14 @@ function BladeRunCoordinatorCreate(
 		__content_id_predicate: _content_id_predicate,
 		__max_catch_up_ticks: _plan.kernel.clock.max_catch_up_ticks,
 		__kernel: _plan.kernel,
+		__is_advancing: false,
+		__pause_registry: _plan.pause_registry,
 		__state: _plan.state,
 	};
 }
 
 /// @func BladeRunCoordinatorReset(coordinator, ship_id, difficulty_id, run_mode, run_seed)
-/// Builds and validates a complete new attempt before atomically replacing the prior kernel and state.
+/// Builds a complete attempt before atomically replacing the prior kernel, pause registry, and state.
 function BladeRunCoordinatorReset(
 	_coordinator,
 	_ship_id,
@@ -481,7 +519,7 @@ function BladeRunCoordinatorReset(
 	_run_mode,
 	_run_seed
 ) {
-	_BladeRunCoordinatorRequire(_coordinator);
+	_BladeRunCoordinatorRequireNotAdvancing(_coordinator, "reset command");
 	var _plan = _BladeRunCoordinatorBuildAttempt(
 		_coordinator.__content_fingerprint,
 		_coordinator.__content_id_predicate,
@@ -491,11 +529,19 @@ function BladeRunCoordinatorReset(
 		_run_mode,
 		_run_seed
 	);
+	var _old_pause_report = BladePauseRegistryRunBoundary(
+		_coordinator.__pause_registry,
+		BladePauseRunBoundary.Reset,
+		_BladeRunCoordinatorCurrentTick(_coordinator)
+	);
 
-	// The plan is complete, so replacing these two references cannot expose partial reset state.
+	// The replacement and old cleanup are complete, so all three owned references swap together.
 	_coordinator.__kernel = _plan.kernel;
+	_coordinator.__pause_registry = _plan.pause_registry;
 	_coordinator.__state = _plan.state;
-	return BladeRunCoordinatorSnapshot(_coordinator);
+	var _result = BladeRunCoordinatorSnapshot(_coordinator);
+	_result.prior_pause_boundary_report = _old_pause_report;
+	return _result;
 }
 
 /// @func BladeRunCoordinatorComplete(coordinator)
@@ -524,21 +570,63 @@ function BladeRunCoordinatorStepDirect(
 	_eligibility,
 	_simulate_callback = undefined
 ) {
-	_BladeRunCoordinatorRequireActive(_coordinator);
-	var _bound_callback = _BladeRunCoordinatorBindSimulationCallback(
-		_coordinator,
-		_simulate_callback
-	);
-	return BladeKernelStepDirect(
-		_coordinator.__kernel,
-		_raw_state,
-		_eligibility,
-		_bound_callback
-	);
+	_BladeRunCoordinatorBeginAdvance(_coordinator);
+	try {
+		var _bound_callback = _BladeRunCoordinatorBindSimulationCallback(
+			_coordinator,
+			_simulate_callback
+		);
+		return BladeKernelStepDirect(
+			_coordinator.__kernel,
+			_raw_state,
+			_BladeRunCoordinatorPauseEligibility(_coordinator, _eligibility),
+			_bound_callback
+		);
+	} finally {
+		_coordinator.__is_advancing = false;
+	}
+}
+
+/// @func BladeRunCoordinatorStepManyDirect(coordinator, raw_state, tick_count, eligibility, simulate_callback)
+/// Runs exact active-run ticks while pause ownership constrains every supplied base mask.
+function BladeRunCoordinatorStepManyDirect(
+	_coordinator, _raw_state, _tick_count, _eligibility, _simulate_callback = undefined
+) {
+	_BladeRunCoordinatorBeginAdvance(_coordinator);
+	try {
+		return BladeKernelStepManyDirect(
+			_coordinator.__kernel,
+			_raw_state,
+			_tick_count,
+			_BladeRunCoordinatorPauseEligibility(_coordinator, _eligibility),
+			_BladeRunCoordinatorBindSimulationCallback(_coordinator, _simulate_callback)
+		);
+	} finally {
+		_coordinator.__is_advancing = false;
+	}
+}
+
+/// @func BladeRunCoordinatorAdvancePresentation(coordinator, delta_us, raw_state, eligibility, simulate_callback)
+/// Advances one presentation update and every due active-run tick through owned pause resolution.
+function BladeRunCoordinatorAdvancePresentation(
+	_coordinator, _delta_us, _raw_state, _eligibility, _simulate_callback = undefined
+) {
+	_BladeRunCoordinatorBeginAdvance(_coordinator);
+	try {
+		return BladeKernelAdvancePresentation(
+			_coordinator.__kernel,
+			_delta_us,
+			_raw_state,
+			_BladeRunCoordinatorPauseEligibility(_coordinator, _eligibility),
+			_BladeRunCoordinatorBindSimulationCallback(_coordinator, _simulate_callback)
+		);
+	} finally {
+		_coordinator.__is_advancing = false;
+	}
 }
 
 /// @func BladeRunCoordinatorSnapshot(coordinator)
-/// Returns a fully detached run and player view after revalidating their ownership invariants.
+/// Returns a fully detached run, player, and pause view after revalidating ownership invariants.
 function BladeRunCoordinatorSnapshot(_coordinator) {
 	return _BladeRunCoordinatorStateView(_coordinator);
 }
@@ -552,11 +640,12 @@ function BladeRunCoordinatorCanRecordNormalResult(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorCanonical(coordinator)
-/// Binds canonical run/player state ahead of the owned kernel G1 record without changing the kernel format.
+/// Encodes owned run BRS1, pause BPR1, and gameplay-kernel G1 records in fixed order.
 function BladeRunCoordinatorCanonical(_coordinator) {
 	var _view = _BladeRunCoordinatorStateView(_coordinator);
 	return BladeCanonicalRecord("BRC1", [
 		_BladeRunCoordinatorStateCanonical(_view),
+		BladePauseRegistryCanonical(_coordinator.__pause_registry),
 		BladeKernelGameplayCanonical(_coordinator.__kernel),
 	]);
 }
@@ -568,15 +657,13 @@ function BladeRunCoordinatorHash(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorDiagnostics(coordinator)
-/// Returns detached run and kernel diagnostics together with the coordinator canonical bytes and hash.
+/// Returns detached run, pause, and kernel diagnostics with coordinator canonical bytes and hash.
 function BladeRunCoordinatorDiagnostics(_coordinator) {
 	var _snapshot = _BladeRunCoordinatorStateView(_coordinator);
-	var _canonical = BladeCanonicalRecord("BRC1", [
-		_BladeRunCoordinatorStateCanonical(_snapshot),
-		BladeKernelGameplayCanonical(_coordinator.__kernel),
-	]);
+	var _canonical = BladeRunCoordinatorCanonical(_coordinator);
 	return {
 		snapshot: _snapshot,
+		pause: _snapshot.pause,
 		kernel: BladeKernelDiagnostics(_coordinator.__kernel),
 		canonical: _canonical,
 		hash: BladeCanonicalHashUtf8(_canonical),
