@@ -12,6 +12,7 @@
   "Folders":[
     {"$GMFolder":"","%Name":"Blade","folderPath":"folders/Blade.yy","name":"Blade","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Deterministic Kernel","folderPath":"folders/Blade/Deterministic Kernel.yy","name":"Deterministic Kernel","resourceType":"GMFolder","resourceVersion":"2.0",},
+    {"$GMFolder":"","%Name":"Runtime State","folderPath":"folders/Blade/Runtime State.yy","name":"Runtime State","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Tests","folderPath":"folders/Blade/Tests.yy","name":"Tests","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"Libraries","folderPath":"folders/Libraries.yy","name":"Libraries","resourceType":"GMFolder","resourceVersion":"2.0",},
     {"$GMFolder":"","%Name":"GMTL","folderPath":"folders/Libraries/GMTL.yy","name":"GMTL","resourceType":"GMFolder","resourceVersion":"2.0",},
@@ -41,6 +42,8 @@
     {"id":{"name":"BladeKernelTests","path":"scripts/BladeKernelTests/BladeKernelTests.yy",},},
     {"id":{"name":"BladeRandomIdentityTests","path":"scripts/BladeRandomIdentityTests/BladeRandomIdentityTests.yy",},},
     {"id":{"name":"BladeRandomStream","path":"scripts/BladeRandomStream/BladeRandomStream.yy",},},
+    {"id":{"name":"BladeRunCoordinator","path":"scripts/BladeRunCoordinator/BladeRunCoordinator.yy",},},
+    {"id":{"name":"BladeRunCoordinatorTests","path":"scripts/BladeRunCoordinatorTests/BladeRunCoordinatorTests.yy",},},
     {"id":{"name":"BladeRunIdentity","path":"scripts/BladeRunIdentity/BladeRunIdentity.yy",},},
     {"id":{"name":"BladeSessionHeader","path":"scripts/BladeSessionHeader/BladeSessionHeader.yy",},},
     {"id":{"name":"BladeSimulationClock","path":"scripts/BladeSimulationClock/BladeSimulationClock.yy",},},
