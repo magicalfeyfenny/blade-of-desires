@@ -52,6 +52,11 @@ function BladeSimulationClockTestsRun(_state) {
             "three exact simulation ticks"
         );
         BladeKernelTestAssertEqual(
+            _third.counters.combat_tick,
+            int64(3),
+            "All advances the combat domain"
+        );
+        BladeKernelTestAssertEqual(
             _third.counters.presentation_tick,
             int64(3),
             "one presentation tick per accumulator update"
@@ -159,12 +164,19 @@ function BladeSimulationClockTestsRun(_state) {
     BladeKernelTestRunCase(_state, "clock domains and presentation count separately", function() {
         // Compares catch-up domains with independent presentation increments in one
         // callback so failures retain this domain-separation case name.
+        BladeKernelTestAssertEqual(BladeClockDomain.Stage, 1, "stable Stage bit");
+        BladeKernelTestAssertEqual(BladeClockDomain.Actor, 2, "stable Actor bit");
+        BladeKernelTestAssertEqual(BladeClockDomain.Boss, 4, "stable Boss bit");
+        BladeKernelTestAssertEqual(BladeClockDomain.Presentation, 8, "stable Presentation bit");
+        BladeKernelTestAssertEqual(BladeClockDomain.Combat, 16, "Combat bit");
+        BladeKernelTestAssertEqual(BladeClockDomain.All, 31, "complete domain mask");
         var _clock = BladeSimulationClockCreate();
         var _catch_up = BladeSimulationClockAdvance(
             _clock,
             50000,
             BladeClockDomain.Stage
                 | BladeClockDomain.Actor
+                | BladeClockDomain.Combat
                 | BladeClockDomain.Presentation
         );
         BladeKernelTestAssertEqual(
@@ -186,6 +198,11 @@ function BladeSimulationClockTestsRun(_state) {
             _catch_up.counters.boss_tick,
             int64(0),
             "ineligible boss domain"
+        );
+        BladeKernelTestAssertEqual(
+            _catch_up.counters.combat_tick,
+            int64(3),
+            "combat domain count"
         );
         BladeKernelTestAssertEqual(
             _catch_up.counters.presentation_tick,
@@ -218,7 +235,7 @@ function BladeSimulationClockTestsRun(_state) {
         var _masks = [];
         var _capture_context = { masks: _masks };
         var _domain_provider = function(_counters) {
-            // Selects Stage, Actor, then Boss from the current tick counter;
+            // Selects Stage, Actor, Boss, then Combat from the current tick counter;
             // a provider callback proves eligibility is resolved before each step.
             if (_counters.simulation_tick == 0) {
                 return BladeClockDomain.Stage;
@@ -226,7 +243,10 @@ function BladeSimulationClockTestsRun(_state) {
             if (_counters.simulation_tick == 1) {
                 return BladeClockDomain.Actor;
             }
-            return BladeClockDomain.Boss;
+            if (_counters.simulation_tick == 2) {
+                return BladeClockDomain.Boss;
+            }
+            return BladeClockDomain.Combat;
         };
         var _capture_tick_mask = method(_capture_context, function(_tick) {
             // Records each completed mask through self because method binding
@@ -235,11 +255,11 @@ function BladeSimulationClockTestsRun(_state) {
         });
         var _result = BladeSimulationClockStepManyDirect(
             _clock,
-            3,
+            4,
             _domain_provider,
             _capture_tick_mask
         );
-        BladeKernelTestAssertEqual(_result.ticks_run, int64(3), "direct tick count");
+        BladeKernelTestAssertEqual(_result.ticks_run, int64(4), "direct tick count");
         BladeKernelTestAssertEqual(_result.dropped_ticks, int64(0), "direct drops");
         BladeKernelTestAssertFalse(_result.overrun, "direct steps cannot overrun");
         BladeKernelTestAssertEqual(
@@ -249,7 +269,12 @@ function BladeSimulationClockTestsRun(_state) {
         );
         BladeKernelTestAssertArrayEqual(
             _masks,
-            [BladeClockDomain.Stage, BladeClockDomain.Actor, BladeClockDomain.Boss],
+            [
+                BladeClockDomain.Stage,
+                BladeClockDomain.Actor,
+                BladeClockDomain.Boss,
+                BladeClockDomain.Combat,
+            ],
             "eligibility is resolved before each direct tick"
         );
 
@@ -257,6 +282,7 @@ function BladeSimulationClockTestsRun(_state) {
         BladeKernelTestAssertEqual(_counters.stage_tick, int64(1), "direct stage count");
         BladeKernelTestAssertEqual(_counters.actor_tick, int64(1), "direct actor count");
         BladeKernelTestAssertEqual(_counters.boss_tick, int64(1), "direct boss count");
+        BladeKernelTestAssertEqual(_counters.combat_tick, int64(1), "direct combat count");
         BladeKernelTestAssertEqual(
             _counters.presentation_tick,
             int64(0),
@@ -268,7 +294,7 @@ function BladeSimulationClockTestsRun(_state) {
             BladeClockDomain.Stage | BladeClockDomain.Presentation
         );
         _counters = BladeSimulationClockGetCounters(_clock);
-        BladeKernelTestAssertEqual(_counters.simulation_tick, int64(4), "single direct step");
+        BladeKernelTestAssertEqual(_counters.simulation_tick, int64(5), "single direct step");
         BladeKernelTestAssertEqual(_counters.stage_tick, int64(2), "single step domain");
         BladeKernelTestAssertEqual(
             _counters.presentation_tick,

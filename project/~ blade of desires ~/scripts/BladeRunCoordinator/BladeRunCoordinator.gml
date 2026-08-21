@@ -6,7 +6,7 @@ enum BladeRunMode {
 	Practice = 2
 }
 
-// Declares the only run lifecycle states accepted by the version 1 coordinator.
+// Declares the only run lifecycle states accepted by the coordinator.
 enum BladeRunLifecycle {
 	Active = 1,
 	Completed = 2,
@@ -128,8 +128,8 @@ function _BladeRunCoordinatorPlayerLifecycleToken(_lifecycle) {
 function _BladeRunCoordinatorRequire(_coordinator) {
 	if (!is_struct(_coordinator)
 		|| !variable_struct_exists(_coordinator, "__blade_run_coordinator_version")
-		|| _coordinator.__blade_run_coordinator_version != 1) {
-		_BladeRunCoordinatorFail("coordinator", "expected a version 1 coordinator");
+		|| _coordinator.__blade_run_coordinator_version != 2) {
+		_BladeRunCoordinatorFail("coordinator", "expected a version 2 coordinator");
 	}
 
 	var _fields = [
@@ -392,6 +392,7 @@ function _BladeRunCoordinatorTickView(_tick) {
 		stage_tick: _tick.stage_tick,
 		actor_tick: _tick.actor_tick,
 		boss_tick: _tick.boss_tick,
+		combat_tick: _tick.combat_tick,
 		presentation_tick: _tick.presentation_tick,
 		domain_mask: _tick.domain_mask,
 	};
@@ -499,7 +500,7 @@ function BladeRunCoordinatorCreate(
 		_run_seed
 	);
 	return {
-		__blade_run_coordinator_version: 1,
+		__blade_run_coordinator_version: 2,
 		__content_fingerprint: _plan.kernel.header.get_content_contract_fingerprint(),
 		__content_id_predicate: _content_id_predicate,
 		__max_catch_up_ticks: _plan.kernel.clock.max_catch_up_ticks,
@@ -640,10 +641,10 @@ function BladeRunCoordinatorCanRecordNormalResult(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorCanonical(coordinator)
-/// Encodes owned run BRS1, pause BPR1, and gameplay-kernel G1 records in fixed order.
+/// Encodes owned run BRS1, pause BPR2, and gameplay-kernel G2 records in fixed order.
 function BladeRunCoordinatorCanonical(_coordinator) {
 	var _view = _BladeRunCoordinatorStateView(_coordinator);
-	return BladeCanonicalRecord("BRC1", [
+	return BladeCanonicalRecord("BRC2", [
 		_BladeRunCoordinatorStateCanonical(_view),
 		BladePauseRegistryCanonical(_coordinator.__pause_registry),
 		BladeKernelGameplayCanonical(_coordinator.__kernel),
@@ -651,7 +652,7 @@ function BladeRunCoordinatorCanonical(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorHash(coordinator)
-/// Hashes the complete BRC1 record so ship, difficulty, mode, lifecycle, and kernel state all participate.
+/// Hashes the complete BRC2 record so ship, difficulty, mode, lifecycle, and kernel state all participate.
 function BladeRunCoordinatorHash(_coordinator) {
 	return BladeCanonicalHashUtf8(BladeRunCoordinatorCanonical(_coordinator));
 }

@@ -107,7 +107,7 @@ function BladeEventSessionTestsRun(_state) {
         BladeKernelTestAssertEqual(_header.get_format_version(), 1, "format version");
         BladeKernelTestAssertEqual(
             _header.get_simulation_contract_version(),
-            "blade.simulation.v1",
+            "blade.simulation.v2",
             "simulation contract version"
         );
         BladeKernelTestAssertEqual(
@@ -123,7 +123,7 @@ function BladeEventSessionTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             _header.hash(),
-            "70beecdf20b03cb990aef29c5d0f7b0037817e80",
+            "e7825d2fae7294fc7d4b5bf341b6e8a9e2eb270e",
             "header golden hash"
         );
 

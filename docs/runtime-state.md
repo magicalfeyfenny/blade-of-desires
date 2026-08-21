@@ -65,8 +65,9 @@ registry, and state together. Reset is valid from active or terminal state,
 accepts a new ship, difficulty, mode, and seed, and restarts all run-local ID
 frontiers, including pause token `pau:1`.
 
-The coordinator canonical form binds its run/player selection and lifecycle,
-the complete pause canonical form, and the deterministic kernel canonical form.
+The `BRC2` coordinator canonical form binds its run/player selection and
+lifecycle, the complete `BPR2` pause canonical form, and the deterministic
+kernel's `G2` canonical form.
 Callbacks receive only a run snapshot, immutable input snapshot, and detached
 tick view. While any advance call is executing, completion, abort, reset, and
 nested advance calls are rejected. Pause commands and detached queries remain
@@ -78,7 +79,7 @@ the coordinator.
 
 ## Pause ownership
 
-A version 1 pause token records:
+A version 2 pause token records:
 
 - stable token ID `pau:<ordinal>`;
 - allocated run-local event-owner ID;
@@ -87,7 +88,11 @@ A version 1 pause token records:
 - authoritative acquisition tick;
 - release policy.
 
-Tokens may freeze only `BladeClockDomain.Stage`, `Actor`, and `Boss`.
+Active tokens use `BPT2` records and the enclosing registry uses `BPR2` because
+the closed pausable-domain set changed. Existing diagnostic record shapes keep
+their version 1 prefixes.
+
+Tokens may freeze only `BladeClockDomain.Stage`, `Actor`, `Boss`, and `Combat`.
 `Presentation` is deliberately not a pausable token domain; UI and presentation
 work can continue while gameplay domains are frozen. Eligibility for each tick
 is resolved as the caller's live mask minus the union of all active token

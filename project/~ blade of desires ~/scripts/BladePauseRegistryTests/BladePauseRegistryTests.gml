@@ -36,12 +36,16 @@ function _BladePauseTestsSimulate(_kernel, _snapshot, _tick) {
     if ((_tick.domain_mask & BladeClockDomain.Boss) != 0) {
         self.boss_work += int64(1);
     }
+    if ((_tick.domain_mask & BladeClockDomain.Combat) != 0) {
+        self.combat_work += int64(1);
+    }
     var _input = BladeInputSnapshotRead(_snapshot);
     array_push(self.pressed_actions, _input.pressed_actions);
-    return BladeCanonicalRecord("PTF1", [
+    return BladeCanonicalRecord("PTF2", [
         string(self.stage_work),
         string(self.actor_work),
         string(self.boss_work),
+        string(self.combat_work),
     ]);
 }
 
@@ -55,7 +59,9 @@ function BladePauseRegistryTestsRun(_state) {
             _left.registry,
             _left.owner_a,
             "pause.menu",
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             12,
             BladePauseReleasePolicy.OwnerDestroyed
         );
@@ -63,7 +69,9 @@ function BladePauseRegistryTestsRun(_state) {
             _right.registry,
             _right.owner_a,
             "pause.menu",
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             12,
             BladePauseReleasePolicy.OwnerDestroyed
         );
@@ -75,6 +83,11 @@ function BladePauseRegistryTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(_left_token.reason, "pause.menu", "token reason");
         BladeKernelTestAssertEqual(
+            _left_token.domains,
+            BladeClockDomain.Stage | BladeClockDomain.Actor | BladeClockDomain.Combat,
+            "Combat is a pausable gameplay domain"
+        );
+        BladeKernelTestAssertEqual(
             _left_token.acquisition_tick,
             int64(12),
             "token acquisition tick"
@@ -83,6 +96,16 @@ function BladePauseRegistryTestsRun(_state) {
             BladePauseRegistryCanonical(_left.registry),
             BladePauseRegistryCanonical(_right.registry),
             "equal pause canonical state"
+        );
+        var _canonical = BladePauseRegistryCanonical(_left.registry);
+        BladeKernelTestAssertEqual(
+            string_copy(_canonical, 1, 4),
+            "BPR2",
+            "version 2 pause registry record"
+        );
+        BladeKernelTestAssertTrue(
+            string_pos("BPT2", _canonical) > 0,
+            "version 2 pause token record"
         );
         BladeKernelTestAssertEqual(
             _left_token.token_id,
@@ -148,7 +171,7 @@ function BladePauseRegistryTestsRun(_state) {
                 0,
                 BladePauseReleasePolicy.OwnerDestroyed
             );
-        }), "Stage, Actor, and Boss", "presentation pause mask");
+        }), "Stage, Actor, Boss, and Combat", "presentation pause mask");
         BladeKernelTestAssertThrows(method(_context, function() {
             // Reject a negative acquisition tick before the token frontier changes.
             BladePauseRegistryAcquire(
@@ -205,7 +228,9 @@ function BladePauseRegistryTestsRun(_state) {
             _fixture.registry,
             _fixture.owner_a,
             "pause.menu",
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             0,
             BladePauseReleasePolicy.OwnerDestroyed
         );
@@ -219,7 +244,9 @@ function BladePauseRegistryTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             BladePauseRegistryFrozenDomains(_fixture.registry),
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             "overlapping frozen union"
         );
         BladeKernelTestAssertEqual(
@@ -242,7 +269,9 @@ function BladePauseRegistryTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             BladePauseRegistryFrozenDomains(_fixture.registry),
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             "wrong owner leaves token active"
         );
 
@@ -262,8 +291,11 @@ function BladePauseRegistryTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             BladePauseRegistryResolveDomains(_fixture.registry, BladeClockDomain.All),
-            BladeClockDomain.Actor | BladeClockDomain.Boss | BladeClockDomain.Presentation,
-            "Actor resumes while Stage stays frozen"
+            BladeClockDomain.Actor
+                | BladeClockDomain.Boss
+                | BladeClockDomain.Presentation
+                | BladeClockDomain.Combat,
+            "Actor and Combat resume while Stage stays frozen"
         );
         BladePauseRegistryRelease(
             _fixture.registry,
@@ -622,7 +654,9 @@ function BladePauseRegistryTestsRun(_state) {
             _registry,
             _owner_a,
             "pause.menu",
-            BladeClockDomain.Stage | BladeClockDomain.Actor,
+            BladeClockDomain.Stage
+                | BladeClockDomain.Actor
+                | BladeClockDomain.Combat,
             0,
             BladePauseReleasePolicy.OwnerDestroyed
         );
@@ -642,6 +676,7 @@ function BladePauseRegistryTestsRun(_state) {
             stage_work: int64(0),
             actor_work: int64(0),
             boss_work: int64(0),
+            combat_work: int64(0),
             pressed_actions: [],
         };
         var _simulate = method(_work, _BladePauseTestsSimulate);
@@ -670,6 +705,7 @@ function BladePauseRegistryTestsRun(_state) {
         BladeKernelTestAssertEqual(_paused.counters.stage_tick, int64(0), "Stage frozen");
         BladeKernelTestAssertEqual(_paused.counters.actor_tick, int64(0), "Actor frozen");
         BladeKernelTestAssertEqual(_paused.counters.boss_tick, int64(1), "Boss permitted");
+        BladeKernelTestAssertEqual(_paused.counters.combat_tick, int64(0), "Combat frozen");
         BladeKernelTestAssertEqual(
             _paused.counters.presentation_tick,
             int64(1),
@@ -678,6 +714,7 @@ function BladePauseRegistryTestsRun(_state) {
         BladeKernelTestAssertEqual(_work.stage_work, int64(0), "no Stage work");
         BladeKernelTestAssertEqual(_work.actor_work, int64(0), "no Actor work");
         BladeKernelTestAssertEqual(_work.boss_work, int64(1), "permitted Boss work");
+        BladeKernelTestAssertEqual(_work.combat_work, int64(0), "no Combat work");
 
         BladePauseRegistryRelease(_registry, _owner_a, _first.token_id, 1);
         var _actor_resumed = BladeKernelAdvancePresentation(
@@ -698,6 +735,11 @@ function BladePauseRegistryTestsRun(_state) {
             "Actor resumes after its only token releases"
         );
         BladeKernelTestAssertEqual(
+            _actor_resumed.counters.combat_tick,
+            int64(1),
+            "Combat resumes after its only token releases"
+        );
+        BladeKernelTestAssertEqual(
             _actor_resumed.counters.presentation_tick,
             int64(2),
             "second presentation update"
@@ -714,6 +756,7 @@ function BladePauseRegistryTestsRun(_state) {
         BladeKernelTestAssertEqual(_resumed.counters.stage_tick, int64(1), "Stage resumes");
         BladeKernelTestAssertEqual(_resumed.counters.actor_tick, int64(2), "Actor continues");
         BladeKernelTestAssertEqual(_resumed.counters.boss_tick, int64(3), "Boss continues");
+        BladeKernelTestAssertEqual(_resumed.counters.combat_tick, int64(2), "Combat continues");
         BladeKernelTestAssertEqual(
             _resumed.counters.presentation_tick,
             int64(3),

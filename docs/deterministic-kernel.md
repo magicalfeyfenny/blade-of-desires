@@ -1,7 +1,7 @@
 # Deterministic kernel contract
 
 Issue #7 establishes the project-owned deterministic seam used by later Blade
-gameplay systems. The seam is versioned as `blade.simulation.v1`, runs at 60 Hz,
+gameplay systems. The current seam is `blade.simulation.v2`, runs at 60 Hz,
 and uses `blade.xoshiro128ss.v1`. It is a simulation foundation, not a complete
 game loop or replay service.
 
@@ -46,8 +46,13 @@ the available, executed, dropped, overrun, remainder, and counter values.
 
 The master simulation counter always advances on an executed tick. The caller
 supplies a `BladeClockDomain` mask, or a callback that returns one before each
-tick, to advance the independent stage, actor, and boss counters. Eligibility
-expresses whether a domain advances; it does not own pause policy.
+tick, to advance the independent stage, actor, boss, and combat counters.
+Eligibility expresses whether a domain advances; it does not own pause policy.
+
+The numeric bits remain `Stage = 1`, `Actor = 2`, `Boss = 4`, and
+`Presentation = 8`. Version 2 adds `Combat = 16`, so `All = 31`. Combat owns
+emission, collision, damage, and reward advancement independently from broader
+actor behavior.
 
 Callback arguments are GML methods. Bind a named script reference explicitly
 with `method(context, script)` before injection; this keeps numeric enum masks
@@ -195,7 +200,7 @@ bytes, then supplies the validated session-header form
 `sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b`. `BladeSessionHeader` does not
 read or re-hash the registry; it validates the lowercase `sha1:<40hex>` syntax
 and binds the supplied value. The `H1` header also binds format version 1,
-`blade.simulation.v1`, `blade.xoshiro128ss.v1`, tick rate 60, and the normalized
+`blade.simulation.v2`, `blade.xoshiro128ss.v1`, tick rate 60, and the normalized
 run seed, in that order.
 
 Independent counters start at 1 and produce `ins:<n>`, `atk:<n>`, `blt:<n>`,
@@ -242,11 +247,11 @@ presentation records enter separate logs. Queue calls return detached diagnostic
 copies, and commit rebuilds and revalidates pending records before allocating
 any event ID.
 
-The final `G1` gameplay hash includes, in fixed order:
+The final `G2` gameplay hash includes, in fixed order:
 
 1. the canonical session header;
 2. the gameplay input transcript;
-3. simulation, stage, actor, and boss counters;
+3. the `C2` simulation, stage, actor, boss, and combat counters;
 4. name, four state lanes, and draw count for each gameplay RNG stream in registry order;
 5. all six typed-ID allocation counts;
 6. canonical gameplay events; and

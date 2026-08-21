@@ -19,12 +19,12 @@ function _BladePauseRegistryFail(_field, _reason) {
     throw("BladePauseRegistry: " + _field + ": " + _reason);
 }
 
-/// Rejects values that are not version 1 registries before internal state is accessed.
+/// Rejects values that are not version 2 registries before internal state is accessed.
 function _BladePauseRegistryRequire(_registry) {
     if (!is_struct(_registry)
         || !variable_struct_exists(_registry, "__blade_pause_registry_version")
-        || _registry.__blade_pause_registry_version != 1) {
-        _BladePauseRegistryFail("registry", "expected a version 1 pause registry");
+        || _registry.__blade_pause_registry_version != 2) {
+        _BladePauseRegistryFail("registry", "expected a version 2 pause registry");
     }
     if (!is_array(_registry.active_tokens) || !is_array(_registry.diagnostics)) {
         _BladePauseRegistryFail("registry", "token and diagnostic storage must be arrays");
@@ -117,7 +117,7 @@ function _BladePauseRegistryReason(_reason) {
     return _reason;
 }
 
-/// Accepts a nonzero combination of Stage, Actor, and Boss without claiming Presentation is pausable.
+/// Accepts a nonzero gameplay-domain combination without claiming Presentation is pausable.
 function _BladePauseRegistryFrozenMask(_domains) {
     var _mask = BladeCanonicalRequireInteger(
         _domains,
@@ -127,12 +127,13 @@ function _BladePauseRegistryFrozenMask(_domains) {
     );
     var _allowed = BladeClockDomain.Stage
         | BladeClockDomain.Actor
-        | BladeClockDomain.Boss;
+        | BladeClockDomain.Boss
+        | BladeClockDomain.Combat;
     if (_mask == BladeClockDomain.None) {
         _BladePauseRegistryFail("domains", "must freeze at least one simulation domain");
     }
     if ((_mask & ~_allowed) != 0) {
-        _BladePauseRegistryFail("domains", "may contain only Stage, Actor, and Boss");
+        _BladePauseRegistryFail("domains", "may contain only Stage, Actor, Boss, and Combat");
     }
     return _mask;
 }
@@ -303,7 +304,7 @@ function _BladePauseRegistryBoundaryReport(
 
 /// Encodes one active token in fixed field order for coordinator canonical state.
 function _BladePauseRegistryTokenCanonical(_token) {
-    return BladeCanonicalRecord("BPT1", [
+    return BladeCanonicalRecord("BPT2", [
         _token.token_id,
         _token.owner_id,
         _token.reason,
@@ -327,11 +328,11 @@ function _BladePauseRegistryDiagnosticCanonical(_diagnostic) {
 }
 
 /// @func BladePauseRegistryCreate(identity)
-/// Creates an empty version 1 registry sharing a deterministic owner-ID allocator.
+/// Creates an empty version 2 registry sharing a deterministic owner-ID allocator.
 function BladePauseRegistryCreate(_identity) {
     BladeRunIdentityGetCounters(_identity);
     return {
-        __blade_pause_registry_version: 1,
+        __blade_pause_registry_version: 2,
         identity: _identity,
         next_token_ordinal: int64(1),
         next_diagnostic_ordinal: int64(1),
@@ -695,7 +696,7 @@ function BladePauseRegistryCanonical(_registry) {
             _BladePauseRegistryDiagnosticCanonical(_registry.diagnostics[i])
         );
     }
-    return BladeCanonicalRecord("BPR1", [
+    return BladeCanonicalRecord("BPR2", [
         string(_registry.next_token_ordinal),
         string(_registry.next_diagnostic_ordinal),
         string(BladePauseRegistryFrozenDomains(_registry)),

@@ -198,7 +198,8 @@ function _BladeKernelFixtureDrive(
     var _inputs = _BladeKernelFixtureInputs(_input_variant, _prompt_variant);
     var _domains = BladeClockDomain.Stage
         | BladeClockDomain.Actor
-        | BladeClockDomain.Boss;
+        | BladeClockDomain.Boss
+        | BladeClockDomain.Combat;
     // The kernel accepts a GameMaker method value. This named callback needs no
     // captured fixture state, so its bound context is intentionally empty.
     var _simulate = method({}, _BladeKernelFixtureSimulate);
@@ -268,7 +269,7 @@ function BladeKernelIntegrationTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             _first.hash,
-            "32634fdd4209262854bf5686b6d848ed840f060c",
+            "4cf18fdbe8ee8d8bb51c51f3f2edcff7c61876e2",
             "independent gameplay golden hash"
         );
 

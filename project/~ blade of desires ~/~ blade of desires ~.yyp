@@ -31,7 +31,9 @@
   "resources":[
     {"id":{"name":"BladeCanonicalEncoding","path":"scripts/BladeCanonicalEncoding/BladeCanonicalEncoding.yy",},},
     {"id":{"name":"BladeDeterministicKernel","path":"scripts/BladeDeterministicKernel/BladeDeterministicKernel.yy",},},
+    {"id":{"name":"BladeEventSchema","path":"scripts/BladeEventSchema/BladeEventSchema.yy",},},
     {"id":{"name":"BladeEventLog","path":"scripts/BladeEventLog/BladeEventLog.yy",},},
+    {"id":{"name":"BladeEventSchemaTests","path":"scripts/BladeEventSchemaTests/BladeEventSchemaTests.yy",},},
     {"id":{"name":"BladeEventSessionTests","path":"scripts/BladeEventSessionTests/BladeEventSessionTests.yy",},},
     {"id":{"name":"BladeInputSnapshot","path":"scripts/BladeInputSnapshot/BladeInputSnapshot.yy",},},
     {"id":{"name":"BladeInputBindingRegistry","path":"scripts/BladeInputBindingRegistry/BladeInputBindingRegistry.yy",},},

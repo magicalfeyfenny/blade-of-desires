@@ -27,6 +27,7 @@ function _BladeClockInputClockState(_clock) {
         string(_counters.stage_tick),
         string(_counters.actor_tick),
         string(_counters.boss_tick),
+        string(_counters.combat_tick),
         string(_counters.presentation_tick),
     ]);
 }
@@ -517,6 +518,21 @@ function BladeClockInputTestsRun(_state) {
             "stage tick exceeds",
             _state_view,
             "domain counter overflow"
+        );
+
+        _clock = BladeSimulationClockCreate();
+        _clock.combat_tick = int64("9223372036854775807");
+        _context.clock = _clock;
+        var _reject_combat_overflow = method(_context, function() {
+            // Requests one Combat step through self so the exhausted counter
+            // rejects before the master counter can advance.
+            BladeSimulationClockStepDirect(self.clock, BladeClockDomain.Combat);
+        });
+        _BladeClockInputAssertRejected(
+            _reject_combat_overflow,
+            "combat tick exceeds",
+            _state_view,
+            "combat counter overflow"
         );
 
         var _sampler = BladeInputSamplerCreate();
