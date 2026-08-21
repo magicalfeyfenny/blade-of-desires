@@ -9,10 +9,12 @@ function BladeKernelTestsRun() {
     BladeSimulationClockTestsRun(_state);
     BladeClockInputTestsRun(_state);
     BladeInputBindingTestsRun(_state);
+    BladeConfigTestsRun(_state);
     BladePauseRegistryTestsRun(_state);
     BladeRandomIdentityTestsRun(_state);
     BladeRunCoordinatorTestsRun(_state);
     BladeRunPauseTestsRun(_state);
+    BladeRuntimeOwnershipTestsRun(_state);
     BladeEventSessionTestsRun(_state);
     BladeKernelIntegrationTestsRun(_state);
 
