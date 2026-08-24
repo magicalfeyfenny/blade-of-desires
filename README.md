@@ -8,7 +8,11 @@ guide in [docs/product-contract.md](docs/product-contract.md). Canonical emitter
 pattern descriptors begin with
 [content/patterns/neutral_v1.json](content/patterns/neutral_v1.json), with their
 schema and normalization contract in
-[docs/pattern-descriptors.md](docs/pattern-descriptors.md).
+[docs/pattern-descriptors.md](docs/pattern-descriptors.md). Canonical neutral
+stage and encounter schedules begin with
+[content/stages/neutral_v1.json](content/stages/neutral_v1.json), with their
+typed execution and ownership contract in
+[docs/stage-schedules.md](docs/stage-schedules.md).
 
 ## Governance overview (non-normative)
 

@@ -57,12 +57,20 @@ record IDs as well as duplicate definitions across the loaded catalog set.
 Successful validation produces a separately normalized pattern plan, not a
 modified product-contract record.
 
+Subordinate stage and encounter schedule catalogs follow the same composition
+boundary. They bind this contract, share its global definition-collision
+policy, and normalize into a separate stage plan. Version 1 schedule records
+use `stage_schedule.*` and `encounter_schedule.*` identities and deliberately
+do not redefine or infer mappings to this contract's campaign `stage.*` and
+`encounter.*` records. The neutral schedule is contract and runtime fixture
+data, not authored Stage 1 production content.
+
 The product `content_version` versions only the product contract's values. A
 catalog cites it as a compatibility binding, but that value does not also
-version the subordinate catalog's values. A subordinate pattern-value change
-therefore does not silently advance the product version; the catalog retains
-its own schema and explicit product binding. The current product contract
-remains version `1.2.0`.
+version the subordinate catalog's values. A subordinate pattern or stage-value
+change therefore does not silently advance the product version; the catalog
+retains its own schema and explicit product binding. The current product
+contract remains version `1.2.0`.
 
 The focused validator reports `source: field.path: reason`. File validation
 uses the supplied filename and decoded in-memory validation uses the explicit

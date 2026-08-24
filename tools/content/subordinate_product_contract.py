@@ -1,4 +1,4 @@
-"""Bind pattern catalogs to Blade's validated canonical product contract."""
+"""Bind subordinate content catalogs to Blade's canonical product contract."""
 
 from __future__ import annotations
 
@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Any
 
 if __package__:
-    from .pattern_descriptor_plan import _add_error
     from .validate_product_contract import (
         ID_PATTERN,
         ID_PATTERN_TEXT,
@@ -15,7 +14,6 @@ if __package__:
         validate_contract as validate_product_contract,
     )
 else:
-    from pattern_descriptor_plan import _add_error
     from validate_product_contract import (
         ID_PATTERN,
         ID_PATTERN_TEXT,
@@ -27,6 +25,11 @@ else:
 PRODUCT_CONTRACT_PATH = Path(__file__).resolve().parents[2] / "content/product_contract.json"
 PRODUCT_CONTRACT_SOURCE = "<product-contract>"
 LOAD_FAILED = object()
+
+
+def _add_error(errors: list[str], source: str, path: str, reason: str) -> None:
+    """Append one source- and field-bound diagnostic."""
+    errors.append(f"{source}: {path}: {reason}")
 
 
 def _validate_exact_keys(
@@ -94,7 +97,7 @@ def collect_definition_ids(product_contract: Any) -> set[str]:
 def validate_context(
     product_contract: Any, source: str, errors: list[str]
 ) -> tuple[dict[str, str] | None, set[str]]:
-    """Validate a decoded product contract and return its binding and definition IDs."""
+    """Validate a product contract and return its binding and definition IDs."""
     context_errors = validate_product_contract(product_contract, source=source)
     errors.extend(context_errors)
     if context_errors:
@@ -106,16 +109,18 @@ def validate_context(
     return binding, collect_definition_ids(product_contract)
 
 
-def validate_catalog_bindings(
-    catalogs: list[dict[str, Any]],
+def validate_document_bindings(
+    documents: list[dict[str, Any]],
     authoritative: dict[str, str] | None,
     errors: list[str],
+    *,
+    root_path: str = "catalog",
 ) -> dict[str, str] | None:
-    """Require every catalog to share and, when supplied, match one product binding."""
+    """Require every subordinate document to share one authoritative binding."""
     valid_bindings = [
-        catalog["product_contract"]
-        for catalog in catalogs
-        if catalog["product_contract"] is not None
+        document["product_contract"]
+        for document in documents
+        if document["product_contract"] is not None
     ]
     if authoritative is not None:
         expected = authoritative
@@ -125,16 +130,16 @@ def validate_catalog_bindings(
         reason_kind = "shared catalog binding"
     else:
         return None
-    for catalog in catalogs:
-        binding = catalog["product_contract"]
+    for document in documents:
+        binding = document["product_contract"]
         if binding is None:
             continue
         for field in ("id", "content_version"):
             if binding[field] != expected[field]:
                 _add_error(
                     errors,
-                    catalog["source"],
-                    f"catalog.product_contract.{field}",
+                    document["source"],
+                    f"{root_path}.product_contract.{field}",
                     f"must match {reason_kind} value {expected[field]}",
                 )
     return {"id": expected["id"], "content_version": expected["content_version"]}

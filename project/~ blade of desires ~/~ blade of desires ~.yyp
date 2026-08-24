@@ -22,7 +22,9 @@
     {"$GMFolder":"","%Name":"Setup","folderPath":"folders/Libraries/GMTL/Setup.yy","name":"Setup","resourceType":"GMFolder","resourceVersion":"2.0",},
   ],
   "ForcedPrefabProjectReferences":[],
-  "IncludedFiles":[],
+  "IncludedFiles":[
+    {"$GMIncludedFile":"","%Name":"neutral_v1.json","CopyToMask":-1,"filePath":"datafiles/content/stages","name":"neutral_v1.json","resourceType":"GMIncludedFile","resourceVersion":"2.0",},
+  ],
   "isEcma":false,
   "LibraryEmitters":[],
   "MetaData":{

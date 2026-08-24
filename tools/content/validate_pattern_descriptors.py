@@ -16,7 +16,7 @@ if __package__:
         report_cycles as _report_cycles,
         validate_references as _validate_references,
     )
-    from .pattern_product_contract import (
+    from .subordinate_product_contract import (
         ID_PATTERN,
         ID_PATTERN_TEXT,
         LOAD_FAILED,
@@ -25,7 +25,7 @@ if __package__:
         load_authoritative_product_contract,
         load_strict_json,
         validate_binding as _validate_product_contract_binding,
-        validate_catalog_bindings as _validate_catalog_bindings,
+        validate_document_bindings as _validate_catalog_bindings,
         validate_context as _validate_product_contract_context,
     )
 else:
@@ -37,7 +37,7 @@ else:
         report_cycles as _report_cycles,
         validate_references as _validate_references,
     )
-    from pattern_product_contract import (
+    from subordinate_product_contract import (
         ID_PATTERN,
         ID_PATTERN_TEXT,
         LOAD_FAILED,
@@ -46,7 +46,7 @@ else:
         load_authoritative_product_contract,
         load_strict_json,
         validate_binding as _validate_product_contract_binding,
-        validate_catalog_bindings as _validate_catalog_bindings,
+        validate_document_bindings as _validate_catalog_bindings,
         validate_context as _validate_product_contract_context,
     )
 
