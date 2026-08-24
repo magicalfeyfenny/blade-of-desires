@@ -33,8 +33,8 @@ is not reassigned.
 `schema_version` describes the shape and interpretation of a record. Removing
 or renaming a field, changing its type, or incompatibly changing its meaning
 requires a schema-version increment. Additive fields and content-value changes
-retain the schema version and advance `content_version`, which versions the
-complete contract. Version 1.1.0 added structured policy while retaining all
+retain the schema version and advance `content_version`, which versions this
+product contract. Version 1.1.0 added structured policy while retaining all
 1.0.0 fields and types. Version 1.2.0 adds the ordered difficulty identity
 registry without changing any existing field or record shape, so the schema
 remains version 1. Consumers reject an unknown schema version rather than
@@ -42,11 +42,27 @@ guessing a default.
 
 `registry_extensions` is a versioned policy object, not a canonical record.
 Its ship, stage, and encounter ID lists are empty in the core contract. A later
-subordinate record must be explicitly declared in the matching list and must
-advance `content_version` beyond the 1.2.0 core baseline; core IDs cannot be
-redeclared. The progression record is closed, so an added ending or unknown
+registry-extension record must be explicitly declared in the matching list and
+must advance `content_version` beyond the 1.2.0 core baseline; core IDs cannot
+be redeclared. The progression record is closed, so an added ending or unknown
 root field requires a future schema rule instead of silently extending the
 registry.
+
+Subordinate pattern catalogs are separate canonical data rather than
+`registry_extensions`. They share this contract's authoritative ID grammar and
+global definition-collision policy. Every pattern catalog binds the exact
+product `id` and `content_version`; pattern validation checks that binding
+against this file and rejects definition collisions against canonical product
+record IDs as well as duplicate definitions across the loaded catalog set.
+Successful validation produces a separately normalized pattern plan, not a
+modified product-contract record.
+
+The product `content_version` versions only the product contract's values. A
+catalog cites it as a compatibility binding, but that value does not also
+version the subordinate catalog's values. A subordinate pattern-value change
+therefore does not silently advance the product version; the catalog retains
+its own schema and explicit product binding. The current product contract
+remains version `1.2.0`.
 
 The focused validator reports `source: field.path: reason`. File validation
 uses the supplied filename and decoded in-memory validation uses the explicit

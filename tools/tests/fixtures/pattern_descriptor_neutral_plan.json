@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "product_contract": {
+    "id": "contract.blade",
+    "content_version": "1.2.0"
+  },
+  "catalogs": [
+    {
+      "schema_version": 1,
+      "id": "pattern_catalog.neutral_fixture",
+      "display_name": "Neutral pattern descriptor fixtures",
+      "named_anchor_ids": [
+        "anchor.neutral_fixture.offset"
+      ],
+      "target_snapshot_ids": [
+        "target.neutral_fixture.snapshot"
+      ],
+      "aim_rule_ids": [
+        "aim_rule.neutral_fixture.forward"
+      ],
+      "bullet_kind_ids": [
+        "bullet_kind.neutral_fixture.projectile"
+      ],
+      "theme_tag_ids": [
+        "theme.neutral_fixture.unstyled"
+      ],
+      "descriptors": [
+        {
+          "schema_version": 1,
+          "id": "pattern.neutral_fixture.leaf",
+          "display_name": "Neutral leaf fixture",
+          "origin": {
+            "kind": "emitter_origin",
+            "anchor_id": null
+          },
+          "aim": {
+            "kind": "fixed_angle",
+            "angle_millidegrees": 0,
+            "target_id": null,
+            "rule_id": null
+          },
+          "count": 2,
+          "local_angle_millidegrees": 0,
+          "spread_millidegrees": 0,
+          "angle_distribution": {
+            "kind": "centered_inclusive",
+            "rounding": "floor_clockwise_remainder"
+          },
+          "speed_tiers_q10_per_tick": [
+            1024
+          ],
+          "cadence_ticks": 1,
+          "repeat_count": 1,
+          "acceleration_q10_per_tick_squared": 0,
+          "friction_per_mille": 1000,
+          "rotation_millidegrees_per_tick": 0,
+          "lifetime_ticks": 1,
+          "bullet_kind_id": "bullet_kind.neutral_fixture.projectile",
+          "theme_tag_ids": [
+            "theme.neutral_fixture.unstyled"
+          ],
+          "cancellation_power": 0,
+          "child": null,
+          "spawn_budget": 2,
+          "direct_spawn_count": 2,
+          "maximum_spawn_count": 2
+        },
+        {
+          "schema_version": 1,
+          "id": "pattern.neutral_fixture.parent",
+          "display_name": "Neutral parent fixture",
+          "origin": {
+            "kind": "named_anchor",
+            "anchor_id": "anchor.neutral_fixture.offset"
+          },
+          "aim": {
+            "kind": "target_snapshot",
+            "angle_millidegrees": null,
+            "target_id": "target.neutral_fixture.snapshot",
+            "rule_id": null
+          },
+          "count": 2,
+          "local_angle_millidegrees": 0,
+          "spread_millidegrees": 1000,
+          "angle_distribution": {
+            "kind": "centered_inclusive",
+            "rounding": "floor_clockwise_remainder"
+          },
+          "speed_tiers_q10_per_tick": [
+            1024
+          ],
+          "cadence_ticks": 1,
+          "repeat_count": 1,
+          "acceleration_q10_per_tick_squared": 0,
+          "friction_per_mille": 1000,
+          "rotation_millidegrees_per_tick": 0,
+          "lifetime_ticks": 1,
+          "bullet_kind_id": "bullet_kind.neutral_fixture.projectile",
+          "theme_tag_ids": [
+            "theme.neutral_fixture.unstyled"
+          ],
+          "cancellation_power": 0,
+          "child": {
+            "pattern_id": "pattern.neutral_fixture.leaf",
+            "trigger": "normal_expiry",
+            "origin": "projectile_terminal_position"
+          },
+          "spawn_budget": 6,
+          "direct_spawn_count": 2,
+          "maximum_spawn_count": 6
+        }
+      ]
+    }
+  ]
+}

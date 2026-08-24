@@ -4,7 +4,11 @@ Blade of Desires is a vertical 2D shmup built in GameMaker, with perspective
 3D used for presentation rather than gameplay authority. The canonical product
 contract and stable identifiers live in
 [content/product_contract.json](content/product_contract.json), with a readable
-guide in [docs/product-contract.md](docs/product-contract.md).
+guide in [docs/product-contract.md](docs/product-contract.md). Canonical emitter
+pattern descriptors begin with
+[content/patterns/neutral_v1.json](content/patterns/neutral_v1.json), with their
+schema and normalization contract in
+[docs/pattern-descriptors.md](docs/pattern-descriptors.md).
 
 ## Governance overview (non-normative)
 
