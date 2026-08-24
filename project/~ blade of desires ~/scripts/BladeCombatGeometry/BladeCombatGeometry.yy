@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeCombatGeometry",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeCombatGeometry",
+  "parent":{
+    "name":"Combat",
+    "path":"folders/Blade/Combat.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
