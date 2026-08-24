@@ -6,10 +6,12 @@ from pathlib import Path
 from unittest.mock import patch
 
 from tools.ci.pr_policy import (
+    POLICY,
     auto_merge_eligible,
     branch_issue,
     changed_file_paths,
     completion_policy_errors,
+    evaluate_pull_request,
     forced_high_risk,
     is_human_created,
     validate,
@@ -46,26 +48,23 @@ class PrPolicyTests(unittest.TestCase):
         self.assertEqual(issue, 27)
         self.assertEqual(errors, [])
 
-    def test_sensitive_path_is_high_risk(self):
-        high, reasons = forced_high_risk(
-            "dev",
-            [".github/workflows/ci.yml"],
-            1,
-            1,
-        )
-
-        self.assertTrue(high)
-        self.assertTrue(reasons)
-
-    def test_project_sensitive_paths_are_high_risk(self):
+    def test_governance_and_pipeline_paths_are_high_risk(self) -> None:
+        """Keep authority and pipeline mechanisms on the manual path."""
         paths = [
-            "project/game.yyp",
-            "project/options/main/options_main.yy",
-            "project/extensions/store/store.yy",
-            "project/scripts/core/state.gml",
-            "project/scripts/save/write_save.gml",
-            "project/scripts/persistence/profile.gml",
-            "project/scripts/migrations/save_v2.gml",
+            ".github/actions/validate/action.yml",
+            ".github/rulesets/dev-protection.json",
+            ".github/workflows/ci.yml",
+            ".gitattributes",
+            "AGENTS.md",
+            "GOVERNANCE.md",
+            "PROJECT_POLICY.toml",
+            ".agents/skills/gamemaker-production/SKILL.md",
+            "docs/SETUP.md",
+            "templates/codex/governed-change.txt",
+            "tools/assets/export_assets.py",
+            "tools/ci/pr_policy.py",
+            "tools/setup_github.py",
+            "project/gmtl.lock.json",
         ]
 
         for path in paths:
@@ -78,18 +77,98 @@ class PrPolicyTests(unittest.TestCase):
                 )
 
                 self.assertTrue(high)
-                self.assertTrue(reasons)
+                self.assertEqual(reasons, [f"high-risk path: {path}"])
 
-    def test_small_game_change_can_be_low_risk(self):
-        high, reasons = forced_high_risk(
+    def test_routine_production_paths_can_be_low_risk(self) -> None:
+        """Do not use ordinary project and asset domains as risk proxies."""
+        paths = [
+            "project/game.yyp",
+            "project/options/main/options_main.yy",
+            "project/extensions/store/store.yy",
+            "project/scripts/core/state.gml",
+            "project/scripts/save/write_save.gml",
+            "project/scripts/persistence/profile.gml",
+            "project/scripts/migrations/save_v2.gml",
+            "content/save/schema.json",
+            "content/story/chapter_1.json",
+            "assets/source/portrait.kra",
+            "assets/runtime/portrait.png",
+            "assets/exports.json",
+            ".github/ISSUE_TEMPLATE/work-item.yml",
+            ".github/pull_request_template.md",
+            "docs/design.md",
+        ]
+
+        for path in paths:
+            with self.subTest(path=path):
+                high, reasons = forced_high_risk(
+                    "dev",
+                    [path],
+                    1,
+                    0,
+                )
+
+                self.assertFalse(high)
+                self.assertEqual(reasons, [])
+
+    def test_size_limits_only_force_massive_changes_high(self) -> None:
+        """Keep exact limits inclusive and force only limit-plus-one high."""
+        max_files = int(POLICY["risk"]["max_changed_files"])
+        max_lines = int(POLICY["risk"]["max_changed_lines"])
+
+        self.assertEqual((max_files, max_lines), (100, 10000))
+
+        at_limit = forced_high_risk(
             "dev",
             ["project/scripts/player/player.gml"],
-            20,
-            10,
+            6000,
+            4000,
+            max_files,
+        )
+        over_files = forced_high_risk(
+            "dev",
+            ["project/scripts/player/player.gml"],
+            1,
+            0,
+            max_files + 1,
+        )
+        over_lines = forced_high_risk(
+            "dev",
+            ["project/scripts/player/player.gml"],
+            max_lines,
+            1,
+            1,
         )
 
-        self.assertFalse(high)
-        self.assertEqual(reasons, [])
+        self.assertEqual(at_limit, (False, []))
+        self.assertEqual(
+            over_files,
+            (True, ["changed file count exceeds low-risk limit"]),
+        )
+        self.assertEqual(
+            over_lines,
+            (True, ["changed line count exceeds low-risk limit"]),
+        )
+
+    def test_routine_change_can_be_voluntarily_high_risk(self) -> None:
+        """Honor an explicit high-risk label without a path-based reason."""
+        evaluation = evaluate_pull_request(
+            base="dev",
+            head="work/12-save-schema",
+            head_repository="owner/game",
+            repository="owner/game",
+            body="Closes #12\n",
+            labels={"risk:high", "work:review-ready"},
+            additions=10,
+            deletions=2,
+            changed_paths=["project/game.yyp"],
+            changed_file_count=1,
+        )
+
+        self.assertEqual(evaluation.errors, ())
+        self.assertEqual(evaluation.high_risk_reasons, ())
+        self.assertTrue(evaluation.effective_high)
+        self.assertFalse(evaluation.auto_merge_allowed)
 
     def test_main_is_high_risk(self):
         high, reasons = forced_high_risk(
@@ -274,15 +353,16 @@ class PrPolicyTests(unittest.TestCase):
         self.assertTrue(missing)
         self.assertIn("PR issue must match branch issue", wrong)
 
-    def test_rename_preserves_sensitive_source_path(self):
+    def test_rename_preserves_governance_source_path(self) -> None:
+        """Keep a renamed authority file high through its previous path."""
         paths, count = changed_file_paths(
             [[
                 {
                     "filename": (
-                        "project/scripts/player/state.gml"
+                        "docs/legacy-policy.md"
                     ),
                     "previous_filename": (
-                        "project/scripts/core/state.gml"
+                        "tools/ci/legacy_policy.py"
                     ),
                 }
             ]]
@@ -300,7 +380,9 @@ class PrPolicyTests(unittest.TestCase):
         self.assertTrue(high)
         self.assertTrue(reasons)
 
-    def test_renames_do_not_inflate_changed_file_count(self):
+    def test_renames_do_not_inflate_changed_file_count(self) -> None:
+        """Count API file records once even when each has two paths."""
+        max_files = int(POLICY["risk"]["max_changed_files"])
         entries = [
             {
                 "filename": (
@@ -310,7 +392,7 @@ class PrPolicyTests(unittest.TestCase):
                     f"project/scripts/archive/old_{index}.gml"
                 ),
             }
-            for index in range(20)
+            for index in range(max_files)
         ]
 
         paths, count = changed_file_paths([entries])
@@ -322,45 +404,62 @@ class PrPolicyTests(unittest.TestCase):
             count,
         )
 
-        self.assertEqual(count, 20)
-        self.assertEqual(len(paths), 40)
+        self.assertEqual(count, max_files)
+        self.assertEqual(len(paths), max_files * 2)
         self.assertFalse(high)
         self.assertEqual(reasons, [])
 
 
 class WorkflowPolicyTests(unittest.TestCase):
-    def test_collectors_preserve_complete_file_records(self):
-        workflows = [
-            ROOT / ".github/workflows/ci.yml",
-            ROOT / ".github/workflows/low-risk-auto-merge.yml",
-        ]
+    """Keep workflow tests focused on declarative trust boundaries."""
 
-        for workflow in workflows:
-            with self.subTest(workflow=workflow.name):
-                text = workflow.read_text(encoding="utf-8")
+    def test_ci_collector_preserves_complete_file_records(self):
+        """Keep CI policy input complete instead of projecting filenames."""
+        text = (ROOT / ".github/workflows/ci.yml").read_text(
+            encoding="utf-8"
+        )
 
-                self.assertIn("--slurp", text)
-                self.assertNotIn("--jq '.[].filename'", text)
+        self.assertIn("--slurp", text)
+        self.assertNotIn("--jq '.[].filename'", text)
 
-    def test_auto_merge_is_revocable_and_head_bound(self):
+    def test_auto_merge_workflow_routes_to_trusted_boundary(self):
+        """Keep event wiring visible and orchestration out of shell YAML."""
         path = ROOT / ".github/workflows/low-risk-auto-merge.yml"
         text = path.read_text(encoding="utf-8")
 
         self.assertIn("pull_request_target:", text)
-        self.assertIn("--disable-auto", text)
+        self.assertIn("workflow_run:", text)
+        self.assertIn(
+            "python3 -m tools.ci.low_risk_merge cancel",
+            text,
+        )
+        self.assertIn(
+            "python3 -m tools.ci.low_risk_merge merge",
+            text,
+        )
+        self.assertEqual(text.count("persist-credentials: false"), 2)
+        self.assertEqual(text.count("ref: dev"), 2)
+
+        for inline_detail in (
+            "eligible_current",
+            "refresh_pr",
+            "classify_ci_metadata",
+            "gh pr ready",
+            "gh pr merge",
+            "jq ",
+        ):
+            with self.subTest(inline_detail=inline_detail):
+                self.assertNotIn(inline_detail, text)
+
         self.assertIn(
             "stale auto-merge request remains",
             (ROOT / ".github/workflows/ci.yml").read_text(
                 encoding="utf-8"
             ),
         )
-        self.assertIn(
-            '--match-head-commit "$CI_HEAD"',
-            text,
-        )
-        self.assertIn("PR_HEAD_REPOSITORY", text)
 
     def test_native_issue_closure_uses_repository_scoped_app_token(self):
+        """Keep App credentials scoped and separate from the ambient token."""
         path = ROOT / ".github/workflows/low-risk-auto-merge.yml"
         text = path.read_text(encoding="utf-8")
         workflow_header, jobs = text.split("\njobs:\n", 1)
@@ -402,18 +501,11 @@ class WorkflowPolicyTests(unittest.TestCase):
             "${{ steps.governed-merge-token.outputs.token }}",
             merge_job,
         )
-        self.assertEqual(
-            merge_job.count('GH_TOKEN="$MERGE_TOKEN"'),
-            1,
+        self.assertIn(
+            "python3 -m tools.ci.low_risk_merge merge",
+            merge_job,
         )
-
-        final_merge = merge_job.split(
-            'GH_TOKEN="$MERGE_TOKEN" gh pr merge',
-            1,
-        )[1]
-        self.assertIn("--auto", final_merge)
-        self.assertIn("--squash", final_merge)
-        self.assertIn('--match-head-commit "$CI_HEAD"', final_merge)
+        self.assertNotIn('GH_TOKEN="$MERGE_TOKEN"', merge_job)
 
     def test_governed_merge_app_setup_is_explicit_and_human_owned(self):
         setup = (ROOT / "docs/SETUP.md").read_text(encoding="utf-8")
@@ -434,8 +526,11 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertIn(required, setup)
 
     def test_auto_merge_relies_on_native_issue_closure(self):
+        """Keep issue completion native to the merge instead of scripting it."""
         path = ROOT / ".github/workflows/low-risk-auto-merge.yml"
-        text = path.read_text(encoding="utf-8")
+        text = path.read_text(encoding="utf-8") + (
+            ROOT / "tools/ci/low_risk_merge.py"
+        ).read_text(encoding="utf-8")
 
         for direct_close in (
             "gh issue close",
@@ -448,6 +543,7 @@ class WorkflowPolicyTests(unittest.TestCase):
                 self.assertNotIn(direct_close, text)
 
     def test_auto_merge_is_bound_to_exact_ci_metadata(self):
+        """Pass every completed-run identity field into one trusted unit."""
         ci_text = (ROOT / ".github/workflows/ci.yml").read_text(
             encoding="utf-8"
         )
@@ -470,66 +566,20 @@ class WorkflowPolicyTests(unittest.TestCase):
 
         self.assertIn("actions: read", merge_text)
         self.assertIn(
-            'gh run download "$CI_RUN_ID"',
-            merge_text,
-        )
-        self.assertIn(
-            "github.event.workflow_run.run_attempt",
-            merge_text,
-        )
-        self.assertIn(
-            '--attestation-run-attempt "$CI_METADATA_ATTEMPT"',
-            merge_text,
-        )
-        self.assertIn('while [ "$attempt" -ge 1 ]', merge_text)
-        self.assertIn("attempt=$((attempt - 1))", merge_text)
-        self.assertIn(
-            "tools/ci/pr_metadata.py compare",
+            "python3 -m tools.ci.low_risk_merge merge",
             merge_text,
         )
 
-        first_eligibility = merge_text.index(
-            "if ! eligible_current;"
-        )
-        ready = merge_text.index("gh pr ready")
-        second_eligibility = merge_text.index(
-            "if ! eligible_current;",
-            first_eligibility + 1,
-        )
-        merge = merge_text.index(
-            'GH_TOKEN="$MERGE_TOKEN" gh pr merge',
-            second_eligibility,
-        )
-
-        self.assertLess(first_eligibility, ready)
-        self.assertLess(ready, second_eligibility)
-        self.assertLess(second_eligibility, merge)
-
-        eligibility_failures = merge_text.split(
-            "if ! eligible_current; then"
-        )[1:]
-        self.assertEqual(len(eligibility_failures), 2)
-
-        for failure in eligibility_failures:
-            block = failure.split("fi", 1)[0]
-            self.assertIn(
-                'CI_METADATA_STATUS" = "stale',
-                block,
-            )
-            self.assertNotIn("disable_auto_merge", block)
-
-        stale_case = merge_text.split(
-            'stale)',
-            1,
-        )[1].split('invalid)', 1)[0]
-        self.assertIn("exit 0", stale_case)
-        self.assertNotIn("disable_auto_merge", stale_case)
-
-        missing_case = merge_text.split(
-            "if ! download_ci_metadata; then",
-            1,
-        )[1].split("fi", 1)[0]
-        self.assertIn("disable_auto_merge", missing_case)
+        for source, argument in (
+            ("github.event.workflow_run.pull_requests[0].number", "PR_NUMBER"),
+            ("github.event.workflow_run.head_sha", "CI_HEAD"),
+            ("github.event.workflow_run.conclusion", "CI_CONCLUSION"),
+            ("github.event.workflow_run.id", "CI_RUN_ID"),
+            ("github.event.workflow_run.run_attempt", "CI_RUN_ATTEMPT"),
+        ):
+            with self.subTest(source=source):
+                self.assertIn(source, merge_text)
+                self.assertIn(f'"${argument}"', merge_text)
 
     def test_human_created_labeler_is_trusted_and_bounded(self):
         path = ROOT / ".github/workflows/human-created.yml"

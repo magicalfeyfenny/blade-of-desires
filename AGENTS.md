@@ -1,9 +1,30 @@
 # GameMaker project instructions
 
-Before modifying the repository, read:
+## Authority and task routing
 
-- GOVERNANCE.md
-- PROJECT_POLICY.toml
+[GOVERNANCE.md](GOVERNANCE.md#authority) owns normative repository rules and
+rationale. [PROJECT_POLICY.toml](PROJECT_POLICY.toml) owns executable values.
+This file routes work, exposes standing permission, and repeats only the
+critical stops that must be visible before mutation. The
+[README governance overview](README.md#governance-overview-non-normative) is
+non-normative.
+
+Before modifying the repository, follow only the routes relevant to the task:
+
+| Task | Required route |
+| --- | --- |
+| Governed repository change | Use the [governed-change skill](.agents/skills/governed-change/SKILL.md), then the Governance sections it names. |
+| Any repository-owned source | Read [Source structure](GOVERNANCE.md#source-structure) and `[structure]` in `PROJECT_POLICY.toml`. |
+| GMTL or imported-dependency registration | Read [Imported dependencies](GOVERNANCE.md#imported-dependencies) and `[imports.gmtl]` in `PROJECT_POLICY.toml`. |
+| GameMaker production code | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). The source route above also applies. |
+| Derived asset | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). |
+| GameMaker structured data | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). |
+| Issue and PR audit | Use the [Project Steward skill](.agents/skills/project-steward/SKILL.md) and [Issue authority](GOVERNANCE.md#issue-authority). |
+| Release | Only when explicitly authorized, read [Releases](GOVERNANCE.md#releases) and the governed lifecycle routes. |
+| Repository setup | Follow [docs/SETUP.md](docs/SETUP.md). |
+
+Do not load unrelated governance sections merely because the repository is
+governed.
 
 For legacy-system, asset, and repository archaeology, start with:
 
@@ -11,151 +32,37 @@ For legacy-system, asset, and repository archaeology, start with:
 
 ## Tooling
 
-Repository tooling requires Python 3.12 or later.
+Repository tooling requires Python 3.12 or later. Use `python3.12` for policy
+and test commands.
 
-Use `python3.12` for repository policy and test commands.
+## Standing permission
 
-## Git
+On the current issue-scoped branch, agents may commit each coherent milestone
+after [Stage 1 evidence](GOVERNANCE.md#stage-1-milestone-evidence), push it, and
+open or update its draft PR under
+[Milestone commits and draft publication](GOVERNANCE.md#milestone-commits-and-draft-publication).
+That permission does not grant completion, readiness, merge, release, or
+publication authority.
 
-Never create work from local `dev`.
+## Critical stops
 
-Normal work begins with:
+These reminders intentionally repeat authoritative Governance rules because
+they must be visible before mutation:
 
-git fetch origin dev
-git switch -c work/<issue>-<slug> origin/dev
-
-Release work uses:
-
-release/<issue>-v<semver>
-
-The `human/` branch namespace is reserved for humans. Agents must never create,
-switch to, push to, or modify a `human/*` branch.
-
-Agents may commit freely to their current issue-scoped branch. Commit each
-coherent milestone as soon as proportionate validation passes. Push the first
-meaningful commit and create its draft PR immediately, including for high-risk
-work. Continue pushing later milestone commits to that draft PR. Commit and
-draft publication do not grant readiness or merge authority. An in-progress
-draft omits the `Closes #<issue>` line.
-
-Do not force-push.
-
-Do not merge into `main`.
-
-Do not create release builds, tags, releases, or publication without explicit
-human instruction.
-
-## Scope
-
-Keep each change bounded to its issue.
-
-Do not perform unrelated cleanup.
-
-Preserve useful behavior, not obsolete architecture merely because it exists.
-
-## Structure
-
-Give each source file one primary responsibility.
-
-Do not create generic helper, utility, misc, or common dumping grounds.
-
-Respect the source-size limit in PROJECT_POLICY.toml.
-
-Write code that is intentionally interpretable by humans. Make each function
-plain and obvious to understand by reading it. Avoid clever techniques unless
-they are necessary, and explain each necessary non-obvious technique with a
-concise plain-English comment.
-
-Add a concise plain-English comment to every function you write or change, and
-wherever intent would otherwise be unclear. Comments must accurately describe
-current behavior and limit their claims to what the code actually does. Do not
-use comments as a wishlist unless the planned behavior is clearly labeled
-`TODO`.
-
-## Asset pipelines
-
-Editable source assets belong under assets/source.
-
-Derived runtime assets belong under assets/runtime.
-
-Update assets/exports.json for every derived runtime asset.
-
-Use:
-
-Vector:
-- Inkscape `.svg` source
-- plain `.svg` runtime
-
-Raster:
-- `.kra` source
-- `.png` runtime
-
-Music:
-- `.mid` sheet-music source
-- `.logicx` project source
-- `.flac` runtime at 48 kHz stereo
-
-Sound effects:
-- `.logicx` project source
-- `.wav` runtime at 48 kHz stereo
-
-3D:
-- `.blend` project source
-- `.obj` and `.mtl` export sources
-- `.vbuff` runtime
-
-## Structured GameMaker data
-
-Canonical runtime GameMaker data lives under content/ as `.json`.
-
-The same JSON is both editable source and runtime data.
-
-Do not duplicate it into assets/source or assets/runtime.
-
-## Validation
-
-Before publishing a change, run:
-
-python3.12 tools/ci/check_repo.py --baseline-ref origin/dev
-python3.12 -m unittest discover -s tools/tests -p 'test_*.py'
-git diff --check
-
-Run relevant GameMaker tests when available.
-
-## Pull requests
-
-Create PRs as drafts.
-
-Apply exactly one:
-
-- risk:low
-- risk:high
-
-Low-risk PRs may continue through repository automation.
-
-After the entire low-risk issue scope is finished and full validation passes,
-add exactly one `Closes #<issue>` line and apply `work:complete`. Do not apply
-it to an intermediate milestone. For a low-risk PR without `manual-merge`,
-repository automation then marks it ready and configures squash auto-merge
-after required CI passes.
-
-High-risk PRs may be committed, pushed, and published as drafts without
-separate permission. When high-risk or `manual-merge` work is finished and
-validated, add exactly one `Closes #<issue>` line and apply
-`work:review-ready`. It then waits for human review, readiness, and merge.
-
-`work:blocked` retains the former `blocked` behavior. Do not work the PR or add
-a closing line or completion label until its blockers are resolved.
-
-If a PR uses a `human/*` branch or has the `human-created` label, stop. Do not
-modify its branch, commits, body, labels, checks, reviews, draft state,
-readiness, or merge state. Do not perform review or validation work on it.
-Agents must never invoke a ruleset bypass.
-
-After a human-created PR merges, do not presume that nonconformance with
-current repository standards is wrong. It may inform desired patterns or
-algorithms. Existing violations are treated as the repository baseline and do
-not block unrelated agent changes. Human-authored work may be followed by a
-bounded repository-compliance issue that normalizes structure, validation,
-assets, tests, and repository conventions without changing intended behavior.
-Use the normal risk policy.
+- Start agent-governed work from current `origin/dev`, never local `dev`, and
+  never create, switch to, push to, or modify a `human/*` branch.
+- If a PR uses a `human/*` branch or has `human-created`, stop. Do not modify,
+  review, validate, label, ready, or merge it, and never invoke a ruleset
+  bypass.
+- Do not work a PR labeled `work:blocked` until its blockers are resolved.
+- Keep the change bounded to its issue and do not perform unrelated cleanup.
+- Do not force-push, automatically delete branches, or rewrite history merely
+  to simplify it.
+- Add completion metadata only after the entire issue scope has valid
+  [Stage 2 evidence](GOVERNANCE.md#stage-2-whole-issue-local-evidence), then use
+  the [Completion transition](GOVERNANCE.md#completion-transition) and path
+  selected by [Risk](GOVERNANCE.md#risk).
+- High-risk and `manual-merge` work waits for human review, readiness, and
+  merge after valid [Stage 3 evidence](GOVERNANCE.md#stage-3-hosted-pr-evidence).
+- Do not merge into `main` or create release builds, tags, releases, or
+  publication without explicit human authority.
