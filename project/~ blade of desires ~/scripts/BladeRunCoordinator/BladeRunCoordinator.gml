@@ -128,8 +128,8 @@ function _BladeRunCoordinatorPlayerLifecycleToken(_lifecycle) {
 function _BladeRunCoordinatorRequire(_coordinator) {
 	if (!is_struct(_coordinator)
 		|| !variable_struct_exists(_coordinator, "__blade_run_coordinator_version")
-		|| _coordinator.__blade_run_coordinator_version != 2) {
-		_BladeRunCoordinatorFail("coordinator", "expected a version 2 coordinator");
+		|| _coordinator.__blade_run_coordinator_version != 3) {
+		_BladeRunCoordinatorFail("coordinator", "expected a version 3 coordinator");
 	}
 
 	var _fields = [
@@ -137,6 +137,7 @@ function _BladeRunCoordinatorRequire(_coordinator) {
 		"__content_id_predicate",
 		"__max_catch_up_ticks",
 		"__kernel",
+		"__combat",
 		"__is_advancing",
 		"__pause_registry",
 		"__state",
@@ -178,7 +179,8 @@ function _BladeRunCoordinatorBuildAttempt(
 	_ship_id,
 	_difficulty_id,
 	_run_mode,
-	_run_seed
+	_run_seed,
+	_gameplay_plane
 ) {
 	var _mode = _BladeRunCoordinatorMode(_run_mode);
 	var _kernel = BladeDeterministicKernelCreate(
@@ -200,6 +202,9 @@ function _BladeRunCoordinatorBuildAttempt(
 		"difficulty ID"
 	);
 	var _owner_id = BladeKernelAllocate(_kernel, BladeRunIdKind.EventOwner);
+	var _combat = BladeCombatRuntimeCreate(
+		_kernel.identity, _owner_id, _gameplay_plane
+	);
 	var _player_id = BladeKernelAllocateForContent(
 		_kernel,
 		BladeRunIdKind.Instance,
@@ -209,6 +214,7 @@ function _BladeRunCoordinatorBuildAttempt(
 
 	return {
 		kernel: _kernel,
+		combat: _combat,
 		pause_registry: BladePauseRegistryCreate(_kernel.identity),
 		state: {
 			__blade_run_state_version: 1,
@@ -284,6 +290,13 @@ function _BladeRunCoordinatorStateView(_coordinator) {
 	if (_owner_id != "own:1") {
 		_BladeRunCoordinatorFail("event owner ID", "must remain own:1");
 	}
+	_BladeCombatRuntimeRequire(_coordinator.__combat);
+	if (_coordinator.__combat.identity != _coordinator.__kernel.identity
+		|| _coordinator.__combat.event_owner_id != _owner_id) {
+		_BladeRunCoordinatorFail(
+			"combat ownership", "must share the active run identity and event owner"
+		);
+	}
 	if (_player_id != "ins:1") {
 		_BladeRunCoordinatorFail("player instance ID", "must remain ins:1");
 	}
@@ -349,6 +362,7 @@ function _BladeRunCoordinatorStateView(_coordinator) {
 		started_tick: _started_tick,
 		terminal_tick: _terminal_tick,
 		pause: BladePauseRegistrySnapshot(_coordinator.__pause_registry),
+		combat: BladeCombatRuntimeSnapshot(_coordinator.__combat),
 		player: {
 			schema_version: 1,
 			instance_id: _player_id,
@@ -400,10 +414,7 @@ function _BladeRunCoordinatorTickView(_tick) {
 
 /// Binds a simulation callback that replaces the kernel argument with a detached run snapshot.
 function _BladeRunCoordinatorBindSimulationCallback(_coordinator, _callback) {
-	if (is_undefined(_callback)) {
-		return undefined;
-	}
-	if (typeof(_callback) != "method") {
+	if (!is_undefined(_callback) && typeof(_callback) != "method") {
 		_BladeRunCoordinatorFail("simulation callback", "must be a method or undefined");
 	}
 
@@ -412,12 +423,33 @@ function _BladeRunCoordinatorBindSimulationCallback(_coordinator, _callback) {
 		callback: _callback,
 	};
 	return method(_context, function(_kernel, _input_snapshot, _tick) {
-		// Discard the owned kernel reference and expose only detached or immutable tick inputs.
-		return self.callback(
-			_BladeRunCoordinatorStateView(self.coordinator),
-			_input_snapshot,
-			_BladeRunCoordinatorTickView(_tick)
-		);
+		var _run_snapshot = _BladeRunCoordinatorStateView(self.coordinator);
+		_BladeCombatRuntimeBeginTick(self.coordinator.__combat, _kernel, _tick);
+		try {
+			var _client_fragment = "";
+			if (typeof(self.callback) == "method") {
+				_client_fragment = self.callback(
+					_run_snapshot, _input_snapshot,
+					_BladeRunCoordinatorTickView(_tick)
+				);
+				if (is_undefined(_client_fragment)) _client_fragment = "";
+				if (!is_string(_client_fragment)) {
+					_BladeRunCoordinatorFail(
+						"simulation callback",
+						"must return a canonical string or undefined"
+					);
+				}
+			}
+			var _combat_fragment = _BladeCombatRuntimeEndTick(
+				self.coordinator.__combat
+			);
+			return BladeCanonicalRecord(
+				"BRCF1", [_client_fragment, _combat_fragment]
+			);
+		} catch (_caught) {
+			_BladeCombatRuntimeCancelTick(self.coordinator.__combat);
+			throw _caught;
+		}
 	});
 }
 
@@ -450,7 +482,9 @@ function _BladeRunCoordinatorBeginAdvance(_coordinator) {
 }
 
 /// Applies one terminal lifecycle only after all current state and clock values are validated.
-function _BladeRunCoordinatorTransitionTerminal(_coordinator, _target_lifecycle) {
+function _BladeRunCoordinatorTransitionTerminal(
+	_coordinator, _target_lifecycle, _terminal_reason = undefined
+) {
 	_BladeRunCoordinatorRequireNotAdvancing(_coordinator, "terminal command");
 	_BladeRunCoordinatorRequireActive(_coordinator);
 	var _target = _BladeRunCoordinatorLifecycle(_target_lifecycle);
@@ -459,14 +493,42 @@ function _BladeRunCoordinatorTransitionTerminal(_coordinator, _target_lifecycle)
 		_BladeRunCoordinatorFail("run lifecycle", "terminal command requires completed or aborted");
 	}
 	var _tick = _BladeRunCoordinatorCurrentTick(_coordinator);
+	var _counters = BladeSimulationClockGetCounters(_coordinator.__kernel.clock);
 	var _boundary = BladePauseRunBoundary.Completed;
+	var _combat_reason = BladeCombatTerminalReason.RunCompleted;
 	if (_target == BladeRunLifecycle.Aborted) {
 		_boundary = BladePauseRunBoundary.Aborted;
+		_combat_reason = BladeCombatTerminalReason.RunAborted;
 	}
+	if (!is_undefined(_terminal_reason)) {
+		_combat_reason = _BladeCombatRuntimeInteger(
+			_terminal_reason, BladeCombatTerminalReason.RunCompleted,
+			BladeCombatTerminalReason.RunLoad, "terminal boundary reason"
+		);
+	}
+	if ((_target == BladeRunLifecycle.Completed
+			&& _combat_reason != BladeCombatTerminalReason.RunCompleted)
+		|| (_target == BladeRunLifecycle.Aborted
+			&& _combat_reason != BladeCombatTerminalReason.RunAborted
+			&& _combat_reason != BladeCombatTerminalReason.RunLoad)) {
+		_BladeRunCoordinatorFail(
+			"terminal boundary reason", "must match the selected lifecycle"
+		);
+	}
+	if (_combat_reason == BladeCombatTerminalReason.RunLoad) {
+		_boundary = BladePauseRunBoundary.Load;
+	}
+	var _combat_plan = BladeCombatRuntimeBoundaryPlan(
+		_coordinator.__combat, _combat_reason,
+		_counters.simulation_tick, _counters.combat_tick
+	);
 	var _pause_report = BladePauseRegistryRunBoundary(
 		_coordinator.__pause_registry,
 		_boundary,
 		_tick
+	);
+	var _combat_report = BladeCombatRuntimeCommitBoundary(
+		_coordinator.__combat, _combat_plan
 	);
 
 	// Pause cleanup preflight passed, so terminal run/player state now changes together.
@@ -476,10 +538,11 @@ function _BladeRunCoordinatorTransitionTerminal(_coordinator, _target_lifecycle)
 	_coordinator.__state.player.terminal_tick = _tick;
 	var _result = BladeRunCoordinatorSnapshot(_coordinator);
 	_result.pause_boundary_report = _pause_report;
+	_result.combat_boundary_report = _combat_report;
 	return _result;
 }
 
-/// @func BladeRunCoordinatorCreate(content_fingerprint, content_id_predicate, ship_id, difficulty_id, run_mode, run_seed, max_catch_up_ticks)
+/// @func BladeRunCoordinatorCreate(content_fingerprint, content_id_predicate, ship_id, difficulty_id, run_mode, run_seed, max_catch_up_ticks, gameplay_plane)
 /// Creates an active deterministic attempt and retains only immutable construction inputs for later reset.
 function BladeRunCoordinatorCreate(
 	_content_fingerprint,
@@ -488,7 +551,8 @@ function BladeRunCoordinatorCreate(
 	_difficulty_id,
 	_run_mode,
 	_run_seed,
-	_max_catch_up_ticks = 8
+	_max_catch_up_ticks = 8,
+	_gameplay_plane = undefined
 ) {
 	var _plan = _BladeRunCoordinatorBuildAttempt(
 		_content_fingerprint,
@@ -497,14 +561,16 @@ function BladeRunCoordinatorCreate(
 		_ship_id,
 		_difficulty_id,
 		_run_mode,
-		_run_seed
+		_run_seed,
+		_gameplay_plane
 	);
 	return {
-		__blade_run_coordinator_version: 2,
+		__blade_run_coordinator_version: 3,
 		__content_fingerprint: _plan.kernel.header.get_content_contract_fingerprint(),
 		__content_id_predicate: _content_id_predicate,
 		__max_catch_up_ticks: _plan.kernel.clock.max_catch_up_ticks,
 		__kernel: _plan.kernel,
+		__combat: _plan.combat,
 		__is_advancing: false,
 		__pause_registry: _plan.pause_registry,
 		__state: _plan.state,
@@ -521,6 +587,7 @@ function BladeRunCoordinatorReset(
 	_run_seed
 ) {
 	_BladeRunCoordinatorRequireNotAdvancing(_coordinator, "reset command");
+	var _gameplay_plane = BladeCombatRuntimePlaneCopy(_coordinator.__combat);
 	var _plan = _BladeRunCoordinatorBuildAttempt(
 		_coordinator.__content_fingerprint,
 		_coordinator.__content_id_predicate,
@@ -528,20 +595,31 @@ function BladeRunCoordinatorReset(
 		_ship_id,
 		_difficulty_id,
 		_run_mode,
-		_run_seed
+		_run_seed,
+		_gameplay_plane
+	);
+	var _old_counters = BladeSimulationClockGetCounters(_coordinator.__kernel.clock);
+	var _old_combat_plan = BladeCombatRuntimeBoundaryPlan(
+		_coordinator.__combat, BladeCombatTerminalReason.RunReset,
+		_old_counters.simulation_tick, _old_counters.combat_tick
 	);
 	var _old_pause_report = BladePauseRegistryRunBoundary(
 		_coordinator.__pause_registry,
 		BladePauseRunBoundary.Reset,
 		_BladeRunCoordinatorCurrentTick(_coordinator)
 	);
+	var _old_combat_report = BladeCombatRuntimeCommitBoundary(
+		_coordinator.__combat, _old_combat_plan
+	);
 
-	// The replacement and old cleanup are complete, so all three owned references swap together.
+	// Replacement planning and old cleanup passed, so all owned references swap together.
 	_coordinator.__kernel = _plan.kernel;
+	_coordinator.__combat = _plan.combat;
 	_coordinator.__pause_registry = _plan.pause_registry;
 	_coordinator.__state = _plan.state;
 	var _result = BladeRunCoordinatorSnapshot(_coordinator);
 	_result.prior_pause_boundary_report = _old_pause_report;
+	_result.prior_combat_boundary_report = _old_combat_report;
 	return _result;
 }
 
@@ -560,6 +638,16 @@ function BladeRunCoordinatorAbort(_coordinator) {
 	return _BladeRunCoordinatorTransitionTerminal(
 		_coordinator,
 		BladeRunLifecycle.Aborted
+	);
+}
+
+/// @func BladeRunCoordinatorLoadBoundary(coordinator)
+/// Ends the active attempt for an explicit load without granting rewards or retaining combat.
+function BladeRunCoordinatorLoadBoundary(_coordinator) {
+	return _BladeRunCoordinatorTransitionTerminal(
+		_coordinator,
+		BladeRunLifecycle.Aborted,
+		BladeCombatTerminalReason.RunLoad
 	);
 }
 
@@ -641,18 +729,19 @@ function BladeRunCoordinatorCanRecordNormalResult(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorCanonical(coordinator)
-/// Encodes owned run BRS1, pause BPR2, and gameplay-kernel G2 records in fixed order.
+/// Encodes run, pause, combat, and gameplay-kernel records in fixed order.
 function BladeRunCoordinatorCanonical(_coordinator) {
 	var _view = _BladeRunCoordinatorStateView(_coordinator);
-	return BladeCanonicalRecord("BRC2", [
+	return BladeCanonicalRecord("BRC3", [
 		_BladeRunCoordinatorStateCanonical(_view),
 		BladePauseRegistryCanonical(_coordinator.__pause_registry),
+		BladeCombatRuntimeCanonical(_coordinator.__combat),
 		BladeKernelGameplayCanonical(_coordinator.__kernel),
 	]);
 }
 
 /// @func BladeRunCoordinatorHash(coordinator)
-/// Hashes the complete BRC2 record so ship, difficulty, mode, lifecycle, and kernel state all participate.
+/// Hashes the complete BRC3 record so run, combat, and kernel state all participate.
 function BladeRunCoordinatorHash(_coordinator) {
 	return BladeCanonicalHashUtf8(BladeRunCoordinatorCanonical(_coordinator));
 }
@@ -665,6 +754,7 @@ function BladeRunCoordinatorDiagnostics(_coordinator) {
 	return {
 		snapshot: _snapshot,
 		pause: _snapshot.pause,
+		combat: _snapshot.combat,
 		kernel: BladeKernelDiagnostics(_coordinator.__kernel),
 		canonical: _canonical,
 		hash: BladeCanonicalHashUtf8(_canonical),

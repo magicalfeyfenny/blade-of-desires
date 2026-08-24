@@ -13,6 +13,7 @@ function _BladeEventSchemaIsBoundaryCleanup(_reason) {
 function _BladeEventSchemaIsCombatCleanup(_reason) {
     return _BladeEventSchemaIsBoundaryCleanup(_reason)
         || _reason == "cleanup.owner_removed"
+        || _reason == "cleanup.expired"
         || _reason == "cancel.phase_change";
 }
 

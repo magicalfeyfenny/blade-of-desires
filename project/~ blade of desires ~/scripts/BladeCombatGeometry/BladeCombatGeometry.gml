@@ -234,6 +234,17 @@ function BladeCombatAabbIntersectsPlane(_plane, _box) {
         && _aabb.bottom_q10_exclusive > _compiled.top_q10;
 }
 
+/// @func BladeCombatAabbOverlaps(left, right)
+/// Applies positive half-open overlap to two current q10 boxes.
+function BladeCombatAabbOverlaps(_left, _right) {
+    var _a = _BladeCombatGeometryAabbCopy(_left);
+    var _b = _BladeCombatGeometryAabbCopy(_right);
+    return _a.left_q10 < _b.right_q10_exclusive
+        && _a.right_q10_exclusive > _b.left_q10
+        && _a.top_q10 < _b.bottom_q10_exclusive
+        && _a.bottom_q10_exclusive > _b.top_q10;
+}
+
 /// Extracts a canonical positive numeric ordinal from one typed run-local ID.
 function _BladeCombatGeometryIdOrdinal(_id, _prefix, _field) {
     if (!is_string(_id)) {

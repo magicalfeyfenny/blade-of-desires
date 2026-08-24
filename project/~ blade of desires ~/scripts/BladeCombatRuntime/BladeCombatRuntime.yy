@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeCombatRuntime",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeCombatRuntime",
+  "parent":{
+    "name":"Combat",
+    "path":"folders/Blade/Combat.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

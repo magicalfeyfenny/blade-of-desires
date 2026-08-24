@@ -122,8 +122,8 @@ function _BladeRunCoordinatorTestRepeatability() {
 	var _baseline = BladeRunCoordinatorCanonical(_first);
 	BladeKernelTestAssertEqual(
 		string_copy(_baseline, 1, 4),
-		"BRC2",
-		"version 2 coordinator record"
+		"BRC3",
+		"version 3 coordinator record"
 	);
 	BladeKernelTestAssertEqual(
 		_baseline,

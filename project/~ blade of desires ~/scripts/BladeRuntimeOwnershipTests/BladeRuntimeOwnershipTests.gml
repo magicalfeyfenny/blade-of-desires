@@ -20,6 +20,7 @@ function _BladeRuntimeOwnershipTestConfigIsolation() {
     variable_struct_set(_candidate, "run_state", BladeRunCoordinatorSnapshot(_coordinator));
     variable_struct_set(_candidate, "player", { instance_id: "ins:999" });
     variable_struct_set(_candidate, "pause", BladeRunCoordinatorPauseSnapshot(_coordinator));
+    variable_struct_set(_candidate, "combat", BladeRunCombatSnapshot(_coordinator));
     variable_struct_set(_candidate, "run_seed", int64(999));
     BladeKernelTestAssertTrue(
         BladeConfigServiceSave(_service, _candidate).ok,
@@ -29,7 +30,7 @@ function _BladeRuntimeOwnershipTestConfigIsolation() {
     var _stored = _storage.read_text(_filename);
     BladeKernelTestAssertTrue(_stored.ok, "isolated config bytes exist");
     var _payload = json_parse(_stored.text, undefined, true);
-    var _forbidden = ["run_state", "player", "pause", "run_seed"];
+    var _forbidden = ["run_state", "player", "pause", "combat", "run_seed"];
     for (var _index = 0; _index < array_length(_forbidden); ++_index) {
         BladeKernelTestAssertFalse(
             variable_struct_exists(_payload, _forbidden[_index]),

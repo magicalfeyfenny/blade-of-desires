@@ -217,14 +217,16 @@ predicate.
 
 | Type | Allowed reason or reasons | Source -> target |
 | --- | --- | --- |
-| `instance.spawned` | `outcome.scheduled` | empty -> `ins` |
-| `attack.started` | `outcome.input_pressed` | `ins` -> `atk` |
+| `instance.spawned` | `outcome.scheduled`, `outcome.defeat_child` | empty -> `ins`, or parent `ins` -> child `ins` |
+| `attack.started` | `outcome.input_pressed`, `outcome.scheduled` | `ins` -> `atk` |
 | `bullet.spawned` | `outcome.pattern_emitted` | `atk` -> `blt` |
 | `damage.applied` | `outcome.collision_confirmed` | `blt` -> `ins` |
-| `instance.removed` | `cleanup.stage_end`, `cleanup.owner_removed`, `cleanup.out_of_bounds`, `cancel.phase_change` | `ins` -> empty |
-| `attack.cancelled` | `cleanup.owner_removed`, `cancel.phase_change` | `atk` -> empty |
-| `bullet.removed` | `cleanup.stage_end`, `cleanup.owner_removed`, `cleanup.out_of_bounds`, `cancel.phase_change` | `blt` -> empty |
+| `damage.transaction_applied` | `outcome.collision_confirmed` | `dmg` -> `ins` |
+| `instance.removed` | defeat, owner/room/run cleanup, stage/out-of-bounds cleanup, or phase cancellation | `ins` -> empty |
+| `attack.cancelled` | owner/expiration/room/run cleanup or phase cancellation | `atk` -> empty |
+| `bullet.removed` | owner/expiration/offscreen/hit-budget/room/run cleanup, stage cleanup, phase change, or projectile cancellation | `blt` -> empty |
 | `damage.cancelled` | `cleanup.owner_removed`, `cancel.phase_change` | `dmg` -> empty |
+| `reward.requested` | `outcome.defeated` | `ins` -> empty |
 | `presentation.effect` | `presentation.requested` | empty -> empty |
 
 The `outcome.*` reasons record successful gameplay facts. Cleanup and
@@ -293,9 +295,10 @@ evidence.
 
 ## Deferred scope
 
-Pause-token ownership; run, player, configuration, and save state; replay files,
-migrations, playback, and remapping UI remain deferred. This issue also does not
-implement combat, damage, projectiles, collisions, rewards, emitters, stages,
-encounters, patterns, bosses, scoring, rank, graze, hyper, deathbomb, player
-ships, menus, rendering, audio, UI, 3D, or assets. It does not change product or
-story IDs and does not modify the GMTL vendor boundary or lock.
+The deterministic kernel itself does not own pause tokens, run/player state,
+configuration, or combat transactions; the project-owned runtime layers compose
+those systems over its clocks, IDs, events, and transcripts. Save/replay files,
+migrations, playback, remapping UI, emitters, stages, encounters, patterns,
+bosses, scoring, rank, graze, hyper, deathbomb, player weapons, menus,
+rendering, audio, UI, 3D, and assets remain outside this kernel contract. It
+does not modify the GMTL vendor boundary or lock.
