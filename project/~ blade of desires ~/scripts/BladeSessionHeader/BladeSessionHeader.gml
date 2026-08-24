@@ -9,7 +9,7 @@ function BladeSessionFormatVersion() {
 /// @func BladeSimulationContractVersion()
 /// Supplies the simulation-contract string stored and encoded by each session header.
 function BladeSimulationContractVersion() {
-	return "blade.simulation.v1";
+	return "blade.simulation.v2";
 }
 
 /// @func BladeSimulationTickRate()

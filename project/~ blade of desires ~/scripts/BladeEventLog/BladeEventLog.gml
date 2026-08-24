@@ -135,68 +135,6 @@ function _BladeEventLogSortPayload(_payload) {
     return _sorted;
 }
 
-/// Resolve a supported type and reason to its source and target ID kinds so
-/// invalid event relationships are rejected.
-function _BladeEventLogTypeSchema(_type, _reason) {
-    switch (_type) {
-        case "instance.spawned":
-            if (_reason == "outcome.scheduled") {
-                return [-1, BladeRunIdKind.Instance];
-            }
-            break;
-        case "attack.started":
-            if (_reason == "outcome.input_pressed") {
-                return [BladeRunIdKind.Instance, BladeRunIdKind.Attack];
-            }
-            break;
-        case "bullet.spawned":
-            if (_reason == "outcome.pattern_emitted") {
-                return [BladeRunIdKind.Attack, BladeRunIdKind.Bullet];
-            }
-            break;
-        case "damage.applied":
-            if (_reason == "outcome.collision_confirmed") {
-                return [BladeRunIdKind.Bullet, BladeRunIdKind.Instance];
-            }
-            break;
-        case "instance.removed":
-            if (_reason == "cleanup.stage_end"
-                || _reason == "cleanup.owner_removed"
-                || _reason == "cleanup.out_of_bounds"
-                || _reason == "cancel.phase_change") {
-                return [BladeRunIdKind.Instance, -1];
-            }
-            break;
-        case "attack.cancelled":
-            if (_reason == "cleanup.owner_removed" || _reason == "cancel.phase_change") {
-                return [BladeRunIdKind.Attack, -1];
-            }
-            break;
-        case "bullet.removed":
-            if (_reason == "cleanup.stage_end"
-                || _reason == "cleanup.owner_removed"
-                || _reason == "cleanup.out_of_bounds"
-                || _reason == "cancel.phase_change") {
-                return [BladeRunIdKind.Bullet, -1];
-            }
-            break;
-        case "damage.cancelled":
-            if (_reason == "cleanup.owner_removed" || _reason == "cancel.phase_change") {
-                return [BladeRunIdKind.DamageEvent, -1];
-            }
-            break;
-        case "presentation.effect":
-            if (_reason == "presentation.requested") {
-                return [-1, -1];
-            }
-            break;
-    }
-    _BladeEventLogFail(
-        "type/reason",
-        "unknown or invalid pair " + string(_type) + " / " + string(_reason)
-    );
-}
-
 /// Require an allocated ID of the selected kind, or an empty value when the
 /// event schema has no such endpoint.
 function _BladeEventLogRequireOptionalId(_identity, _id, _kind, _field) {
@@ -271,7 +209,7 @@ function _BladeEventLogBuildQueued(
     );
     var _validated_type = _BladeEventLogAsciiToken(_type, "type", true);
     var _validated_reason = _BladeEventLogAsciiToken(_reason, "reason", true);
-    var _schema = _BladeEventLogTypeSchema(_validated_type, _validated_reason);
+    var _schema = _BladeEventSchemaEndpointKinds(_validated_type, _validated_reason);
     if (_validated_channel == BladeEventChannel.Presentation
         && _validated_type != "presentation.effect") {
         _BladeEventLogFail("channel", "presentation channel requires a presentation event");

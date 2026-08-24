@@ -143,7 +143,7 @@ function _BladeRunPauseTestsThrowingCallback(_run_snapshot, _input_snapshot, _ti
 /// Adds the focused run-pause integration cases to the shared project-owned result state.
 function BladeRunPauseTestsRun(_state) {
 	BladeKernelTestRunCase(_state, "run pause numeric masks freeze gameplay while presentation advances", function() {
-		// Reject unknown bits before sampling, then prove All cannot bypass two frozen domains.
+		// Reject unknown bits before sampling, then prove All cannot bypass frozen gameplay domains.
 		var _coordinator = _BladeRunCoordinatorTestCreate();
 		var _raw = _BladeRunPauseTestsRawState();
 		var _initial = BladeRunCoordinatorCanonical(_coordinator);
@@ -155,7 +155,7 @@ function BladeRunPauseTestsRun(_state) {
 			BladeRunCoordinatorStepDirect(
 				self.coordinator,
 				self.raw,
-				BladeClockDomain.All | 16
+				BladeClockDomain.All | 32
 			);
 		}), "requested domain mask", "invalid numeric eligibility");
 		BladeKernelTestAssertEqual(
@@ -170,7 +170,9 @@ function BladeRunPauseTestsRun(_state) {
 			_coordinator,
 			_owner,
 			"pause.menu",
-			BladeClockDomain.Stage | BladeClockDomain.Actor,
+			BladeClockDomain.Stage
+				| BladeClockDomain.Actor
+				| BladeClockDomain.Combat,
 			BladePauseReleasePolicy.OwnerDestroyed
 		);
 		BladeKernelTestAssertEqual(_token.token_id, "pau:1", "first coordinator pause ID");
@@ -194,6 +196,7 @@ function BladeRunPauseTestsRun(_state) {
 		BladeKernelTestAssertEqual(_direct.counters.stage_tick, int64(0), "direct Stage frozen");
 		BladeKernelTestAssertEqual(_direct.counters.actor_tick, int64(0), "direct Actor frozen");
 		BladeKernelTestAssertEqual(_direct.counters.boss_tick, int64(1), "direct Boss advances");
+		BladeKernelTestAssertEqual(_direct.counters.combat_tick, int64(0), "direct Combat frozen");
 		BladeKernelTestAssertEqual(
 			_direct.counters.presentation_tick,
 			int64(1),
@@ -210,6 +213,7 @@ function BladeRunPauseTestsRun(_state) {
 		BladeKernelTestAssertEqual(_advance.counters.stage_tick, int64(0), "advance Stage frozen");
 		BladeKernelTestAssertEqual(_advance.counters.actor_tick, int64(0), "advance Actor frozen");
 		BladeKernelTestAssertEqual(_advance.counters.boss_tick, int64(2), "advance Boss tick");
+		BladeKernelTestAssertEqual(_advance.counters.combat_tick, int64(0), "advance Combat frozen");
 		BladeKernelTestAssertEqual(
 			_advance.counters.presentation_tick,
 			int64(2),
@@ -228,6 +232,7 @@ function BladeRunPauseTestsRun(_state) {
 		BladeKernelTestAssertEqual(_resumed.counters.stage_tick, int64(1), "Stage resumes");
 		BladeKernelTestAssertEqual(_resumed.counters.actor_tick, int64(1), "Actor resumes");
 		BladeKernelTestAssertEqual(_resumed.counters.boss_tick, int64(3), "Boss continues");
+		BladeKernelTestAssertEqual(_resumed.counters.combat_tick, int64(1), "Combat resumes");
 		BladeKernelTestAssertEqual(
 			BladeRunCoordinatorDiagnostics(_coordinator).pause.frozen_domains,
 			BladeClockDomain.None,
@@ -267,6 +272,7 @@ function BladeRunPauseTestsRun(_state) {
 		BladeKernelTestAssertEqual(_result.counters.stage_tick, int64(0), "method cannot bypass Stage");
 		BladeKernelTestAssertEqual(_result.counters.actor_tick, int64(3), "method permits Actor");
 		BladeKernelTestAssertEqual(_result.counters.boss_tick, int64(3), "method permits Boss");
+		BladeKernelTestAssertEqual(_result.counters.combat_tick, int64(3), "method permits Combat");
 		BladeKernelTestAssertEqual(
 			_result.counters.presentation_tick,
 			int64(1),
@@ -305,6 +311,7 @@ function BladeRunPauseTestsRun(_state) {
 		);
 		BladeKernelTestAssertEqual(_result.counters.actor_tick, int64(3), "Actor remains eligible");
 		BladeKernelTestAssertEqual(_result.counters.boss_tick, int64(3), "Boss remains eligible");
+		BladeKernelTestAssertEqual(_result.counters.combat_tick, int64(3), "Combat remains eligible");
 		BladeKernelTestAssertEqual(
 			BladeRunCoordinatorPauseSnapshot(_coordinator).frozen_domains,
 			BladeClockDomain.Stage,
@@ -396,6 +403,7 @@ function BladeRunPauseTestsRun(_state) {
 		BladeKernelTestAssertEqual(_result.counters.stage_tick, int64(1), "later Stage ticks freeze");
 		BladeKernelTestAssertEqual(_result.counters.actor_tick, int64(3), "Actor batch remains coherent");
 		BladeKernelTestAssertEqual(_result.counters.boss_tick, int64(3), "Boss batch remains coherent");
+		BladeKernelTestAssertEqual(_result.counters.combat_tick, int64(3), "Combat batch remains coherent");
 		BladeKernelTestAssertEqual(
 			BladeRunCoordinatorSnapshot(_coordinator).lifecycle,
 			BladeRunLifecycle.Active,

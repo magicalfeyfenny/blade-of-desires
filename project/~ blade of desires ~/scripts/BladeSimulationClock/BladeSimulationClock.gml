@@ -6,15 +6,16 @@ enum BladeClockDomain {
 	Actor = 2,
 	Boss = 4,
 	Presentation = 8,
-	All = 15
+	Combat = 16,
+	All = 31
 }
 
-// Rejects values that are not version 1 clock structs before other clock fields are read.
+// Rejects values that are not version 2 clock structs before other clock fields are read.
 function _BladeSimulationClockRequire(_clock) {
 	if (!is_struct(_clock)
 		|| !variable_struct_exists(_clock, "__blade_simulation_clock_version")
-		|| _clock.__blade_simulation_clock_version != 1) {
-		throw("BladeSimulationClock: expected a version 1 clock");
+		|| _clock.__blade_simulation_clock_version != 2) {
+		throw("BladeSimulationClock: expected a version 2 clock");
 	}
 }
 
@@ -108,6 +109,13 @@ function _BladeSimulationClockRequireTickCapacity(_clock, _domain_mask, _tick_co
 			_clock.boss_tick,
 			_tick_count,
 			"boss tick"
+		);
+	}
+	if ((_domain_mask & BladeClockDomain.Combat) != 0) {
+		_BladeSimulationClockRequireCounterCapacity(
+			_clock.combat_tick,
+			_tick_count,
+			"combat tick"
 		);
 	}
 	if ((_domain_mask & BladeClockDomain.Presentation) != 0) {
@@ -210,7 +218,7 @@ function BladeSimulationClockCreate(_max_catch_up_ticks = 8) {
 	);
 
 	return {
-		__blade_simulation_clock_version: 1,
+		__blade_simulation_clock_version: 2,
 		tick_rate: 60,
 		accumulator_threshold: int64(1000000),
 		max_catch_up_ticks: _maximum,
@@ -220,6 +228,7 @@ function BladeSimulationClockCreate(_max_catch_up_ticks = 8) {
 		stage_tick: int64(0),
 		actor_tick: int64(0),
 		boss_tick: int64(0),
+		combat_tick: int64(0),
 		presentation_tick: int64(0),
 	};
 }
@@ -235,6 +244,7 @@ function BladeSimulationClockReset(_clock) {
 	_clock.stage_tick = int64(0);
 	_clock.actor_tick = int64(0);
 	_clock.boss_tick = int64(0);
+	_clock.combat_tick = int64(0);
 	_clock.presentation_tick = int64(0);
 	return _clock;
 }
@@ -250,6 +260,7 @@ function BladeSimulationClockGetCounters(_clock) {
 		stage_tick: _clock.stage_tick,
 		actor_tick: _clock.actor_tick,
 		boss_tick: _clock.boss_tick,
+		combat_tick: _clock.combat_tick,
 		presentation_tick: _clock.presentation_tick,
 	};
 }
@@ -284,6 +295,9 @@ function BladeSimulationClockStepDirect(_clock, _eligibility, _tick_callback = u
 	}
 	if ((_domain_mask & BladeClockDomain.Boss) != 0) {
 		_clock.boss_tick += int64(1);
+	}
+	if ((_domain_mask & BladeClockDomain.Combat) != 0) {
+		_clock.combat_tick += int64(1);
 	}
 	if ((_domain_mask & BladeClockDomain.Presentation) != 0) {
 		_clock.presentation_tick += int64(1);

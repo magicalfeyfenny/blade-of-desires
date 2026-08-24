@@ -31,8 +31,9 @@ function _BladeRunCoordinatorTestCreate(
 
 /// Returns one deterministic state fragment through the coordinator's kernel-hiding callback adapter.
 function _BladeRunCoordinatorTestDirtySimulation(_run_snapshot, _snapshot, _tick) {
-	return BladeCanonicalRecord("RT1", [
+	return BladeCanonicalRecord("RT2", [
 		string(_tick.simulation_tick),
+		string(_tick.combat_tick),
 		_run_snapshot.ship_id,
 		BladeInputSnapshotCanonical(_snapshot),
 	]);
@@ -43,7 +44,10 @@ function _BladeRunCoordinatorTestStep(_coordinator, _callback = undefined) {
 	return BladeRunCoordinatorStepDirect(
 		_coordinator,
 		BladeInputRawStateCreate(0, 0, 0),
-		BladeClockDomain.Stage | BladeClockDomain.Actor | BladeClockDomain.Boss,
+		BladeClockDomain.Stage
+			| BladeClockDomain.Actor
+			| BladeClockDomain.Boss
+			| BladeClockDomain.Combat,
 		_callback
 	);
 }
@@ -116,6 +120,11 @@ function _BladeRunCoordinatorTestRepeatability() {
 	var _first = _BladeRunCoordinatorTestCreate();
 	var _second = _BladeRunCoordinatorTestCreate();
 	var _baseline = BladeRunCoordinatorCanonical(_first);
+	BladeKernelTestAssertEqual(
+		string_copy(_baseline, 1, 4),
+		"BRC3",
+		"version 3 coordinator record"
+	);
 	BladeKernelTestAssertEqual(
 		_baseline,
 		BladeRunCoordinatorCanonical(_second),
@@ -314,6 +323,7 @@ function _BladeRunCoordinatorTestCallbackIsolation() {
 		input_is_string: false,
 		tick_is_struct: false,
 		tick_value: int64(-1),
+		combat_tick_value: int64(-1),
 	};
 	var _callback = method(_observed, function(_run_snapshot, _input_snapshot, _tick) {
 		// Inspect and mutate only the detached or immutable values supplied by the adapter.
@@ -327,9 +337,11 @@ function _BladeRunCoordinatorTestCallbackIsolation() {
 		self.input_is_string = is_string(_input_snapshot);
 		self.tick_is_struct = is_struct(_tick);
 		self.tick_value = _tick.simulation_tick;
+		self.combat_tick_value = _tick.combat_tick;
 		_run_snapshot.ship_id = "ship.changed";
 		_run_snapshot.player.instance_id = "ins:999";
 		_tick.simulation_tick = int64(999);
+		_tick.combat_tick = int64(999);
 		return BladeCanonicalRecord("RCI1", [
 			_input_snapshot,
 			string(self.tick_value),
@@ -353,6 +365,11 @@ function _BladeRunCoordinatorTestCallbackIsolation() {
 	);
 	BladeKernelTestAssertTrue(_observed.tick_is_struct, "callback receives detached tick view");
 	BladeKernelTestAssertEqual(_observed.tick_value, int64(1), "callback tick value");
+	BladeKernelTestAssertEqual(
+		_observed.combat_tick_value,
+		int64(1),
+		"callback receives the Combat tick value"
+	);
 	var _fresh = BladeRunCoordinatorSnapshot(_coordinator);
 	BladeKernelTestAssertEqual(_fresh.ship_id, "ship.maynii", "callback cannot change run ship");
 	BladeKernelTestAssertEqual(_fresh.player.instance_id, "ins:1", "callback cannot change player ID");
@@ -360,6 +377,11 @@ function _BladeRunCoordinatorTestCallbackIsolation() {
 		BladeRunCoordinatorDiagnostics(_coordinator).kernel.clock.simulation_tick,
 		int64(1),
 		"callback tick mutation cannot change the owned clock"
+	);
+	BladeKernelTestAssertEqual(
+		BladeRunCoordinatorDiagnostics(_coordinator).kernel.clock.combat_tick,
+		int64(1),
+		"coordinator advances the Combat counter"
 	);
 
 	var _reference = _BladeRunCoordinatorTestCreate();

@@ -15,7 +15,10 @@ function BladeKernelTestsRun() {
     BladeRunCoordinatorTestsRun(_state);
     BladeRunPauseTestsRun(_state);
     BladeRuntimeOwnershipTestsRun(_state);
+    BladeEventSchemaTestsRun(_state);
     BladeEventSessionTestsRun(_state);
+    BladeCombatGeometryTestsRun(_state);
+    BladeCombatRuntimeTestsRun(_state);
     BladeKernelIntegrationTestsRun(_state);
 
     return BladeKernelTestFinish(_state);

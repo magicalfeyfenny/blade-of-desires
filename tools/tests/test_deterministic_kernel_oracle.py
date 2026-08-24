@@ -205,7 +205,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         header = _record(
             "H1",
             1,
-            "blade.simulation.v1",
+            "blade.simulation.v2",
             "sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b",
             PRNG_VERSION,
             60,
@@ -218,7 +218,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
             _record("S1", 3, 1024, 0, 4, 0, 1, 0, 0, 0),
             _record("S1", 4, 0, 0, 0, 0, 4, 0, 0, 0),
         )
-        clock = _record("C1", 4, 4, 4, 4)
+        clock = _record("C2", 4, 4, 4, 4, 4)
 
         stream_draws = {
             "stage_schedule": 1,
@@ -289,7 +289,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
             state_records.append(_record("T1", tick, _record("F1", tick, held)))
         state_transcript = _record("ST1", *state_records)
         gameplay = _record(
-            "G1",
+            "G2",
             header,
             inputs,
             clock,
@@ -305,7 +305,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         )
         self.assertEqual(
             hashlib.sha1(gameplay.encode()).hexdigest(),
-            "32634fdd4209262854bf5686b6d848ed840f060c",
+            "4cf18fdbe8ee8d8bb51c51f3f2edcff7c61876e2",
         )
 
 

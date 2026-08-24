@@ -5,12 +5,12 @@ function _BladeKernelFail(_field, _reason) {
     throw("BladeDeterministicKernel: " + _field + ": " + _reason);
 }
 
-/// Reject values that are not version 1 kernel structs before composed systems are accessed.
+/// Reject values that are not version 2 kernel structs before composed systems are accessed.
 function _BladeKernelRequire(_kernel) {
     if (!is_struct(_kernel)
         || !variable_struct_exists(_kernel, "__blade_kernel_version")
-        || _kernel.__blade_kernel_version != 1) {
-        _BladeKernelFail("kernel", "expected a version 1 deterministic kernel");
+        || _kernel.__blade_kernel_version != 2) {
+        _BladeKernelFail("kernel", "expected a version 2 deterministic kernel");
     }
 }
 
@@ -92,11 +92,12 @@ function _BladeKernelGameplayInputCanonical(_snapshot) {
 /// timing cannot alter the gameplay transcript.
 function _BladeKernelClockCanonical(_clock) {
     var _counters = BladeSimulationClockGetCounters(_clock);
-    return BladeCanonicalRecord("C1", [
+    return BladeCanonicalRecord("C2", [
         string(_counters.simulation_tick),
         string(_counters.stage_tick),
         string(_counters.actor_tick),
         string(_counters.boss_tick),
+        string(_counters.combat_tick),
     ]);
 }
 
@@ -181,7 +182,7 @@ function BladeDeterministicKernelCreate(
 ) {
     var _identity = BladeRunIdentityCreate(_content_id_predicate);
     return {
-        __blade_kernel_version: 1,
+        __blade_kernel_version: 2,
         header: new BladeSessionHeader(_content_fingerprint, _run_seed),
         clock: BladeSimulationClockCreate(_max_catch_up_ticks),
         input_sampler: BladeInputSamplerCreate(),
@@ -358,7 +359,7 @@ function BladeKernelStepDirect(
 /// excluding presentation-only state.
 function BladeKernelGameplayCanonical(_kernel) {
     _BladeKernelRequire(_kernel);
-    return BladeCanonicalRecord("G1", [
+    return BladeCanonicalRecord("G2", [
         _kernel.header.canonical(),
         BladeCanonicalRecord("I1", _kernel.gameplay_input_transcript),
         _BladeKernelClockCanonical(_kernel.clock),

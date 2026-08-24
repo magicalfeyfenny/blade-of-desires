@@ -1,7 +1,8 @@
 # Runtime state ownership
 
-Blade's project-owned runtime layer separates deterministic run state, pause
-ownership, mutable per-user configuration, and repository content. These
+Blade's project-owned runtime layer separates deterministic run state, combat
+ownership, pause ownership, mutable per-user configuration, and repository
+content. These
 boundaries are part of the public contract: callers submit commands to the
 owner and consume detached snapshots instead of retaining mutable internal
 records.
@@ -12,20 +13,22 @@ records.
 | --- | --- | --- | --- |
 | Ship, difficulty, and input-binding IDs | Product contract and input-binding registry | Repository version | Canonical repository data; never rewritten by the game |
 | Run and player state | `BladeRunCoordinator` | One run attempt | Not persisted by this layer |
+| Actors, attacks, projectiles, damage, terminals, and reward requests | Coordinator-owned `BladeCombatRuntime` | One run attempt or explicit room boundary | Not persisted by this layer |
 | Pause tokens and diagnostics | Coordinator-owned `BladePauseRegistry` | One run attempt | Not persisted by this layer |
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
 | Career, scores, suspended runs, checkpoints, and replays | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
 
-The config service has no reference to the coordinator or pause registry. Its
+The config service has no reference to the coordinator, combat runtime, or
+pause registry. Its
 closed schema drops run-shaped fields, and the cross-boundary test proves that
 saving and loading config neither serializes nor mutates live run, player, or
-pause state.
+combat/pause state.
 
 ## Run and player ownership
 
 `BladeRunCoordinatorCreate` establishes the sole mutable owner of a run. It
-builds a deterministic kernel, run record, player record, and pause registry
-from these explicit inputs:
+builds a deterministic kernel, run record, player record, combat runtime, and
+pause registry from these explicit inputs:
 
 - the content-contract fingerprint and known-content predicate;
 - a known `ship.*` ID and `difficulty.*` ID;
@@ -60,13 +63,14 @@ run. It does not write career or score data. Invalid lifecycle transitions and
 attempts to advance a terminal run fail closed.
 
 Reset first builds and validates an entirely fresh attempt. Only after that
-succeeds does it close the old pause boundary and swap the kernel, pause
-registry, and state together. Reset is valid from active or terminal state,
-accepts a new ship, difficulty, mode, and seed, and restarts all run-local ID
-frontiers, including pause token `pau:1`.
+succeeds does it close the old combat and pause boundaries and swap the kernel,
+combat runtime, pause registry, and state together. Reset is valid from active
+or terminal state, accepts a new ship, difficulty, mode, and seed, and restarts
+all run-local ID frontiers, including pause token `pau:1`.
 
-The coordinator canonical form binds its run/player selection and lifecycle,
-the complete pause canonical form, and the deterministic kernel canonical form.
+The `BRC3` coordinator canonical form binds its run/player selection and
+lifecycle, the complete `BPR2` pause form, the `BCRUNTIME1` combat form, and the
+deterministic kernel's `G2` form.
 Callbacks receive only a run snapshot, immutable input snapshot, and detached
 tick view. While any advance call is executing, completion, abort, reset, and
 nested advance calls are rejected. Pause commands and detached queries remain
@@ -76,9 +80,61 @@ simulation callback constrains the next tick. The advancing guard is cleared in
 a `finally` block after either success or callback failure, so it cannot strand
 the coordinator.
 
+## Combat transaction ownership
+
+`BladeCombatRuntime` is the only mutable owner of active combat records.
+`BladeRunCombatCommands` is the public coordinator-facing seam; snapshots are
+detached and omit the shared identity allocator and active kernel tick.
+The coordinator opens and closes the runtime around every simulation callback,
+and its `BRCF1` callback fragment binds both caller state and the resulting
+combat canonical state.
+
+Every emitted attack and projectile records a run-local `atk:<n>` or `blt:<n>`
+ID, faction, owner instance, attack relationship, content ID, simulation and
+Combat spawn ticks, integer damage, cancellation power/policy, remaining
+penetration and hit budget, lifetime, and terminal reason. Enemy requests pass
+the same compiled product plane owned by #6 before either ID allocation or
+event submission. The half-open point or fully-contained hurtbox rule is
+evaluated for every request; previous entry and previous successful emission do
+not authorize a later outside attempt.
+
+Collision discovery is pure. Swept q10 AABBs produce candidates, then exact
+impact fractions sort first; projectile numeric ID and target numeric ID are
+the stable tie-breakers. Resolution alone applies integer health changes and
+allocates `dmg:<n>` transactions. Faction, invulnerability, zero health,
+per-projectile target history, and same-tick attack history reject damage before
+allocation. GameMaker instance creation and candidate insertion order therefore
+cannot choose the result.
+
+Projectile cancellation is a pure symmetric pair rule. Equal power cancels
+both without consuming penetration. Unequal power cancels the weaker member;
+the stronger member consumes one penetration and survives only when it had one
+available. Ignore policy, matching factions, and nonpositive power do not
+interact.
+
+Terminal requests are idempotent and commit by subject kind, then numeric
+subject ID. For competing requests on one subject, priority from lowest to
+highest is: out of bounds, expiration, exhausted hit budget, projectile
+cancellation, defeat, owner removal, phase change, room exit, run completion or
+abort, run reset, then run load. Administrative cleanup therefore outranks a
+same-tick defeat and cannot grant its reward or children. Rewards and recursive
+Requests with equal priority use the numeric reason value, then the earliest
+simulation tick and Combat tick. Rewards and recursive child declarations are
+derived only from a selected zero-health defeat; the
+test-only Ghost declaration proves one large defeat creates three medium actors
+and their defeats create nine small actors.
+
+Room exit, completion, abort, reset, and load prepare complete reason-coded
+boundary plans between ticks and commit them without events, rewards, or child
+spawns. `BladeRunCoordinatorLoadBoundary` closes the replaced attempt as
+aborted; this is cleanup authority, not suspended-run serialization. Holding
+the Combat pause domain freezes emission, projectile motion, collision, damage,
+and rewards while Actor poses and Presentation may continue. Administrative
+boundaries remain available while Combat is paused.
+
 ## Pause ownership
 
-A version 1 pause token records:
+A version 2 pause token records:
 
 - stable token ID `pau:<ordinal>`;
 - allocated run-local event-owner ID;
@@ -87,7 +143,11 @@ A version 1 pause token records:
 - authoritative acquisition tick;
 - release policy.
 
-Tokens may freeze only `BladeClockDomain.Stage`, `Actor`, and `Boss`.
+Active tokens use `BPT2` records and the enclosing registry uses `BPR2` because
+the closed pausable-domain set changed. Existing diagnostic record shapes keep
+their version 1 prefixes.
+
+Tokens may freeze only `BladeClockDomain.Stage`, `Actor`, `Boss`, and `Combat`.
 `Presentation` is deliberately not a pausable token domain; UI and presentation
 work can continue while gameplay domains are frozen. Eligibility for each tick
 is resolved as the caller's live mask minus the union of all active token
@@ -110,10 +170,9 @@ policy required a longer lifetime is diagnosed as a missing transfer. Room
 exit retains only `RunBoundary` tokens already held by the run owner and
 releases everything else. Completion, abort, reset, and load boundaries release
 every token; an unreleased `Explicit` token emits `pause.leaked_token`.
-Completion, abort, and reset are coordinator commands. Suspended-run loading is
-outside this layer, but a future loader must apply
-`BladePauseRegistryRunBoundary(..., BladePauseRunBoundary.Load, ...)` before it
-replaces an attempt.
+Completion, abort, reset, and load cleanup are coordinator commands. Suspended
+run serialization remains outside this layer; a future loader must call the
+load boundary before it replaces an attempt.
 
 Unknown release and transfer requests, plus release and transfer owner
 mismatches, do not consume token IDs or remove tokens. They emit the stable
