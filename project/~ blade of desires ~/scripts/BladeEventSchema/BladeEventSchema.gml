@@ -14,13 +14,13 @@ function _BladeEventSchemaIsCombatCleanup(_reason) {
     return _BladeEventSchemaIsBoundaryCleanup(_reason)
         || _reason == "cleanup.owner_removed"
         || _reason == "cleanup.expired"
+        || _reason == "cleanup.stage_end"
         || _reason == "cancel.phase_change";
 }
 
 /// Recognizes every reason that may remove a projectile during a combat tick.
 function _BladeEventSchemaIsProjectileCleanup(_reason) {
     return _BladeEventSchemaIsCombatCleanup(_reason)
-        || _reason == "cleanup.stage_end"
         || _reason == "cleanup.out_of_bounds"
         || _reason == "cleanup.expired"
         || _reason == "cleanup.hit_budget_exhausted"

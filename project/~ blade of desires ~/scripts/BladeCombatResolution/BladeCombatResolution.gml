@@ -18,7 +18,7 @@ function _BladeCombatResolutionReason(_subject_kind, _reason) {
     var _kind = _BladeCombatResolutionIdentityKind(_subject_kind);
     var _validated = _BladeCombatRuntimeInteger(
         _reason, BladeCombatTerminalReason.OutOfBounds,
-        BladeCombatTerminalReason.RunLoad, "terminal reason"
+        BladeCombatTerminalReason.StageEnd, "terminal reason"
     );
     if (_validated == BladeCombatTerminalReason.Defeat
         && _kind != BladeRunIdKind.Instance) {

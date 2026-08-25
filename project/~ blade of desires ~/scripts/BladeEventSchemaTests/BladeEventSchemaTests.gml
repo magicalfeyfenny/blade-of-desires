@@ -96,6 +96,7 @@ function BladeEventSchemaTestsRun(_state) {
 
     BladeKernelTestRunCase(_state, "combat event schema accepts every administrative boundary", function() {
         var _reasons = [
+            "cleanup.stage_end",
             "cleanup.run_load",
             "cleanup.run_reset",
             "cleanup.run_aborted",

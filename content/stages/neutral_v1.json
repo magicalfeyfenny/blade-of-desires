@@ -1,0 +1,244 @@
+{
+  "schema_version": 1,
+  "id": "stage_catalog.neutral_fixture",
+  "display_name": "Neutral stage and encounter schedule fixtures",
+  "product_contract": {
+    "id": "contract.blade",
+    "content_version": "1.2.0"
+  },
+  "named_anchors": [
+    {
+      "schema_version": 1,
+      "id": "anchor.neutral_stage.entry",
+      "display_name": "Neutral encounter entry",
+      "x_q10": 327680,
+      "y_q10": 61440
+    }
+  ],
+  "participant_kind_ids": [
+    "participant_kind.neutral_stage.target"
+  ],
+  "task_type_ids": [
+    "task_type.neutral_stage.probe"
+  ],
+  "signal_type_ids": [
+    "signal_type.neutral_stage.encounter_lifecycle",
+    "signal_type.neutral_stage.external",
+    "signal_type.neutral_stage.task_completion"
+  ],
+  "cue_type_ids": [
+    "cue_type.neutral_stage.semantic"
+  ],
+  "task_ports": [
+    {
+      "schema_version": 1,
+      "id": "task_port.neutral_stage.probe",
+      "display_name": "Neutral downstream task probe",
+      "type_id": "task_type.neutral_stage.probe",
+      "completion_signal": {
+        "signal_id": "signal.neutral_stage.task_completed",
+        "type_id": "signal_type.neutral_stage.task_completion"
+      }
+    }
+  ],
+  "signals": [
+    {
+      "schema_version": 1,
+      "id": "signal.neutral_stage.encounter_completed",
+      "display_name": "Neutral encounter completed",
+      "type_id": "signal_type.neutral_stage.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.neutral_stage.targets"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.neutral_stage.encounter_started",
+      "display_name": "Neutral encounter started",
+      "type_id": "signal_type.neutral_stage.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.neutral_stage.targets"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.neutral_stage.release",
+      "display_name": "Neutral external release",
+      "type_id": "signal_type.neutral_stage.external",
+      "source": {
+        "kind": "external"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.neutral_stage.task_completed",
+      "display_name": "Neutral task completed",
+      "type_id": "signal_type.neutral_stage.task_completion",
+      "source": {
+        "kind": "task_completion",
+        "source_id": "task_port.neutral_stage.probe"
+      }
+    }
+  ],
+  "cues": [
+    {
+      "schema_version": 1,
+      "id": "cue.neutral_stage.ready",
+      "display_name": "Neutral stage ready",
+      "type_id": "cue_type.neutral_stage.semantic"
+    }
+  ],
+  "stages": [
+    {
+      "schema_version": 1,
+      "id": "stage_schedule.neutral_fixture",
+      "display_name": "Neutral stage schedule fixture",
+      "entry_node_id": "stage_node.neutral_stage.ready",
+      "terminal_node_id": "stage_node.neutral_stage.complete",
+      "nodes": [
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.ready",
+          "display_name": "Emit ready cue",
+          "content_order": 0,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.neutral_stage.ready",
+            "type_id": "cue_type.neutral_stage.semantic"
+          },
+          "next_node_id": "stage_node.neutral_stage.wait_two_ticks"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.wait_two_ticks",
+          "display_name": "Wait two eligible stage ticks",
+          "content_order": 1,
+          "kind": "wait",
+          "active_ticks": 2,
+          "next_node_id": "stage_node.neutral_stage.spawn_targets"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.spawn_targets",
+          "display_name": "Spawn neutral encounter",
+          "content_order": 2,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.neutral_stage.targets",
+          "anchor_id": "anchor.neutral_stage.entry",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 1024
+          },
+          "next_node_id": "stage_node.neutral_stage.wait_targets"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.wait_targets",
+          "display_name": "Wait for owned encounter completion",
+          "content_order": 3,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.neutral_stage.targets",
+          "next_node_id": "stage_node.neutral_stage.request_probe"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.request_probe",
+          "display_name": "Request downstream probe",
+          "content_order": 4,
+          "kind": "request_task",
+          "task": {
+            "port_id": "task_port.neutral_stage.probe",
+            "type_id": "task_type.neutral_stage.probe"
+          },
+          "next_node_id": "stage_node.neutral_stage.wait_probe"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.wait_probe",
+          "display_name": "Wait for correlated task completion",
+          "content_order": 5,
+          "kind": "wait_signal",
+          "signal": {
+            "signal_id": "signal.neutral_stage.task_completed",
+            "type_id": "signal_type.neutral_stage.task_completion"
+          },
+          "next_node_id": "stage_node.neutral_stage.wait_release"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.wait_release",
+          "display_name": "Wait for external release",
+          "content_order": 6,
+          "kind": "wait_signal",
+          "signal": {
+            "signal_id": "signal.neutral_stage.release",
+            "type_id": "signal_type.neutral_stage.external"
+          },
+          "next_node_id": "stage_node.neutral_stage.complete"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.neutral_stage.complete",
+          "display_name": "Complete neutral stage",
+          "content_order": 7,
+          "kind": "complete"
+        }
+      ]
+    }
+  ],
+  "encounters": [
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.neutral_stage.targets",
+      "display_name": "Neutral owned-target encounter",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.neutral_stage.first",
+          "display_name": "First neutral target",
+          "kind_id": "participant_kind.neutral_stage.target",
+          "spawn_order": 0,
+          "local_offset_q10": {
+            "x": -1024,
+            "y": 0
+          },
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.neutral_stage.second",
+          "display_name": "Second neutral target",
+          "kind_id": "participant_kind.neutral_stage.target",
+          "spawn_order": 1,
+          "local_offset_q10": {
+            "x": 1024,
+            "y": 0
+          },
+          "defeat_disposition": "retain_harmless"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.neutral_stage.first",
+          "participant.neutral_stage.second"
+        ]
+      },
+      "cleanup_policy": {
+        "on_completion": "cleanup.stage_end"
+      },
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.neutral_stage.encounter_started",
+          "type_id": "signal_type.neutral_stage.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.neutral_stage.encounter_completed",
+          "type_id": "signal_type.neutral_stage.encounter_lifecycle"
+        }
+      }
+    }
+  ]
+}

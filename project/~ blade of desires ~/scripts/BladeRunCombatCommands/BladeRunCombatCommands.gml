@@ -110,20 +110,33 @@ function BladeRunCombatRequestTerminal(
 }
 
 /// @func BladeRunCombatRoomExit(coordinator)
-/// Clears room-owned pause and combat state between ticks without ending the active run.
+/// Clears room-owned pause, combat, and attached stage state without ending the run.
 function BladeRunCombatRoomExit(_coordinator) {
 	var _runtime = _BladeRunCombatBetweenTicks(_coordinator, "combat room exit");
 	var _ticks = _BladeRunCombatCounters(_coordinator);
+	var _stage_boundary = _BladeRunStagePrepareAbort(
+		_coordinator, BladeCombatTerminalReason.RoomExit
+	);
 	var _plan = BladeCombatRuntimeBoundaryPlan(
 		_runtime, BladeCombatTerminalReason.RoomExit,
 		_ticks.simulation_tick, _ticks.combat_tick
 	);
 	var _pause_report = BladeRunCoordinatorPauseRoomExit(_coordinator);
 	var _combat_report = BladeCombatRuntimeCommitBoundary(_runtime, _plan);
-	return {
+	var _stage_report = _BladeRunStageCommitAbort(_stage_boundary);
+	if (!is_undefined(_stage_report)) {
+		// The report retains the ended room's provenance while the active run
+		// becomes vacant for its next room-owned stage.
+		_coordinator.__stage = undefined;
+	}
+	var _result = {
 		pause_boundary_report: _pause_report,
 		combat_boundary_report: _combat_report,
 	};
+	if (!is_undefined(_stage_report)) {
+		_result.stage_boundary_report = _stage_report;
+	}
+	return _result;
 }
 
 /// @func BladeRunCombatSnapshot(coordinator)
