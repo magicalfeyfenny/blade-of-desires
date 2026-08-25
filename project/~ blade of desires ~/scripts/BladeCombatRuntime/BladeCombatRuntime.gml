@@ -19,7 +19,8 @@ enum BladeCombatTerminalReason {
     RunCompleted = 9,
     RunAborted = 10,
     RunReset = 11,
-    RunLoad = 12
+    RunLoad = 12,
+    StageEnd = 13
 }
 
 /// Throws one field-specific combat-runtime diagnostic.
@@ -68,7 +69,7 @@ function _BladeCombatRuntimeClone(_value) {
 function BladeCombatTerminalReasonToken(_reason) {
     switch (_BladeCombatRuntimeInteger(
         _reason, BladeCombatTerminalReason.None,
-        BladeCombatTerminalReason.RunLoad, "terminal reason"
+        BladeCombatTerminalReason.StageEnd, "terminal reason"
     )) {
         case BladeCombatTerminalReason.None: return "";
         case BladeCombatTerminalReason.OutOfBounds: return "cleanup.out_of_bounds";
@@ -78,6 +79,7 @@ function BladeCombatTerminalReasonToken(_reason) {
         case BladeCombatTerminalReason.Defeat: return "outcome.defeated";
         case BladeCombatTerminalReason.OwnerRemoval: return "cleanup.owner_removed";
         case BladeCombatTerminalReason.PhaseChange: return "cancel.phase_change";
+        case BladeCombatTerminalReason.StageEnd: return "cleanup.stage_end";
         case BladeCombatTerminalReason.RoomExit: return "cleanup.room_exit";
         case BladeCombatTerminalReason.RunCompleted: return "cleanup.run_completed";
         case BladeCombatTerminalReason.RunAborted: return "cleanup.run_aborted";
@@ -97,6 +99,7 @@ function _BladeCombatRuntimeTerminalPriority(_reason) {
         case BladeCombatTerminalReason.Defeat: return 50;
         case BladeCombatTerminalReason.OwnerRemoval: return 60;
         case BladeCombatTerminalReason.PhaseChange: return 70;
+        case BladeCombatTerminalReason.StageEnd: return 75;
         case BladeCombatTerminalReason.RoomExit: return 80;
         case BladeCombatTerminalReason.RunCompleted:
         case BladeCombatTerminalReason.RunAborted: return 90;

@@ -17,6 +17,7 @@ PROJECT_FILENAME = "~ blade of desires ~.yyp"
 CONTENT_DIRECTORY = Path("content")
 CONTENT_LINK = Path("datafiles/content")
 STAGE_DIRECTORY = Path("stages")
+PRODUCT_CONTRACT = Path("product_contract.json")
 LOAD_FAILED = object()
 
 
@@ -287,14 +288,16 @@ def _validate_included_files(
     project_root: Path,
     content_root: Path,
     content_resolved: Path | None,
+    product_source: Path,
     stage_sources: list[Path],
     errors: list[str],
 ) -> None:
-    """Validate canonical JSON entries and exact stage-source coverage."""
+    """Validate canonical JSON entries plus exact product and stage coverage."""
     included_files = project.get("IncludedFiles")
     if not isinstance(included_files, list):
         _add_error(errors, yyp_path, "IncludedFiles", "must be an array")
         return
+    product_count = 0
     stage_counts = {source.name: 0 for source in stage_sources}
     seen_destinations: dict[tuple[str, str], int] = {}
     for index, entry in enumerate(included_files):
@@ -344,10 +347,25 @@ def _validate_included_files(
         if (
             source is not None
             and mask_valid
+            and destination.parts[2:] == ()
+            and name == product_source.name
+        ):
+            product_count += 1
+        if (
+            source is not None
+            and mask_valid
             and destination.parts[2:] == STAGE_DIRECTORY.parts
             and name in stage_counts
         ):
             stage_counts[name] += 1
+    if product_count != 1:
+        _add_error(
+            errors,
+            product_source,
+            "IncludedFiles",
+            "must have exactly one valid datafiles/content entry; "
+            f"found {product_count}",
+        )
     for source in stage_sources:
         count = stage_counts[source.name]
         if count == 0:
@@ -379,6 +397,7 @@ def validate_repository(
     _validate_content_link(project_root, content_root, content_resolved, errors)
     _find_regular_json_copies(project_root, errors)
     stage_sources = _discover_stage_sources(content_root, content_resolved, errors)
+    product_source = content_root / PRODUCT_CONTRACT
     project = _load_yyp(yyp_path, errors)
     if project is not LOAD_FAILED:
         _validate_included_files(
@@ -387,6 +406,7 @@ def validate_repository(
             project_root,
             content_root,
             content_resolved,
+            product_source,
             stage_sources,
             errors,
         )

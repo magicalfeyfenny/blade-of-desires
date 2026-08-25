@@ -2,7 +2,7 @@
 
 `content/stages/` contains Blade's canonical subordinate JSON contract for
 deterministic stage schedules and encounter ownership. Version 1 defines a
-bounded plan that later GameMaker runtime code consumes. It does not author a
+bounded plan consumed by the GameMaker stage executor. It does not author a
 production Stage 1 route, enemy, boss, cutscene, balance value, or story beat.
 
 The checked-in `content/stages/neutral_v1.json` is deliberately neutral. Its
@@ -309,3 +309,34 @@ Any failure in phases one or two leaves gameplay ID frontiers, task generations,
 event queues, pause ownership, RNG draw counts, and command sinks unchanged.
 Validation never attempts partial repair, default inference, or best-effort
 execution.
+
+## GameMaker runtime ownership
+
+The GameMaker project bundles both `content/product_contract.json` and every
+canonical `content/stages/*.json` file as Included Files. Public attachment
+loads those JSON bytes, requires the bundled product file's exact SHA-1 to equal
+the active run header fingerprint, verifies the catalog's product ID and
+content version, and fingerprints the normalized stage plan separately. A
+resolver then validates every selected-stage participant spawn specification
+and final position before the executor is attached. Attachment allocates no
+participant or event IDs and emits no command.
+
+`BladeRunCoordinator` optionally owns one executor. On an eligible tick Combat
+commits first, so the stage observes same-tick owned defeats; the stage then
+advances while the kernel event-log tick remains open. A stage spawn therefore
+becomes combat-eligible on the following Combat tick. Pausing the Stage domain
+freezes stage ticks, execution generations, events, and outboxes while other
+eligible domains, including Combat, may continue.
+
+Each committed node appends one canonical stage event and consumes one shared
+run-local `evt:*` ID. Stage events have a dedicated canonical stream, while the
+shared identity frontier prevents collisions with ordinary gameplay events.
+Task requests, semantic cues, signals, and stage events are append-only
+outboxes read through consumer-owned cursors; reading or mutating a detached
+result cannot acknowledge or change executor state.
+
+Run reset restarts the same plan as fresh ownership and revalidates every spawn
+spec against the new kernel and combat runtime before replacing the old
+attempt. Abort, load, completion, and room-exit cleanup reconcile combat
+terminal provenance before marking an active stage aborted. Room exit then
+detaches that stage so the still-active run may attach the next schedule.

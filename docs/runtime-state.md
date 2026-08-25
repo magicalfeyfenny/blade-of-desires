@@ -14,6 +14,7 @@ records.
 | Ship, difficulty, and input-binding IDs | Product contract and input-binding registry | Repository version | Canonical repository data; never rewritten by the game |
 | Run and player state | `BladeRunCoordinator` | One run attempt | Not persisted by this layer |
 | Actors, attacks, projectiles, damage, terminals, and reward requests | Coordinator-owned `BladeCombatRuntime` | One run attempt or explicit room boundary | Not persisted by this layer |
+| Stage schedule, encounter ownership, typed ports, and stage events | Optional coordinator-owned `BladeStageExecutor` | One attached stage or run reset | Not persisted by this layer |
 | Pause tokens and diagnostics | Coordinator-owned `BladePauseRegistry` | One run attempt | Not persisted by this layer |
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
 | Career, scores, suspended runs, checkpoints, and replays | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
@@ -70,7 +71,9 @@ all run-local ID frontiers, including pause token `pau:1`.
 
 The `BRC3` coordinator canonical form binds its run/player selection and
 lifecycle, the complete `BPR2` pause form, the `BCRUNTIME1` combat form, and the
-deterministic kernel's `G2` form.
+deterministic kernel's `G2` form. When a stage is attached, `BRC3` appends its
+complete `BSEXECUTOR1` form; coordinators without a stage retain their existing
+bytes.
 Callbacks receive only a run snapshot, immutable input snapshot, and detached
 tick view. While any advance call is executing, completion, abort, reset, and
 nested advance calls are rejected. Pause commands and detached queries remain
@@ -79,6 +82,28 @@ tick because registry resolution follows the callback; one acquired by the
 simulation callback constrains the next tick. The advancing guard is cleared in
 a `finally` block after either success or callback failure, so it cannot strand
 the coordinator.
+
+## Stage transaction ownership
+
+`BladeStageExecutor` is the sole mutable schedule owner. The public loader binds
+the exact bundled product-contract SHA-1 to the active run, normalizes the raw
+stage JSON, fingerprints the normalized plan, and resolves every participant
+spawn specification before attachment. It advances after Combat closes on each
+eligible Stage tick, allowing same-tick combat terminals to satisfy only their
+owned encounter gate. Spawns become available to Combat on the next tick.
+
+Stage pause consumes no stage tick, ID, execution generation, event, or outbox
+record, while other eligible domains may continue. Committed nodes own a
+separate canonical event stream whose `evt:*` IDs share the kernel identity
+frontier. Typed task requests, semantic cues, signals, and events are exposed as
+detached cursor reads, never as mutable queues.
+
+Reset constructs and binds fresh stage ownership before swapping attempts.
+Terminal run boundaries retain the final stage report. Room exit applies its
+authoritative cleanup reason, returns the aborted stage report, and detaches the
+executor so the active run may attach another schedule. None of these
+administrative reasons can satisfy an encounter's all-defeated predicate or
+emit its completion signal.
 
 ## Combat transaction ownership
 
@@ -115,9 +140,10 @@ interact.
 Terminal requests are idempotent and commit by subject kind, then numeric
 subject ID. For competing requests on one subject, priority from lowest to
 highest is: out of bounds, expiration, exhausted hit budget, projectile
-cancellation, defeat, owner removal, phase change, room exit, run completion or
-abort, run reset, then run load. Administrative cleanup therefore outranks a
-same-tick defeat and cannot grant its reward or children. Rewards and recursive
+cancellation, defeat, owner removal, phase change, stage end
+(`cleanup.stage_end`), room exit, run completion or abort, run reset, then run
+load. Administrative cleanup therefore outranks a same-tick defeat and cannot
+grant its reward or children. Rewards and recursive
 Requests with equal priority use the numeric reason value, then the earliest
 simulation tick and Combat tick. Rewards and recursive child declarations are
 derived only from a selected zero-health defeat; the

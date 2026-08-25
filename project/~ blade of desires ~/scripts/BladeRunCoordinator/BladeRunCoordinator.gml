@@ -138,6 +138,7 @@ function _BladeRunCoordinatorRequire(_coordinator) {
 		"__max_catch_up_ticks",
 		"__kernel",
 		"__combat",
+		"__stage",
 		"__is_advancing",
 		"__pause_registry",
 		"__state",
@@ -351,7 +352,7 @@ function _BladeRunCoordinatorStateView(_coordinator) {
 		);
 	}
 
-	return {
+	var _view = {
 		schema_version: 1,
 		mode: _mode,
 		lifecycle: _lifecycle,
@@ -372,6 +373,12 @@ function _BladeRunCoordinatorStateView(_coordinator) {
 			terminal_tick: _player_terminal_tick,
 		},
 	};
+	if (!is_undefined(_coordinator.__stage)) {
+		_view.stage = BladeStageExecutorSnapshot(
+			_BladeRunStageAttached(_coordinator)
+		);
+	}
+	return _view;
 }
 
 /// Encodes one detached state view in fixed BPS1 then BRS1 field order.
@@ -397,60 +404,6 @@ function _BladeRunCoordinatorStateCanonical(_view) {
 		BladeCanonicalIntegerString(_view.terminal_tick, -1, _maximum, "run terminal tick"),
 		_player,
 	]);
-}
-
-/// Copies the completed kernel tick so callback mutation cannot affect later transcript encoding.
-function _BladeRunCoordinatorTickView(_tick) {
-	return {
-		simulation_tick: _tick.simulation_tick,
-		stage_tick: _tick.stage_tick,
-		actor_tick: _tick.actor_tick,
-		boss_tick: _tick.boss_tick,
-		combat_tick: _tick.combat_tick,
-		presentation_tick: _tick.presentation_tick,
-		domain_mask: _tick.domain_mask,
-	};
-}
-
-/// Binds a simulation callback that replaces the kernel argument with a detached run snapshot.
-function _BladeRunCoordinatorBindSimulationCallback(_coordinator, _callback) {
-	if (!is_undefined(_callback) && typeof(_callback) != "method") {
-		_BladeRunCoordinatorFail("simulation callback", "must be a method or undefined");
-	}
-
-	var _context = {
-		coordinator: _coordinator,
-		callback: _callback,
-	};
-	return method(_context, function(_kernel, _input_snapshot, _tick) {
-		var _run_snapshot = _BladeRunCoordinatorStateView(self.coordinator);
-		_BladeCombatRuntimeBeginTick(self.coordinator.__combat, _kernel, _tick);
-		try {
-			var _client_fragment = "";
-			if (typeof(self.callback) == "method") {
-				_client_fragment = self.callback(
-					_run_snapshot, _input_snapshot,
-					_BladeRunCoordinatorTickView(_tick)
-				);
-				if (is_undefined(_client_fragment)) _client_fragment = "";
-				if (!is_string(_client_fragment)) {
-					_BladeRunCoordinatorFail(
-						"simulation callback",
-						"must return a canonical string or undefined"
-					);
-				}
-			}
-			var _combat_fragment = _BladeCombatRuntimeEndTick(
-				self.coordinator.__combat
-			);
-			return BladeCanonicalRecord(
-				"BRCF1", [_client_fragment, _combat_fragment]
-			);
-		} catch (_caught) {
-			_BladeCombatRuntimeCancelTick(self.coordinator.__combat);
-			throw _caught;
-		}
-	});
 }
 
 /// Requires an active run before any command can advance deterministic kernel state.
@@ -518,6 +471,9 @@ function _BladeRunCoordinatorTransitionTerminal(
 	if (_combat_reason == BladeCombatTerminalReason.RunLoad) {
 		_boundary = BladePauseRunBoundary.Load;
 	}
+	var _stage_boundary = _BladeRunStagePrepareAbort(
+		_coordinator, _combat_reason
+	);
 	var _combat_plan = BladeCombatRuntimeBoundaryPlan(
 		_coordinator.__combat, _combat_reason,
 		_counters.simulation_tick, _counters.combat_tick
@@ -530,6 +486,7 @@ function _BladeRunCoordinatorTransitionTerminal(
 	var _combat_report = BladeCombatRuntimeCommitBoundary(
 		_coordinator.__combat, _combat_plan
 	);
+	var _stage_report = _BladeRunStageCommitAbort(_stage_boundary);
 
 	// Pause cleanup preflight passed, so terminal run/player state now changes together.
 	_coordinator.__state.lifecycle = _target;
@@ -539,6 +496,9 @@ function _BladeRunCoordinatorTransitionTerminal(
 	var _result = BladeRunCoordinatorSnapshot(_coordinator);
 	_result.pause_boundary_report = _pause_report;
 	_result.combat_boundary_report = _combat_report;
+	if (!is_undefined(_stage_report)) {
+		_result.stage_boundary_report = _stage_report;
+	}
 	return _result;
 }
 
@@ -571,6 +531,7 @@ function BladeRunCoordinatorCreate(
 		__max_catch_up_ticks: _plan.kernel.clock.max_catch_up_ticks,
 		__kernel: _plan.kernel,
 		__combat: _plan.combat,
+		__stage: undefined,
 		__is_advancing: false,
 		__pause_registry: _plan.pause_registry,
 		__state: _plan.state,
@@ -578,7 +539,7 @@ function BladeRunCoordinatorCreate(
 }
 
 /// @func BladeRunCoordinatorReset(coordinator, ship_id, difficulty_id, run_mode, run_seed)
-/// Builds a complete attempt before atomically replacing the prior kernel, pause registry, and state.
+/// Builds fresh kernel, combat, stage, pause, and run owners before replacing the prior attempt.
 function BladeRunCoordinatorReset(
 	_coordinator,
 	_ship_id,
@@ -598,6 +559,16 @@ function BladeRunCoordinatorReset(
 		_run_seed,
 		_gameplay_plane
 	);
+	var _new_stage = undefined;
+	if (!is_undefined(_coordinator.__stage)) {
+		_new_stage = BladeStageExecutorRestart(_coordinator.__stage);
+		BladeStageExecutorBindRuntime(
+			_new_stage, _plan.kernel, _plan.combat
+		);
+	}
+	var _old_stage_boundary = _BladeRunStagePrepareAbort(
+		_coordinator, BladeCombatTerminalReason.RunReset
+	);
 	var _old_counters = BladeSimulationClockGetCounters(_coordinator.__kernel.clock);
 	var _old_combat_plan = BladeCombatRuntimeBoundaryPlan(
 		_coordinator.__combat, BladeCombatTerminalReason.RunReset,
@@ -611,15 +582,20 @@ function BladeRunCoordinatorReset(
 	var _old_combat_report = BladeCombatRuntimeCommitBoundary(
 		_coordinator.__combat, _old_combat_plan
 	);
+	var _old_stage_report = _BladeRunStageCommitAbort(_old_stage_boundary);
 
-	// Replacement planning and old cleanup passed, so all owned references swap together.
+	// Replacement planning and old cleanup passed, so every owned reference swaps together.
 	_coordinator.__kernel = _plan.kernel;
 	_coordinator.__combat = _plan.combat;
+	_coordinator.__stage = _new_stage;
 	_coordinator.__pause_registry = _plan.pause_registry;
 	_coordinator.__state = _plan.state;
 	var _result = BladeRunCoordinatorSnapshot(_coordinator);
 	_result.prior_pause_boundary_report = _old_pause_report;
 	_result.prior_combat_boundary_report = _old_combat_report;
+	if (!is_undefined(_old_stage_report)) {
+		_result.prior_stage_boundary_report = _old_stage_report;
+	}
 	return _result;
 }
 
@@ -715,7 +691,7 @@ function BladeRunCoordinatorAdvancePresentation(
 }
 
 /// @func BladeRunCoordinatorSnapshot(coordinator)
-/// Returns a fully detached run, player, and pause view after revalidating ownership invariants.
+/// Returns detached run ownership and includes stage state only when one is attached.
 function BladeRunCoordinatorSnapshot(_coordinator) {
 	return _BladeRunCoordinatorStateView(_coordinator);
 }
@@ -729,15 +705,19 @@ function BladeRunCoordinatorCanRecordNormalResult(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorCanonical(coordinator)
-/// Encodes run, pause, combat, and gameplay-kernel records in fixed order.
+/// Encodes fixed legacy ownership fields and appends stage state only when attached.
 function BladeRunCoordinatorCanonical(_coordinator) {
 	var _view = _BladeRunCoordinatorStateView(_coordinator);
-	return BladeCanonicalRecord("BRC3", [
+	var _fields = [
 		_BladeRunCoordinatorStateCanonical(_view),
 		BladePauseRegistryCanonical(_coordinator.__pause_registry),
 		BladeCombatRuntimeCanonical(_coordinator.__combat),
 		BladeKernelGameplayCanonical(_coordinator.__kernel),
-	]);
+	];
+	if (!is_undefined(_coordinator.__stage)) {
+		array_push(_fields, BladeStageExecutorCanonical(_coordinator.__stage));
+	}
+	return BladeCanonicalRecord("BRC3", _fields);
 }
 
 /// @func BladeRunCoordinatorHash(coordinator)
@@ -747,11 +727,11 @@ function BladeRunCoordinatorHash(_coordinator) {
 }
 
 /// @func BladeRunCoordinatorDiagnostics(coordinator)
-/// Returns detached run, pause, and kernel diagnostics with coordinator canonical bytes and hash.
+/// Returns detached ownership diagnostics, adding stage state only when attached.
 function BladeRunCoordinatorDiagnostics(_coordinator) {
 	var _snapshot = _BladeRunCoordinatorStateView(_coordinator);
 	var _canonical = BladeRunCoordinatorCanonical(_coordinator);
-	return {
+	var _diagnostics = {
 		snapshot: _snapshot,
 		pause: _snapshot.pause,
 		combat: _snapshot.combat,
@@ -759,4 +739,8 @@ function BladeRunCoordinatorDiagnostics(_coordinator) {
 		canonical: _canonical,
 		hash: BladeCanonicalHashUtf8(_canonical),
 	};
+	if (!is_undefined(_coordinator.__stage)) {
+		_diagnostics.stage = _snapshot.stage;
+	}
+	return _diagnostics;
 }

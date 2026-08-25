@@ -22,8 +22,10 @@ class TemporaryContentBundleTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.root = Path(self.temporary.name)
         self.content = self.root / "content"
+        self.product_source = self.content / "product_contract.json"
         self.stage_source = self.content / "stages/neutral_v1.json"
         self.stage_source.parent.mkdir(parents=True)
+        self.product_source.write_text("{}\n", encoding="utf-8")
         self.stage_source.write_text("{}\n", encoding="utf-8")
         self.project = self.root / PROJECT_DIRECTORY
         self.datafiles = self.project / "datafiles"
@@ -31,6 +33,15 @@ class TemporaryContentBundleTests(unittest.TestCase):
         self.link = self.datafiles / "content"
         self.link.symlink_to("../../../content", target_is_directory=True)
         self.yyp = self.project / PROJECT_FILENAME
+        self.product_entry = {
+            "$GMIncludedFile": "",
+            "%Name": self.product_source.name,
+            "CopyToMask": -1,
+            "filePath": "datafiles/content",
+            "name": self.product_source.name,
+            "resourceType": "GMIncludedFile",
+            "resourceVersion": "2.0",
+        }
         self.valid_entry = {
             "$GMIncludedFile": "",
             "%Name": self.stage_source.name,
@@ -40,7 +51,7 @@ class TemporaryContentBundleTests(unittest.TestCase):
             "resourceType": "GMIncludedFile",
             "resourceVersion": "2.0",
         }
-        self.write_yyp([self.valid_entry])
+        self.write_yyp([self.product_entry, self.valid_entry])
 
     def tearDown(self):
         """Release the temporary repository fixture."""
@@ -92,14 +103,29 @@ class TemporaryContentBundleTests(unittest.TestCase):
 
     def test_duplicate_stage_entry_is_rejected(self):
         """Each canonical stage source must have exactly one IncludedFile entry."""
-        self.write_yyp([self.valid_entry, self.valid_entry])
-        self.assert_has("IncludedFiles[1]", "duplicates IncludedFiles[0]")
+        self.write_yyp([self.product_entry, self.valid_entry, self.valid_entry])
+        self.assert_has("IncludedFiles[2]", "duplicates IncludedFiles[1]")
         self.assert_has("neutral_v1.json", "found 2")
 
     def test_missing_stage_entry_is_rejected(self):
         """An unrepresented canonical stage source fails closed."""
-        self.write_yyp([])
+        self.write_yyp([self.product_entry])
         self.assert_has("neutral_v1.json", "found 0")
+
+    def test_missing_product_contract_entry_is_rejected(self):
+        """The runtime must package the exact product contract bound by the run header."""
+        self.write_yyp([self.valid_entry])
+        self.assert_has("product_contract.json", "found 0")
+
+    def test_duplicate_product_contract_entry_is_rejected(self):
+        """The authoritative product binding may not have two bundle destinations."""
+        self.write_yyp([
+            self.product_entry,
+            self.product_entry,
+            self.valid_entry,
+        ])
+        self.assert_has("IncludedFiles[1]", "duplicates IncludedFiles[0]")
+        self.assert_has("product_contract.json", "found 2")
 
     def test_name_and_path_traversal_are_rejected(self):
         """Neither IncludedFile field may escape its conventional directory."""
@@ -111,22 +137,22 @@ class TemporaryContentBundleTests(unittest.TestCase):
             with self.subTest(field=field):
                 entry = dict(self.valid_entry)
                 entry[field] = value
-                self.write_yyp([entry])
-                self.assert_has(f"IncludedFiles[0].{field}", reason)
+                self.write_yyp([self.product_entry, entry])
+                self.assert_has(f"IncludedFiles[1].{field}", reason)
 
     def test_wrong_copy_mask_is_rejected(self):
         """Canonical content must be included on every target."""
         entry = dict(self.valid_entry)
         entry["CopyToMask"] = 0
-        self.write_yyp([entry])
-        self.assert_has("IncludedFiles[0].CopyToMask", "must be integer -1")
+        self.write_yyp([self.product_entry, entry])
+        self.assert_has("IncludedFiles[1].CopyToMask", "must be integer -1")
 
     def test_wrong_content_subdirectory_is_rejected(self):
         """The YYP directory must match the canonical source subdirectory."""
         entry = dict(self.valid_entry)
         entry["filePath"] = "datafiles/content/patterns"
-        self.write_yyp([entry])
-        self.assert_has("IncludedFiles[0]", "lists missing canonical source")
+        self.write_yyp([self.product_entry, entry])
+        self.assert_has("IncludedFiles[1]", "lists missing canonical source")
         self.assert_has("neutral_v1.json", "found 0")
 
     def test_unlisted_yyp_source_is_rejected(self):
@@ -134,15 +160,15 @@ class TemporaryContentBundleTests(unittest.TestCase):
         entry = dict(self.valid_entry)
         entry["name"] = "ghost.json"
         entry["%Name"] = "ghost.json"
-        self.write_yyp([self.valid_entry, entry])
-        self.assert_has("IncludedFiles[1]", "lists missing canonical source")
+        self.write_yyp([self.product_entry, self.valid_entry, entry])
+        self.assert_has("IncludedFiles[2]", "lists missing canonical source")
 
     def test_json_path_outside_canonical_content_is_rejected(self):
         """JSON IncludedFiles cannot use a legacy copied-data directory."""
         entry = dict(self.valid_entry)
         entry["filePath"] = "datafiles/stages"
-        self.write_yyp([entry])
-        self.assert_has("IncludedFiles[0].filePath", "must be under datafiles/content")
+        self.write_yyp([self.product_entry, entry])
+        self.assert_has("IncludedFiles[1].filePath", "must be under datafiles/content")
 
     def test_regular_json_copy_below_datafiles_is_rejected(self):
         """A physical JSON copy cannot coexist with the canonical content link."""
@@ -189,7 +215,7 @@ class RepositoryContentBundleTests(unittest.TestCase):
     """Pin the checked-in repository's canonical GameMaker content bundle."""
 
     def test_repository_content_bundle_is_valid(self):
-        """The live project links and lists every canonical stage source exactly once."""
+        """The live project lists the product contract and every stage source once."""
         self.assertEqual(validate_repository(ROOT), [])
 
 
