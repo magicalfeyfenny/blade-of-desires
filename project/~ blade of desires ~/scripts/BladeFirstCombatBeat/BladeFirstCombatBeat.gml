@@ -2,14 +2,79 @@
 
 enum BladeFirstBeatState {
     Playing = 0,
-    Won = 1,
-    Failed = 2
+    Rewarding = 1,
+    Won = 2,
+    Failed = 3
 }
 
 enum BladeFirstBeatEvent {
     EnemyDefeated = 1,
-    PlayerHit = 2,
-    Retry = 3
+    RewardsCollected = 2,
+    PlayerOutOfLives = 3,
+    Retry = 4
+}
+
+#macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"
+
+/// Reads one bundled text file completely and always closes its GameMaker handle.
+function _BladeFirstBeatReadBundledText(_path) {
+    var _resolved_path = _path;
+    if (!file_exists(_resolved_path)
+        && file_exists(working_directory + _resolved_path)) {
+        _resolved_path = working_directory + _resolved_path;
+    }
+    if (!file_exists(_resolved_path)) {
+        throw("BladeFirstCombatBeat: bundled file does not exist: " + _path);
+    }
+
+    var _file = -1;
+    try {
+        _file = file_text_open_read(_resolved_path);
+        if (_file < 0) {
+            throw("BladeFirstCombatBeat: bundled file could not be opened: " + _path);
+        }
+        var _text = "";
+        var _first_line = true;
+        while (!file_text_eof(_file)) {
+            if (!_first_line) _text += "\n";
+            _text += file_text_read_string(_file);
+            file_text_readln(_file);
+            _first_line = false;
+        }
+        return _text;
+    } finally {
+        if (_file >= 0) file_text_close(_file);
+    }
+}
+
+/// Loads the playable room's plane from the bundled canonical product contract.
+function BladeFirstBeatLoadGameplayPlane(
+    _path = BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH
+) {
+    var _contract;
+    try {
+        _contract = json_parse(
+            _BladeFirstBeatReadBundledText(_path), undefined, true
+        );
+    } catch (_caught) {
+        throw("BladeFirstCombatBeat: product contract could not be decoded");
+    }
+    if (!is_struct(_contract)
+        || !variable_struct_exists(_contract, "runtime_geometry")
+        || !is_struct(_contract.runtime_geometry)
+        || !variable_struct_exists(_contract.runtime_geometry, "gameplay_plane")) {
+        throw("BladeFirstCombatBeat: product contract has no gameplay plane");
+    }
+    return BladeCombatPlaneCreate(_contract.runtime_geometry.gameplay_plane);
+}
+
+/// Removes every attempt-local actor, projectile, and reward before retry restarts.
+function BladeFirstBeatCleanupTransientInstances() {
+    with (o_blade_first_beat_enemy_bullet) instance_destroy();
+    with (o_ciela_first_beat_shot) instance_destroy();
+    with (o_blade_reward_item) instance_destroy();
+    with (o_blade_first_beat_enemy) instance_destroy();
+    with (o_ciela_first_beat_player) instance_destroy();
 }
 
 /// Applies one visible room event without allowing a finished beat to change outcome.
@@ -17,20 +82,24 @@ function BladeFirstBeatTransition(_state, _event) {
     if (_event == BladeFirstBeatEvent.Retry) {
         return BladeFirstBeatState.Playing;
     }
-    if (_state != BladeFirstBeatState.Playing) {
-        return _state;
-    }
-    switch (_event) {
-        case BladeFirstBeatEvent.EnemyDefeated:
-            return BladeFirstBeatState.Won;
-        case BladeFirstBeatEvent.PlayerHit:
-            return BladeFirstBeatState.Failed;
+    if (_state == BladeFirstBeatState.Playing) {
+        switch (_event) {
+            case BladeFirstBeatEvent.EnemyDefeated:
+                return BladeFirstBeatState.Rewarding;
+            case BladeFirstBeatEvent.PlayerOutOfLives:
+                return BladeFirstBeatState.Failed;
+        }
+    } else if (_state == BladeFirstBeatState.Rewarding
+        && _event == BladeFirstBeatEvent.RewardsCollected) {
+        return BladeFirstBeatState.Won;
     }
     return _state;
 }
 
 /// Moves Ciela at her focused or unfocused speed and keeps her body inside the playfield.
-function BladeFirstBeatMovePlayer(_x, _y, _move_x, _move_y, _focused) {
+function BladeFirstBeatMovePlayer(
+    _plane, _x, _y, _move_x, _move_y, _focused, _body_radius
+) {
     var _horizontal = clamp(_move_x, -1, 1);
     var _vertical = clamp(_move_y, -1, 1);
     var _length = point_distance(0, 0, _horizontal, _vertical);
@@ -40,9 +109,18 @@ function BladeFirstBeatMovePlayer(_x, _y, _move_x, _move_y, _focused) {
     }
 
     var _speed = _focused ? 1.35 : 2.75;
+    var _bounds = BladeCombatPlanePixelBounds(_plane);
     return {
-        x: clamp(_x + _horizontal * _speed, 191, 449),
-        y: clamp(_y + _vertical * _speed, 6, 354),
+        x: clamp(
+            _x + _horizontal * _speed,
+            _bounds.left + _body_radius,
+            _bounds.right_exclusive - _body_radius
+        ),
+        y: clamp(
+            _y + _vertical * _speed,
+            _bounds.top + _body_radius,
+            _bounds.bottom_exclusive - _body_radius
+        ),
         speed: _speed,
     };
 }
@@ -63,28 +141,15 @@ function BladeFirstBeatCielaSpread(_focused) {
     return _velocities;
 }
 
-/// Advances Ciela's eight-frame repeat cadence and reports this frame's volley.
-function BladeFirstBeatFireCadence(_cooldown, _fire_held) {
+/// Advances Ciela's repeat cadence, which active Hyper tiers shorten, and reports a volley.
+function BladeFirstBeatFireCadence(_cooldown, _fire_held, _hyper_tier = 0) {
     var _remaining = max(0, _cooldown - 1);
     var _fires = _fire_held && _remaining == 0;
+    var _repeat_ticks = max(4, 8 - max(0, _hyper_tier));
     return {
         fires: _fires,
-        cooldown: _fires ? 8 : _remaining,
+        cooldown: _fires ? _repeat_ticks : _remaining,
     };
-}
-
-/// Checks a projectile anchor against the authoritative half-open gameplay plane.
-function BladeFirstBeatPointInsidePlane(_x, _y) {
-    return _x >= 185 && _x < 455 && _y >= 0 && _y < 360;
-}
-
-/// Checks the current enemy hurtbox against the authoritative half-open gameplay plane.
-function BladeFirstBeatHurtboxCanFire(_x, _y, _radius) {
-    return _radius > 0
-        && _x - _radius >= 185
-        && _x + _radius <= 455
-        && _y - _radius >= 0
-        && _y + _radius <= 360;
 }
 
 /// Resolves positive damage once and reports whether the target was defeated.
@@ -92,6 +157,7 @@ function BladeFirstBeatDamageResult(_health, _damage) {
     var _remaining = max(0, _health - max(0, _damage));
     return {
         remaining: _remaining,
+        applied: max(0, _health - _remaining),
         defeated: _health > 0 && _remaining == 0,
     };
 }

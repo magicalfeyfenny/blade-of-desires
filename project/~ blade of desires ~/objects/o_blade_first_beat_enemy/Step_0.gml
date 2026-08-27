@@ -2,7 +2,8 @@ if (hit_flash > 0) {
     hit_flash -= 1;
 }
 var _controller = instance_find(o_blade_first_beat_controller, 0);
-if (_controller == noone || _controller.state != BladeFirstBeatState.Playing) exit;
+if (_controller == noone || _controller.state != BladeFirstBeatState.Playing
+    || !BladeSurvivalGameplayAdvances(_controller)) exit;
 
 if (y < target_y) {
     y = min(target_y, y + 1.25);
@@ -21,7 +22,11 @@ if (x <= 230 || x >= 410) {
 }
 
 fire_cooldown = max(0, fire_cooldown - 1);
-if (fire_cooldown > 0 || !BladeFirstBeatHurtboxCanFire(x, y, hit_radius)) exit;
+if (_controller.bomb_clears_this_frame
+    || fire_cooldown > 0
+    || !BladeCombatPlaneContainsPixelCircle(
+    _controller.gameplay_plane, x, y, hit_radius
+)) exit;
 
 var _player = instance_find(o_ciela_first_beat_player, 0);
 if (_player == noone) exit;

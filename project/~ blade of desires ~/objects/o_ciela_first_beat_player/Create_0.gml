@@ -3,3 +3,4 @@ focused = false;
 fire_cooldown = 0;
 hit_radius = 3;
 body_radius = 6;
+graze_radius = 14;
