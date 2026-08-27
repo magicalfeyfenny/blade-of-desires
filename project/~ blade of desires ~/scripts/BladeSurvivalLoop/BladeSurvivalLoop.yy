@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeSurvivalLoop",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeSurvivalLoop",
+  "parent":{
+    "name":"Blade",
+    "path":"folders/Blade.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

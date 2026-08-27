@@ -7,3 +7,4 @@ target_y = 72;
 tell_ticks = 50;
 fire_cooldown = 0;
 travel_speed_x = 0.8;
+archetype_id = BLADE_SURVIVAL_BOMB_CARRIER_ID;

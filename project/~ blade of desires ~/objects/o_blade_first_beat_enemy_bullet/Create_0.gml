@@ -2,3 +2,4 @@
 velocity_x = 0;
 velocity_y = 2.7;
 radius = 4;
+grazed = false;

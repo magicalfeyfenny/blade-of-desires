@@ -148,6 +148,57 @@ function BladeCombatPlaneCopy(_plane) {
     return _BladeCombatGeometryPlaneCopy(_plane);
 }
 
+/// Converts one finite logical-pixel coordinate to the combat grid used by the plane.
+function _BladeCombatGeometryPixelToQ10(_value, _field) {
+    if (!is_numeric(_value) || is_nan(_value) || is_infinity(_value)) {
+        _BladeCombatGeometryFail(_field, "must be a finite logical-pixel coordinate");
+    }
+    var _scaled = round(_value * 1024);
+    return _BladeCombatGeometryInteger(
+        _scaled, int64("-536870911"), int64("536870911"), _field
+    );
+}
+
+/// @func BladeCombatPlanePixelBounds(plane)
+/// Returns readable logical-pixel bounds for native movement and presentation code.
+function BladeCombatPlanePixelBounds(_plane) {
+    var _copy = _BladeCombatGeometryPlaneCopy(_plane);
+    return {
+        left: real(_copy.left_q10) / 1024,
+        top: real(_copy.top_q10) / 1024,
+        right_exclusive: real(_copy.right_q10_exclusive) / 1024,
+        bottom_exclusive: real(_copy.bottom_q10_exclusive) / 1024,
+    };
+}
+
+/// @func BladeCombatPlaneContainsPixelPoint(plane, x, y)
+/// Applies the canonical half-open point rule to an ordinary GameMaker position.
+function BladeCombatPlaneContainsPixelPoint(_plane, _x, _y) {
+    return BladeCombatPlaneContainsPoint(
+        _plane,
+        _BladeCombatGeometryPixelToQ10(_x, "point x"),
+        _BladeCombatGeometryPixelToQ10(_y, "point y")
+    );
+}
+
+/// @func BladeCombatPlaneContainsPixelCircle(plane, x, y, radius)
+/// Uses a circle's current bounding box for the canonical full-hurtbox emission gate.
+function BladeCombatPlaneContainsPixelCircle(_plane, _x, _y, _radius) {
+    if (!is_numeric(_radius) || is_nan(_radius) || is_infinity(_radius)
+        || _radius <= 0) {
+        _BladeCombatGeometryFail("circle radius", "must be a positive finite number");
+    }
+    var _box = BladeCombatAabbCreate(
+        _BladeCombatGeometryPixelToQ10(_x - _radius, "circle left"),
+        _BladeCombatGeometryPixelToQ10(_y - _radius, "circle top"),
+        _BladeCombatGeometryPixelToQ10(_x + _radius, "circle right"),
+        _BladeCombatGeometryPixelToQ10(_y + _radius, "circle bottom")
+    );
+    return BladeCombatEmissionGateAllows(
+        _plane, BladeCombatGateKind.Hurtbox, _box
+    );
+}
+
 /// @func BladeCombatAabbCreate(left, top, right_exclusive, bottom_exclusive)
 /// Creates one bounded positive half-open q10 box.
 function BladeCombatAabbCreate(

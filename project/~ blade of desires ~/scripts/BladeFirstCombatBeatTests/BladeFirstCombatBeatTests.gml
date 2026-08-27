@@ -1,9 +1,33 @@
 /// Behavior-focused tests for the first player-visible combat beat.
 
+/// Removes every playable test instance so one failed case cannot poison later cases.
+function _BladeFirstBeatTestCleanupInstances() {
+    BladeFirstBeatCleanupTransientInstances();
+    with (o_blade_first_beat_controller) instance_destroy();
+}
+
+/// Runs one instance-aware case with cleanup before entry and on every exit path.
+function BladeFirstBeatTestRunCase(_state, _name, _callback) {
+    _BladeFirstBeatTestCleanupInstances();
+    var _context = { callback: _callback };
+    BladeKernelTestRunCase(_state, _name, method(_context, function() {
+        try {
+            self.callback();
+        } finally {
+            _BladeFirstBeatTestCleanupInstances();
+        }
+    }));
+}
+
 function BladeFirstCombatBeatTestsRun(_state) {
     BladeKernelTestRunCase(_state, "first beat movement is bounded and focus is slower", function() {
-        var _fast = BladeFirstBeatMovePlayer(320, 300, 1, -1, false);
-        var _slow = BladeFirstBeatMovePlayer(320, 300, 1, -1, true);
+        var _plane = BladeFirstBeatLoadGameplayPlane();
+        var _fast = BladeFirstBeatMovePlayer(
+            _plane, 320, 300, 1, -1, false, 6
+        );
+        var _slow = BladeFirstBeatMovePlayer(
+            _plane, 320, 300, 1, -1, true, 6
+        );
         BladeKernelTestAssertTrue(
             abs(point_distance(320, 300, _fast.x, _fast.y) - 2.75) < 0.001,
             "unfocused diagonal speed"
@@ -12,8 +36,12 @@ function BladeFirstCombatBeatTestsRun(_state) {
             abs(point_distance(320, 300, _slow.x, _slow.y) - 1.35) < 0.001,
             "focused diagonal speed"
         );
-        var _minimum = BladeFirstBeatMovePlayer(0, 0, -1, -1, false);
-        var _maximum = BladeFirstBeatMovePlayer(640, 500, 1, 1, false);
+        var _minimum = BladeFirstBeatMovePlayer(
+            _plane, 0, 0, -1, -1, false, 6
+        );
+        var _maximum = BladeFirstBeatMovePlayer(
+            _plane, 640, 500, 1, 1, false, 6
+        );
         BladeKernelTestAssertEqual(_minimum.x, 191, "left body bound");
         BladeKernelTestAssertEqual(_minimum.y, 6, "top body bound");
         BladeKernelTestAssertEqual(_maximum.x, 449, "right body bound");
@@ -54,36 +82,41 @@ function BladeFirstCombatBeatTestsRun(_state) {
     });
 
     BladeKernelTestRunCase(_state, "projectile anchors use the half-open plane", function() {
+        var _plane = BladeFirstBeatLoadGameplayPlane();
         BladeKernelTestAssertTrue(
-            BladeFirstBeatPointInsidePlane(185, 0), "minimum anchor is inside"
+            BladeCombatPlaneContainsPixelPoint(_plane, 185, 0),
+            "minimum anchor is inside"
         );
         BladeKernelTestAssertTrue(
-            BladeFirstBeatPointInsidePlane(454.999, 359.999),
+            BladeCombatPlaneContainsPixelPoint(_plane, 454.999, 359.999),
             "interior maximum anchor is inside"
         );
         BladeKernelTestAssertFalse(
-            BladeFirstBeatPointInsidePlane(455, 100), "right edge is outside"
+            BladeCombatPlaneContainsPixelPoint(_plane, 455, 100),
+            "right edge is outside"
         );
         BladeKernelTestAssertFalse(
-            BladeFirstBeatPointInsidePlane(320, 360), "bottom edge is outside"
+            BladeCombatPlaneContainsPixelPoint(_plane, 320, 360),
+            "bottom edge is outside"
         );
     });
 
     BladeKernelTestRunCase(_state, "enemy fire uses its current full hurtbox", function() {
+        var _plane = BladeFirstBeatLoadGameplayPlane();
         BladeKernelTestAssertTrue(
-            BladeFirstBeatHurtboxCanFire(320, 72, 14),
+            BladeCombatPlaneContainsPixelCircle(_plane, 320, 72, 14),
             "in-plane enemy can fire"
         );
         BladeKernelTestAssertFalse(
-            BladeFirstBeatHurtboxCanFire(320, 10, 14),
+            BladeCombatPlaneContainsPixelCircle(_plane, 320, 10, 14),
             "top overlap cannot fire"
         );
         BladeKernelTestAssertTrue(
-            BladeFirstBeatHurtboxCanFire(199, 100, 14),
+            BladeCombatPlaneContainsPixelCircle(_plane, 199, 100, 14),
             "left contained edge can fire"
         );
         BladeKernelTestAssertFalse(
-            BladeFirstBeatHurtboxCanFire(198, 100, 14),
+            BladeCombatPlaneContainsPixelCircle(_plane, 198, 100, 14),
             "left outside edge cannot fire"
         );
     });
@@ -94,14 +127,22 @@ function BladeFirstCombatBeatTestsRun(_state) {
         BladeKernelTestAssertFalse(_survived.defeated, "positive health survives");
         var _defeated = BladeFirstBeatDamageResult(4, 10);
         BladeKernelTestAssertEqual(_defeated.remaining, 0, "damage clamps at zero");
+        BladeKernelTestAssertEqual(_defeated.applied, 4, "damage reports actual loss");
         BladeKernelTestAssertTrue(_defeated.defeated, "zero health defeats target");
 
-        var _won = BladeFirstBeatTransition(
+        var _rewarding = BladeFirstBeatTransition(
             BladeFirstBeatState.Playing, BladeFirstBeatEvent.EnemyDefeated
         );
-        BladeKernelTestAssertEqual(_won, BladeFirstBeatState.Won, "defeat wins beat");
         BladeKernelTestAssertEqual(
-            BladeFirstBeatTransition(_won, BladeFirstBeatEvent.PlayerHit),
+            _rewarding, BladeFirstBeatState.Rewarding,
+            "defeat opens reward collection"
+        );
+        var _won = BladeFirstBeatTransition(
+            _rewarding, BladeFirstBeatEvent.RewardsCollected
+        );
+        BladeKernelTestAssertEqual(_won, BladeFirstBeatState.Won, "rewards finish beat");
+        BladeKernelTestAssertEqual(
+            BladeFirstBeatTransition(_won, BladeFirstBeatEvent.PlayerOutOfLives),
             BladeFirstBeatState.Won,
             "finished outcome is stable"
         );
@@ -112,7 +153,10 @@ function BladeFirstCombatBeatTestsRun(_state) {
         );
     });
 
-    BladeKernelTestRunCase(_state, "a player shot damages a live enemy instance", function() {
+    BladeFirstBeatTestRunCase(_state, "a player shot damages a live enemy instance", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
         var _enemy = instance_create_layer(
             320, 100, "Instances", o_blade_first_beat_enemy
         );
@@ -126,9 +170,10 @@ function BladeFirstCombatBeatTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(_enemy.hit_points, 34, "impact applies shot damage");
         with (_enemy) instance_destroy();
+        with (_controller) instance_destroy();
     });
 
-    BladeKernelTestRunCase(_state, "a player hit fails the beat and cleans projectiles", function() {
+    BladeFirstBeatTestRunCase(_state, "a player hit opens the readable response window", function() {
         var _controller = instance_create_layer(
             0, 0, "Instances", o_blade_first_beat_controller
         );
@@ -142,15 +187,22 @@ function BladeFirstCombatBeatTestsRun(_state) {
             320, 250, "Instances", o_ciela_first_beat_shot
         );
         with (_player) event_perform(ev_step, ev_step_normal);
+        with (_shot) event_perform(ev_step, ev_step_normal);
         BladeKernelTestAssertEqual(
-            _controller.state, BladeFirstBeatState.Failed, "collision fails beat"
+            _controller.state, BladeFirstBeatState.Playing,
+            "a first hit does not skip the survival loop"
+        );
+        BladeKernelTestAssertEqual(
+            _controller.player_phase, BladeSurvivalPlayerPhase.HitResponse,
+            "collision opens hit response"
         );
         BladeKernelTestAssertFalse(
-            instance_exists(_bullet), "enemy bullets are cleaned"
+            instance_exists(_bullet), "the claimed hit bullet is removed"
         );
-        BladeKernelTestAssertFalse(
-            instance_exists(_shot), "player shots are cleaned"
+        BladeKernelTestAssertTrue(
+            instance_exists(_shot), "hit response freezes the live shot"
         );
+        with (_shot) instance_destroy();
         with (_player) instance_destroy();
         with (_controller) instance_destroy();
     });

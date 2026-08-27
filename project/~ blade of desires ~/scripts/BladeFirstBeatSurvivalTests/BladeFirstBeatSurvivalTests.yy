@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeFirstBeatSurvivalTests",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeFirstBeatSurvivalTests",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/Blade/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
