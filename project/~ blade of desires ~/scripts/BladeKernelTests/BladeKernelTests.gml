@@ -20,6 +20,7 @@ function BladeKernelTestsRun() {
     BladeCombatGeometryTestsRun(_state);
     BladeCombatRuntimeTestsRun(_state);
     BladeCombatLifecycleTestsRun(_state);
+    BladeFirstCombatBeatTestsRun(_state);
     BladeStagePlanTestsRun(_state);
     BladeStageRuntimeTestsRun(_state);
     BladeRunStageTestsRun(_state);
