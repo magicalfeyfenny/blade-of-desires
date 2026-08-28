@@ -1,4 +1,43 @@
 {
   "version": 1,
-  "exports": []
+  "exports": [
+    {
+      "kind": "raster",
+      "sources": [
+        "assets/source/textures/stage1/lost_forest_materials.kra"
+      ],
+      "runtime": [
+        "assets/runtime/textures/stage1/lost_forest_materials.png"
+      ]
+    },
+    {
+      "kind": "raster",
+      "sources": [
+        "assets/source/textures/stage1/lost_forest_fae.kra"
+      ],
+      "runtime": [
+        "assets/runtime/textures/stage1/lost_forest_fae.png"
+      ]
+    },
+    {
+      "kind": "raster",
+      "sources": [
+        "assets/source/textures/stage1/lost_forest_fae_light.kra"
+      ],
+      "runtime": [
+        "assets/runtime/textures/stage1/lost_forest_fae_light.png"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_route.blend",
+        "assets/source/models/stage1/lost_forest_route.obj",
+        "assets/source/models/stage1/lost_forest_route.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_route.vbuff"
+      ]
+    }
+  ]
 }

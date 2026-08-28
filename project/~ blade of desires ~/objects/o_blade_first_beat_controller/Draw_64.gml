@@ -1,21 +1,18 @@
-draw_clear(make_color_rgb(6, 16, 18));
+display_set_gui_size(room_width, room_height);
 var _bounds = BladeCombatPlanePixelBounds(gameplay_plane);
 
-// The simple forest shapes are readable gameplay presentation, not final art.
-draw_set_color(make_color_rgb(16, 43, 34));
+// The world renderer owns the clear; these translucent panels keep combat readable.
+draw_set_alpha(0.88);
+draw_set_color(make_color_rgb(6, 18, 22));
 draw_rectangle(0, 0, _bounds.left - 1, 359, false);
 draw_rectangle(_bounds.right_exclusive, 0, 639, 359, false);
-draw_set_color(make_color_rgb(24, 67, 47));
-for (var _trunk_x = 22; _trunk_x < 640; _trunk_x += 54) {
-    if (_trunk_x >= _bounds.left && _trunk_x < _bounds.right_exclusive) continue;
-    draw_rectangle(_trunk_x, 0, _trunk_x + 13, 360, false);
-}
-
-draw_set_color(make_color_rgb(9, 28, 34));
+draw_set_alpha(0.12);
+draw_set_color(make_color_rgb(5, 22, 28));
 draw_rectangle(
     _bounds.left, _bounds.top,
     _bounds.right_exclusive - 1, _bounds.bottom_exclusive - 1, false
 );
+draw_set_alpha(1);
 draw_set_color(make_color_rgb(78, 154, 125));
 draw_rectangle(
     _bounds.left, _bounds.top,

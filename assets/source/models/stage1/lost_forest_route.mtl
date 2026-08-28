@@ -1,0 +1,8 @@
+# Blade of Desires Stage 1 Lost Forest material
+newmtl LostForestMaterials
+Ka 0.100000 0.100000 0.100000
+Kd 1.000000 1.000000 1.000000
+Ks 0.000000 0.000000 0.000000
+d 1.000000
+illum 1
+map_Kd ../../../runtime/textures/stage1/lost_forest_materials.png
