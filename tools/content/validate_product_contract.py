@@ -14,8 +14,8 @@ IN_MEMORY_SOURCE = "<in-memory>"
 ID_PATTERN_TEXT = r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$"
 ID_PATTERN = re.compile(ID_PATTERN_TEXT)
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
-CORE_CONTENT_VERSION = (1, 2, 0)
-CORE_CONTENT_VERSION_TEXT = "1.2.0"
+CORE_CONTENT_VERSION = (1, 3, 0)
+CORE_CONTENT_VERSION_TEXT = "1.3.0"
 COMMON_RECORD_FIELDS = {"schema_version", "id", "display_name"}
 REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "content_version",

@@ -674,11 +674,11 @@ function BladeStageRuntimeTestsRun(_state) {
 			"stage event bytes retain their deterministic golden"
 		);
 		BladeKernelTestAssertEqual(
-			_first.stage_hash, "8893b3c46f07b648aa0fffdbfe4a0f1c40981cee",
+			_first.stage_hash, "9b3fd28698a5a958c1440fde03f67d061f0393d9",
 			"final stage state retains its deterministic golden"
 		);
 		BladeKernelTestAssertEqual(
-			_first.kernel_hash, "bbb211d8a463cfcdd9a9511f5c34be256c2cc50c",
+			_first.kernel_hash, "bf2e2bef2043dab131720e40fecd5751f4ae2259",
 			"composed kernel state retains its deterministic golden"
 		);
 		show_debug_message(

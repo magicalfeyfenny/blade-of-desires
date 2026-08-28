@@ -75,12 +75,55 @@ function BladeStage1ForestBillboardBufferCreate(_format) {
     return _buffer;
 }
 
+#macro BLADE_STAGE1_FOREST_FIRST_HALF_CAP 86
+#macro BLADE_STAGE1_FOREST_SECOND_HALF_CAP 176
+#macro BLADE_STAGE1_WORLD_TREE_TRAVEL_TICKS 180
+
+/// Maps each authored route cue to one bounded, player-visible camera segment.
+function BladeStage1ForestApplyRouteCue(_renderer, _cue_id) {
+    switch (_cue_id) {
+        case "cue.stage1.forest_travel":
+            _renderer.route_progress_cap = BLADE_STAGE1_FOREST_FIRST_HALF_CAP;
+            _renderer.route_scroll_speed = 0.10;
+            _renderer.route_scroll_enabled = true;
+            return true;
+
+        case "cue.stage1.midboss_stop":
+            _renderer.route_progress_cap = BLADE_STAGE1_FOREST_FIRST_HALF_CAP;
+            _renderer.route_scroll_enabled = false;
+            return true;
+
+        case "cue.stage1.forest_resume":
+            _renderer.route_progress_cap = BLADE_STAGE1_FOREST_SECOND_HALF_CAP;
+            _renderer.route_scroll_speed = 0.12;
+            _renderer.route_scroll_enabled = true;
+            return true;
+
+        case "cue.stage1.world_tree_approach":
+            _renderer.route_progress_cap = _renderer.route_progress_limit;
+            _renderer.route_scroll_speed = max(
+                0.18,
+                (_renderer.route_progress_limit - _renderer.route_progress)
+                    / BLADE_STAGE1_WORLD_TREE_TRAVEL_TICKS
+            );
+            _renderer.route_scroll_enabled = true;
+            return true;
+
+        case "cue.stage1.world_tree_handoff":
+            _renderer.route_progress = _renderer.route_progress_limit;
+            _renderer.route_progress_cap = _renderer.route_progress_limit;
+            _renderer.route_scroll_enabled = false;
+            return true;
+    }
+    return false;
+}
+
 /// Advances the presentation-only route camera and records one fae trail sample.
 function BladeStage1ForestPresentationStep(_renderer) {
     if (_renderer.route_scroll_enabled) {
         _renderer.route_progress = min(
             _renderer.route_progress + _renderer.route_scroll_speed,
-            _renderer.route_progress_limit
+            _renderer.route_progress_cap
         );
     }
 

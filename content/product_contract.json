@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "contract.blade",
   "display_name": "Blade Product Contract",
-  "content_version": "1.2.0",
+  "content_version": "1.3.0",
   "id_grammar": {
     "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
     "collision_policy": "globally_unique_and_never_reused"
@@ -68,7 +68,7 @@
     "enemy_emission_gate": "An enemy may appear outside the gameplay plane, but each attempted emission declares one gate: either a point anchor or a hurtbox. A declared point must lie inside the half-open gameplay plane, and a declared hurtbox must be fully contained; otherwise that attempt remains locked.",
     "boss_phase_policy": "Every boss phase break has a readable ring-style recharge telegraph lasting roughly two seconds. Large bosses may lose, replace, regrow, or transform parts between phases.",
     "defeat_feedback": "Ordinary enemy defeats use generous, large, readable particles. Accessibility settings may reduce density but must not obscure dangerous bullets.",
-    "presentation": "Stage 1 is a high-quality, somewhat photorealistic pixel-art forest with softly floating camera-facing 3D billboard lights. The UI is ornate and Blade-specific, informed by Selkies rather than copied from it.",
+    "presentation": "Stage 1 travels through a textured perspective 3D forest authored with -Z as world up. High-quality pixel art supplies texture maps, character and enemy sprites, bullets, UI, effects, and separate camera-facing fae and light billboards. Gameplay remains on the fixed 2D plane. The UI is ornate and Blade-specific, informed by Selkies rather than copied from it.",
     "asset_authoring": "New assets use the governed editable-source to runtime-export pipeline. Codex-created raster art requires image generation and deliberate pixel-art finishing in KRA source; quick geometry stand-ins are not production art."
   },
   "difficulties": [
@@ -220,10 +220,10 @@
     {
       "schema_version": 1,
       "id": "encounter.stage1.unchosen_elemental_fae",
-      "display_name": "Unchosen elemental fae",
+      "display_name": "Unchosen elemental fae duo",
       "stage_id": "stage.stage1.lost_forest_of_aurei",
       "kind": "midboss",
-      "resolution": "The two unchosen fae participate. Their participant IDs remain unresolved for later Stage 1 content."
+      "resolution": "The two elemental fae not selected by the player participate together. In the current Ciela slice, Maynii and Kolar each use one solo attack simultaneously, then perform one shared Maynii-Kolar combo attack. Defeating the combo resumes the second half of Stage 1. Ciela's solo and Ciela-inclusive combos remain deferred until Maynii and Kolar become playable."
     },
     {
       "schema_version": 1,

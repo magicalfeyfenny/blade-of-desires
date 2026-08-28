@@ -22,6 +22,7 @@ assets_ready = route_buffer >= 0
 
 route_progress = 0;
 route_progress_limit = 218;
+route_progress_cap = BLADE_STAGE1_FOREST_FIRST_HALF_CAP;
 route_scroll_speed = 0.09;
 route_scroll_enabled = true;
 camera_x = 0;

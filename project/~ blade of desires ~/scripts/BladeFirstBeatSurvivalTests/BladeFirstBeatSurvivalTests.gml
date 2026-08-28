@@ -385,6 +385,31 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         with (_controller) instance_destroy();
     });
 
+    BladeFirstBeatTestRunCase(_state, "Hyper clears on expiry but not continuously", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        _controller.economy.active_hyper_tier = 1;
+        _controller.economy.hyper_ticks = 2;
+        var _during = instance_create_layer(
+            320, 200, "Instances", o_blade_first_beat_enemy_bullet
+        );
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            instance_exists(_during),
+            "active Hyper does not continuously erase bullets"
+        );
+        var _ending = instance_create_layer(
+            340, 200, "Instances", o_blade_first_beat_enemy_bullet
+        );
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertFalse(
+            instance_exists(_during) || instance_exists(_ending),
+            "Hyper expiry performs its one ending clear"
+        );
+        with (_controller) instance_destroy();
+    });
+
     BladeFirstBeatTestRunCase(_state, "carrier rewards collect naturally and finish the beat", function() {
         var _controller = instance_create_layer(
             0, 0, "Instances", o_blade_first_beat_controller
@@ -509,6 +534,9 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             0, 0, "Instances", o_blade_first_beat_controller
         );
         instance_create_layer(320, 100, "Instances", o_blade_first_beat_enemy);
+        instance_create_layer(
+            360, 100, "Instances", o_blade_stage1_fae_midboss
+        );
         instance_create_layer(320, 314, "Instances", o_ciela_first_beat_player);
         instance_create_layer(
             320, 180, "Projectiles", o_blade_first_beat_enemy_bullet
@@ -521,8 +549,8 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         _controller.economy.bomb_ticks = 20;
         BladeFirstBeatCleanupTransientInstances();
         BladeKernelTestAssertEqual(
-            instance_number(o_blade_first_beat_enemy), 0,
-            "retry removes enemies"
+            instance_number(o_blade_enemy_target), 0,
+            "retry removes ordinary enemies and fae midbosses"
         );
         BladeKernelTestAssertEqual(
             instance_number(o_blade_first_beat_enemy_bullet), 0,

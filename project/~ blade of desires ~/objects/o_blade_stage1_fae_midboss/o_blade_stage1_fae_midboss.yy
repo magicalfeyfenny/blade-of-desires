@@ -1,13 +1,13 @@
 {
   "$GMObject":"",
-  "%Name":"o_blade_first_beat_enemy",
+  "%Name":"o_blade_stage1_fae_midboss",
   "eventList":[
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":0,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":3,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
     {"$GMEvent":"v1","%Name":"","collisionObjectId":null,"eventNum":0,"eventType":8,"isDnD":false,"name":"","resourceType":"GMEvent","resourceVersion":"2.0",},
   ],
   "managed":true,
-  "name":"o_blade_first_beat_enemy",
+  "name":"o_blade_stage1_fae_midboss",
   "overriddenProperties":[],
   "parent":{"name":"Blade","path":"folders/Blade.yy",},
   "parentObjectId":{"name":"o_blade_enemy_target","path":"objects/o_blade_enemy_target/o_blade_enemy_target.yy",},

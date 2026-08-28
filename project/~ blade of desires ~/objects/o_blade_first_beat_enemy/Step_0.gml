@@ -6,7 +6,7 @@ if (_controller == noone || _controller.state != BladeFirstBeatState.Playing
     || !BladeSurvivalGameplayAdvances(_controller)) exit;
 
 if (y < target_y) {
-    y = min(target_y, y + 1.25);
+    y = min(target_y, y + entry_speed);
     exit;
 }
 
@@ -31,13 +31,13 @@ if (_controller.bomb_clears_this_frame
 var _player = instance_find(o_ciela_first_beat_player, 0);
 if (_player == noone) exit;
 var _aim = point_direction(x, y, _player.x, _player.y);
-var _offsets = [-12, 0, 12];
-for (var _index = 0; _index < array_length(_offsets); ++_index) {
-    var _direction = _aim + _offsets[_index];
+for (var _index = 0; _index < array_length(bullet_offsets); ++_index) {
+    var _direction = _aim + bullet_offsets[_index];
     var _bullet = instance_create_layer(
         x, y + hit_radius, "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    _bullet.velocity_x = lengthdir_x(2.7, _direction);
-    _bullet.velocity_y = lengthdir_y(2.7, _direction);
+    _bullet.velocity_x = lengthdir_x(bullet_speed, _direction);
+    _bullet.velocity_y = lengthdir_y(bullet_speed, _direction);
+    _bullet.owner_stage_instance_id = stage_instance_id;
 }
-fire_cooldown = 52;
+fire_cooldown = fire_repeat_ticks;

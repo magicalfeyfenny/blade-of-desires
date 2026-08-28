@@ -1,5 +1,6 @@
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     && keyboard_check_pressed(ord("R"))) {
+    BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
     BladeFirstBeatCleanupTransientInstances();
     room_restart();
@@ -7,13 +8,18 @@ if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
 }
 
 var _bomb_was_active = economy.bomb_ticks > 0;
+var _hyper_was_active = economy.hyper_ticks > 0;
 BladeSurvivalAdvancePowerTimers(economy);
 bomb_clears_this_frame = _bomb_was_active || economy.bomb_ticks > 0;
+var _hyper_ended_this_frame = _hyper_was_active && economy.hyper_ticks == 0;
 if (feedback_ticks > 0) feedback_ticks -= 1;
 if (invulnerable_ticks > 0) invulnerable_ticks -= 1;
 
 // An active bomb owns the whole hostile-bullet clearing window, including new fire.
 if (bomb_clears_this_frame) {
+    with (o_blade_first_beat_enemy_bullet) instance_destroy();
+} else if (_hyper_ended_this_frame) {
+    // Hyper clears once on expiry; it never owns the continuous bomb sweep.
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
 }
 
@@ -106,6 +112,12 @@ if (state == BladeFirstBeatState.Playing
             feedback_ticks = 60;
         }
     }
+}
+
+if (stage_route_enabled
+    && state == BladeFirstBeatState.Playing
+    && BladeSurvivalGameplayAdvances(id)) {
+    BladeStage1RouteAdvance(id);
 }
 
 if (state == BladeFirstBeatState.Rewarding) {

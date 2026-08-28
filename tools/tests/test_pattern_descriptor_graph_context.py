@@ -49,7 +49,7 @@ class PatternDescriptorGraphContextTests(PatternDescriptorTestCase):
         second["product_contract"]["content_version"] = "1.2.1"
         rendered = "\n".join(validate_catalogs((("a.json", first), ("b.json", second))))
         self.assertIn("catalog.product_contract.content_version", rendered)
-        self.assertIn("1.2.0", rendered)
+        self.assertIn("1.3.0", rendered)
 
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "mismatched.json"
@@ -57,7 +57,7 @@ class PatternDescriptorGraphContextTests(PatternDescriptorTestCase):
             plan, errors = validate_path(path)
         self.assertIsNone(plan)
         self.assertIn("catalog.product_contract.content_version", "\n".join(errors))
-        self.assertIn("1.2.0", "\n".join(errors))
+        self.assertIn("1.3.0", "\n".join(errors))
 
         invented = self.load_catalog()
         invented["product_contract"] = {

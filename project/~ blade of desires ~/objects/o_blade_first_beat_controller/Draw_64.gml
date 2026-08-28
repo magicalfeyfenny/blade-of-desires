@@ -53,23 +53,29 @@ if (economy.active_hyper_tier > 0) {
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
     + "\nPower  X\nHyper takes priority");
 
-draw_text(469, 12, "CIELA\nARCADE");
-draw_text(469, 62, "Defeat the gold\nbomb carrier, then\ncollect its rewards.");
+draw_text(469, 12, "CIELA\nSTAGE 1");
+draw_text(469, 62, route_label);
+if (stage_route_enabled
+    && BladeStage1MidbossDrawHud(id, 469, 100, 155)) {
+    // The midboss HUD owns this space while its personal or combo life is active.
+} else {
+    draw_text(469, 100, "Clear each wave.\nGold carriers hold\none Bomb each.");
+}
 if (economy.bomb_ticks > 0) {
     draw_set_color(make_color_rgb(255, 224, 116));
-    draw_text(469, 132, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
+    draw_text(469, 188, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
 } else if (invulnerable_ticks > 0) {
     draw_set_color(make_color_rgb(126, 228, 255));
-    draw_text(469, 132, "PROTECTED\n" + string(invulnerable_ticks));
+    draw_text(469, 188, "PROTECTED\n" + string(invulnerable_ticks));
 } else {
     draw_set_color(make_color_rgb(255, 156, 126));
-    draw_text(469, 132, "VULNERABLE");
+    draw_text(469, 188, "VULNERABLE");
 }
 draw_set_color(c_white);
-draw_text(469, 190, "Enemy fire uses\none shared plane\nand hurtbox gate.");
+draw_text(469, 238, "Every emission uses\nthe shared 2D plane\nand current hurtbox.");
 if (feedback_ticks > 0) {
     draw_set_color(make_color_rgb(255, 239, 145));
-    draw_text(469, 270, feedback_text);
+    draw_text(469, 298, feedback_text);
 }
 
 if (state != BladeFirstBeatState.Playing) {
@@ -80,7 +86,8 @@ if (state != BladeFirstBeatState.Playing) {
         draw_set_alpha(1);
         draw_set_halign(fa_center);
         draw_set_color(c_white);
-        draw_text(320, 154, "COMBAT BEAT CLEAR\n\nPress R to play again");
+        draw_text(320, 145, "WORLD TREE REACHED\nASAHI AWAITS"
+            + "\n\nPress R to traverse again");
         draw_set_halign(fa_left);
     } else if (state == BladeFirstBeatState.Failed) {
         draw_set_alpha(0.82);

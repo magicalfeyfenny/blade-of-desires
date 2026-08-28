@@ -42,12 +42,12 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
 
     def test_repository_contract_is_valid_and_versioned(self):
-        """The checked-in additive contract remains schema 1 at content 1.2.0."""
+        """The checked-in additive contract remains schema 1 at content 1.3.0."""
         contract = self.load_contract()
 
         self.assertEqual(validate_file(CONTRACT_PATH), [])
         self.assertEqual(contract["schema_version"], 1)
-        self.assertEqual(contract["content_version"], "1.2.0")
+        self.assertEqual(contract["content_version"], "1.3.0")
         self.assertEqual(contract["registry_extensions"]["schema_version"], 1)
 
     def test_diagnostics_bind_file_or_in_memory_source(self):
@@ -83,7 +83,7 @@ class ProductContractValidatorTests(unittest.TestCase):
 
         contract = self.load_contract()
         contract["content_version"] = "1.1.0"
-        self.assert_error(contract, "product_contract.content_version", "must be at least 1.2.0")
+        self.assert_error(contract, "product_contract.content_version", "must be at least 1.3.0")
 
         contract = self.load_contract()
         contract["ships"][0]["id"] = "Ship Maynii"
@@ -156,9 +156,9 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "product_contract.content_version",
-            "must advance beyond 1.2.0 when registry extensions are declared",
+            "must advance beyond 1.3.0 when registry extensions are declared",
         )
-        contract["content_version"] = "1.2.1"
+        contract["content_version"] = "1.3.1"
         self.assertEqual(self.errors(contract), [])
 
         contract["ships"][3]["combat_role"] = None
@@ -568,12 +568,14 @@ class ProductContractValidatorTests(unittest.TestCase):
             f"requires core ID {removed_id}",
         )
 
-    def test_stage1_seam_no_longer_defers_kolar_role(self):
+    def test_stage1_seam_declares_the_current_ciela_duo_and_continuation(self):
         contract = self.load_contract()
         encounter = self.encounter(contract, "encounter.stage1.unchosen_elemental_fae")
 
-        self.assertIn("participant IDs remain unresolved", encounter["resolution"])
-        self.assertNotIn("Kolar", encounter["resolution"])
+        self.assertIn("Maynii and Kolar", encounter["resolution"])
+        self.assertIn("solo attack simultaneously", encounter["resolution"])
+        self.assertIn("shared Maynii-Kolar combo attack", encounter["resolution"])
+        self.assertIn("resumes the second half of Stage 1", encounter["resolution"])
 
 
 if __name__ == "__main__":
