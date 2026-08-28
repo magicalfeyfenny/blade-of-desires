@@ -94,7 +94,7 @@ function _BladeStageRuntimeTestsScenario(
 	};
 }
 
-/// Registers binding, timing, ownership, port, abort, and determinism cases.
+/// Registers combat and playable binding, timing, ownership, abort, and determinism cases.
 function BladeStageRuntimeTestsRun(_state) {
 	BladeKernelTestRunCase(_state, "runtime binding preflights all participant specs atomically", function() {
 		var _fixture = _BladeStageTestsFixture(undefined, 2, false, false);
@@ -154,6 +154,223 @@ function BladeStageRuntimeTestsRun(_state) {
 			_valid_counters.event, int64(0),
 			"successful binding still allocates no event IDs"
 		);
+	});
+
+	BladeKernelTestRunCase(_state, "playable binding preflights content without creating objects", function() {
+		var _fixture = _BladeStageTestsPlayableFixture(undefined, 2, false);
+		var _before = BladeStageExecutorCanonical(_fixture.executor);
+		var _kernel_before = BladeKernelGameplayCanonical(_fixture.kernel);
+		var _counters = BladeRunIdentityGetCounters(_fixture.kernel.identity);
+		var _context = { fixture: _fixture };
+		BladeKernelTestAssertThrows(method(_context, function() {
+			BladeStageExecutorBindPlayable(
+				self.fixture.executor, self.fixture.kernel,
+				self.fixture.spawn_callback
+			);
+		}), "fixture playable resolver rejected",
+		"invalid second playable participant rejects binding");
+		var _after_counters = BladeRunIdentityGetCounters(_fixture.kernel.identity);
+		BladeKernelTestAssertEqual(
+			BladeStageExecutorCanonical(_fixture.executor), _before,
+			"failed playable binding changes no schedule ownership"
+		);
+		BladeKernelTestAssertEqual(
+			BladeKernelGameplayCanonical(_fixture.kernel), _kernel_before,
+			"failed playable binding changes no deterministic kernel state"
+		);
+		BladeKernelTestAssertEqual(
+			_after_counters.instance, _counters.instance,
+			"failed playable binding allocates no participant ID"
+		);
+		BladeKernelTestAssertEqual(
+			array_length(_fixture.spawn_state.records), 0,
+			"failed playable binding creates no gameplay object"
+		);
+
+		var _valid = _BladeStageTestsPlayableFixture(undefined, 0, false);
+		BladeStageExecutorBindPlayable(
+			_valid.executor, _valid.kernel, _valid.spawn_callback
+		);
+		var _valid_counters = BladeRunIdentityGetCounters(_valid.kernel.identity);
+		BladeKernelTestAssertEqual(
+			_valid.resolver_state.calls, 2,
+			"playable binding resolves every participant exactly once"
+		);
+		BladeKernelTestAssertEqual(
+			array_length(_valid.spawn_state.records), 0,
+			"successful preflight still creates no object"
+		);
+		BladeKernelTestAssertEqual(
+			_valid_counters.instance, int64(0),
+			"successful playable preflight still allocates no participant ID"
+		);
+	});
+
+	BladeKernelTestRunCase(_state, "playable objects receive stable spawns and open only owned defeat gates", function() {
+		var _fixture = _BladeStageTestsPlayableFixture();
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		BladeKernelTestAssertFalse(
+			variable_struct_exists(_fixture, "runtime"),
+			"playable stage fixture constructs no duplicate combat runtime"
+		);
+		BladeKernelTestAssertEqual(
+			array_length(_fixture.spawn_state.records), 2,
+			"spawn node creates the complete playable participant batch"
+		);
+		var _first_spawn = _fixture.spawn_state.records[0];
+		var _second_spawn = _fixture.spawn_state.records[1];
+		BladeKernelTestAssertArrayEqual(
+			[_first_spawn.instance_id, _second_spawn.instance_id],
+			["ins:1", "ins:2"],
+			"playable participants keep deterministic spawn-order IDs"
+		);
+		BladeKernelTestAssertArrayEqual(
+			[_first_spawn.x_q10, _first_spawn.y_q10],
+			[int64(326656), int64(62464)],
+			"playable callback receives exact plane-bound coordinates"
+		);
+		BladeKernelTestAssertEqual(
+			_first_spawn.encounter_id,
+			"encounter_schedule.neutral_stage.targets",
+			"playable callback identifies its owning encounter"
+		);
+		BladeKernelTestAssertEqual(
+			_first_spawn.execution_generation, int64(3),
+			"playable callback receives the validated spawn generation"
+		);
+		var _generation = BladeStageEncounterRegistryLatest(
+			_fixture.executor.encounters,
+			"encounter_schedule.neutral_stage.targets"
+		);
+		BladeKernelTestAssertArrayEqual(
+			[_generation.participants[0].instance_id,
+				_generation.participants[1].instance_id],
+			["ins:1", "ins:2"],
+			"registry and gameplay objects share one participant identity"
+		);
+
+		_BladeStageTestsPlayableStep(
+			_fixture, BladeClockDomain.All,
+			["ins:999", _first_spawn.instance_id, _first_spawn.instance_id]
+		);
+		BladeKernelTestAssertArrayEqual(
+			[_fixture.defeat_results[0].accepted,
+				_fixture.defeat_results[1].accepted,
+				_fixture.defeat_results[2].accepted],
+			[false, true, false],
+			"unowned and duplicate defeats cannot change encounter ownership"
+		);
+		BladeKernelTestAssertEqual(
+			_fixture.executor.current_node_id,
+			"stage_node.neutral_stage.wait_targets",
+			"one of two real defeats keeps the all-defeated gate closed"
+		);
+		_BladeStageTestsPlayableStep(
+			_fixture, BladeClockDomain.All, [_second_spawn.instance_id]
+		);
+		BladeKernelTestAssertTrue(
+			_fixture.defeat_results[0].accepted,
+			"final owned real defeat is accepted once"
+		);
+		BladeKernelTestAssertEqual(
+			_generation.participants[1].state,
+			BladeStageParticipantState.RetainedHarmless,
+			"authored retained disposition survives direct object defeat"
+		);
+		BladeKernelTestAssertEqual(
+			_fixture.executor.current_node_id,
+			"stage_node.neutral_stage.wait_probe",
+			"final defeat advances through completion into the next real route gate"
+		);
+		BladeKernelTestAssertEqual(
+			array_length(_fixture.executor.ports.signal_records), 2,
+			"playable encounter emits started and completed exactly once"
+		);
+	});
+
+	BladeKernelTestRunCase(_state, "playable abort cleans only active objects and restart drops the callback", function() {
+		var _fixture = _BladeStageTestsPlayableFixture();
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		_BladeStageTestsPlayableStep(_fixture, BladeClockDomain.All);
+		var _generation = BladeStageEncounterRegistryLatest(
+			_fixture.executor.encounters,
+			"encounter_schedule.neutral_stage.targets"
+		);
+		_BladeStageTestsPlayableStep(
+			_fixture, BladeClockDomain.Combat,
+			[_generation.participants[1].instance_id]
+		);
+		BladeStageExecutorAbortPlayable(
+			_fixture.executor, BladeCombatTerminalReason.RunLoad,
+			_BladeStageRuntimeTestsBoundaryTick(_fixture)
+		);
+		BladeKernelTestAssertEqual(
+			_generation.participants[1].state,
+			BladeStageParticipantState.RetainedHarmless,
+			"reported playable defeat retains its exact terminal provenance"
+		);
+		BladeKernelTestAssertEqual(
+			_generation.participants[0].state,
+			BladeStageParticipantState.Cleaned,
+			"abort cleans only the still-active playable participant"
+		);
+		BladeKernelTestAssertEqual(
+			_generation.lifecycle, BladeStageLifecycle.Aborted,
+			"abort cannot convert one reported defeat into completion"
+		);
+		BladeKernelTestAssertEqual(
+			array_length(_fixture.executor.ports.signal_records), 1,
+			"playable abort emits no completed signal"
+		);
+		var _restart = BladeStageExecutorRestart(_fixture.executor);
+		BladeKernelTestAssertFalse(
+			_restart.runtime_bound,
+			"playable restart returns fresh unbound stage ownership"
+		);
+		BladeKernelTestAssertEqual(
+			_restart.runtime_kind, "unbound",
+			"playable restart carries no former runtime kind"
+		);
+		BladeKernelTestAssertTrue(
+			is_undefined(_restart.playable_spawn_callback),
+			"playable restart carries no former object callback"
+		);
+	});
+
+	BladeKernelTestRunCase(_state, "combat and playable hosts cannot impersonate each other", function() {
+		var _combat = _BladeStageTestsFixture();
+		var _combat_context = { fixture: _combat };
+		BladeKernelTestAssertThrows(method(_combat_context, function() {
+			BladeStageExecutorBindPlayable(
+				self.fixture.executor, self.fixture.kernel,
+				method({ records: [] }, _BladeStageTestsPlayableSpawn)
+			);
+		}), "cannot change", "combat-bound stage rejects a playable rebind");
+
+		var _playable = _BladeStageTestsPlayableFixture();
+		var _event_owner_id = BladeKernelAllocate(
+			_playable.kernel, BladeRunIdKind.EventOwner
+		);
+		var _runtime = BladeCombatRuntimeCreate(
+			_playable.kernel.identity, _event_owner_id, _playable.plane
+		);
+		var _playable_context = { fixture: _playable, runtime: _runtime };
+		BladeKernelTestAssertThrows(method(_playable_context, function() {
+			BladeStageExecutorBindRuntime(
+				self.fixture.executor, self.fixture.kernel, self.runtime
+			);
+		}), "cannot change", "playable-bound stage rejects a combat rebind");
+		BladeKernelTestAssertThrows(method(_playable_context, function() {
+			BladeStageExecutorAbort(
+				self.fixture.executor, self.runtime,
+				BladeCombatTerminalReason.RunLoad,
+				_BladeStageRuntimeTestsBoundaryTick(self.fixture)
+			);
+		}), "bound combat runtime",
+		"playable-bound stage rejects combat-runtime abort");
 	});
 
 	BladeKernelTestRunCase(_state, "eligible Stage ticks own wait timing and stable command events", function() {

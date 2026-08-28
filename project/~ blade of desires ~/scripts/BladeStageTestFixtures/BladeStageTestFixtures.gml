@@ -100,6 +100,26 @@ function _BladeStageTestsParticipantResolver(
 	};
 }
 
+/// Resolves the minimal content identity needed by one ordinary playable object.
+function _BladeStageTestsPlayableParticipantResolver(
+	_kind_id, _participant_id, _x_q10, _y_q10
+) {
+	self.calls += 1;
+	if (self.fail_on_call == self.calls) {
+		throw("fixture playable resolver rejected " + _participant_id);
+	}
+	if (_kind_id != "participant_kind.neutral_stage.target") {
+		throw("fixture playable resolver received unknown kind " + _kind_id);
+	}
+	return { content_id: "enemy.fixture" };
+}
+
+/// Records one real-object creation request without constructing a combat-runtime actor.
+function _BladeStageTestsPlayableSpawn(_spawn) {
+	array_push(self.records, _BladeStagePlanClone(_spawn));
+	return true;
+}
+
 /// Replaces the neutral schedule with a spawn-first atomicity fixture.
 function _BladeStageTestsSpawnFirstPlan(_normalized) {
 	var _copy = _BladeStagePlanClone(_normalized);
@@ -156,6 +176,42 @@ function _BladeStageTestsFixture(
 	};
 }
 
+/// Creates a stage fixture bound directly to playable object creation and defeat reports.
+function _BladeStageTestsPlayableFixture(
+	_raw = undefined, _fail_on_call = 0, _bind = true
+) {
+	var _plane = _BladeStageTestsPlane();
+	if (is_undefined(_raw)) _raw = _BladeStageTestsRawCatalog();
+	var _normalized = BladeStageCatalogNormalize(_raw, _plane);
+	var _fingerprint = BladeStageNormalizedPlanFingerprint(_normalized);
+	var _kernel = BladeDeterministicKernelCreate(
+		"sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b", 305419896,
+		method({}, _BladeStageTestsKnownContent), 8
+	);
+	var _resolver_state = { calls: 0, fail_on_call: _fail_on_call };
+	var _spawn_state = { records: [] };
+	var _spawn_callback = method(_spawn_state, _BladeStageTestsPlayableSpawn);
+	var _executor = BladeStageExecutorCreate(
+		_normalized, _fingerprint, "stage_schedule.neutral_fixture",
+		method(_resolver_state, _BladeStageTestsPlayableParticipantResolver), _plane
+	);
+	if (_bind) {
+		BladeStageExecutorBindPlayable(_executor, _kernel, _spawn_callback);
+	}
+	return {
+		plane: _plane,
+		normalized: _normalized,
+		fingerprint: _fingerprint,
+		kernel: _kernel,
+		resolver_state: _resolver_state,
+		spawn_state: _spawn_state,
+		spawn_callback: _spawn_callback,
+		executor: _executor,
+		defeat_instance_ids: [],
+		defeat_results: [],
+	};
+}
+
 /// Runs combat first and Stage last while the kernel's EventLog tick stays open.
 function _BladeStageTestsTick(_kernel, _input, _tick) {
 	_BladeCombatRuntimeBeginTick(self.runtime, _kernel, _tick);
@@ -201,6 +257,32 @@ function _BladeStageTestsStep(
 	);
 	_fixture.terminal_requests = [];
 	_fixture.queue_ordinary_event = false;
+	return _result;
+}
+
+/// Reports queued real-object defeats, then advances the same deterministic schedule.
+function _BladeStageTestsPlayableTick(_kernel, _input, _tick) {
+	self.defeat_results = [];
+	for (var _index = 0;
+		_index < array_length(self.defeat_instance_ids); ++_index) {
+		array_push(self.defeat_results, BladeStageExecutorReportPlayableDefeat(
+			self.executor, _kernel, self.defeat_instance_ids[_index], _tick
+		));
+	}
+	BladeStageExecutorAdvancePlayable(self.executor, _kernel, _tick);
+	return BladeStageExecutorCanonical(self.executor);
+}
+
+/// Steps one playable stage tick with caller-selected domains and defeat IDs.
+function _BladeStageTestsPlayableStep(
+	_fixture, _domains, _defeat_instance_ids = []
+) {
+	_fixture.defeat_instance_ids = _BladeStagePlanClone(_defeat_instance_ids);
+	var _result = BladeKernelStepDirect(
+		_fixture.kernel, BladeInputRawStateCreate(0, 0, 0), _domains,
+		method(_fixture, _BladeStageTestsPlayableTick)
+	);
+	_fixture.defeat_instance_ids = [];
 	return _result;
 }
 

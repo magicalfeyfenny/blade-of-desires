@@ -13,8 +13,14 @@ function _BladeStageExecutorRequire(_executor) {
 	_BladeStageEventStreamRequire(_executor.events);
 	if (!is_array(_executor.execution_records)
 		|| !is_array(_executor.prepared_spawns)
-		|| typeof(_executor.runtime_bound) != "bool") {
-		_BladeStagePlanFail("executor", "execution records must remain an array");
+		|| typeof(_executor.runtime_bound) != "bool"
+		|| !is_string(_executor.runtime_kind)
+		|| (_executor.runtime_kind != "unbound"
+			&& _executor.runtime_kind != "combat"
+			&& _executor.runtime_kind != "playable")
+		|| (!is_undefined(_executor.playable_spawn_callback)
+			&& typeof(_executor.playable_spawn_callback) != "method")) {
+		_BladeStagePlanFail("executor", "has invalid mutable runtime fields");
 	}
 	return _executor;
 }
@@ -213,11 +219,20 @@ function _BladeStageExecutorImmediate(
 	);
 	switch (_node.kind) {
 		case "spawn_encounter":
-			BladeStageEncounterRegistrySpawnPrepared(
-				_executor.encounters, _executor.ports, _kernel, _runtime,
-				_BladeStageExecutorPreparedSpawn(_executor, _node.id),
-				_tick, _executor.current_generation
-			);
+			if (_executor.runtime_kind == "combat") {
+				BladeStageEncounterRegistrySpawnPrepared(
+					_executor.encounters, _executor.ports, _kernel, _runtime,
+					_BladeStageExecutorPreparedSpawn(_executor, _node.id),
+					_tick, _executor.current_generation
+				);
+			} else {
+				BladeStageEncounterRegistrySpawnPlayablePrepared(
+					_executor.encounters, _executor.ports, _kernel,
+					_BladeStageExecutorPreparedSpawn(_executor, _node.id),
+					_tick, _executor.current_generation,
+					_executor.playable_spawn_callback
+				);
+			}
 			break;
 		case "request_task":
 			BladeStagePortsEmitTask(
@@ -271,7 +286,9 @@ function BladeStageExecutorCreate(
 		encounters: BladeStageEncounterRegistryCreate(_plan),
 		events: BladeStageEventStreamCreate(_plan),
 		runtime_bound: false,
+		runtime_kind: "unbound",
 		bound_identity: undefined,
+		playable_spawn_callback: undefined,
 		prepared_spawns: [],
 		lifecycle: BladeStageLifecycle.Active,
 		current_node_id: _plan.stage.entry_node_id,
@@ -311,8 +328,11 @@ function BladeStageExecutorBindRuntime(_executor, _kernel, _runtime) {
 	}
 	BladeStageExecutorRequireGameplayPlane(_executor, _runtime.plane);
 	if (_executor.runtime_bound) {
-		if (_executor.bound_identity != _kernel.identity) {
-			_BladeStagePlanFail("executor binding", "cannot change its run identity");
+		if (_executor.runtime_kind != "combat"
+			|| _executor.bound_identity != _kernel.identity) {
+			_BladeStagePlanFail(
+				"executor binding", "cannot change its runtime kind or run identity"
+			);
 		}
 		return BladeStageExecutorSnapshot(_executor);
 	}
@@ -331,6 +351,46 @@ function BladeStageExecutorBindRuntime(_executor, _kernel, _runtime) {
 	}
 	_executor.prepared_spawns = _prepared;
 	_executor.bound_identity = _kernel.identity;
+	_executor.runtime_kind = "combat";
+	_executor.runtime_bound = true;
+	return BladeStageExecutorSnapshot(_executor);
+}
+
+/// Binds content-only spawn specs and one real-object creation callback without a combat runtime.
+function BladeStageExecutorBindPlayable(_executor, _kernel, _spawn_callback) {
+	_BladeStageExecutorRequire(_executor);
+	_BladeKernelRequire(_kernel);
+	if (typeof(_spawn_callback) != "method") {
+		_BladeStagePlanFail("playable executor binding", "requires a spawn callback");
+	}
+	if (_executor.runtime_bound) {
+		if (_executor.runtime_kind != "playable"
+			|| _executor.bound_identity != _kernel.identity
+			|| _executor.playable_spawn_callback != _spawn_callback) {
+			_BladeStagePlanFail(
+				"playable executor binding",
+				"cannot change its callback, runtime kind, or run identity"
+			);
+		}
+		return BladeStageExecutorSnapshot(_executor);
+	}
+	var _prepared = [];
+	for (var _index = 0;
+		_index < array_length(_executor.plan.stage.nodes); ++_index) {
+		var _node = _executor.plan.stage.nodes[_index];
+		if (_node.kind != "spawn_encounter") continue;
+		var _anchor = BladeStagePlanResolveAnchor(
+			_executor.plan, _node.anchor_id, _node.local_offset_q10
+		);
+		array_push(_prepared, BladeStageEncounterRegistryPreparePlayableSpawn(
+			_executor.encounters, _kernel, _node.id, _node.encounter_id,
+			_anchor, _executor.participant_spec_resolver
+		));
+	}
+	_executor.prepared_spawns = _prepared;
+	_executor.bound_identity = _kernel.identity;
+	_executor.playable_spawn_callback = _spawn_callback;
+	_executor.runtime_kind = "playable";
 	_executor.runtime_bound = true;
 	return BladeStageExecutorSnapshot(_executor);
 }
@@ -350,19 +410,13 @@ function BladeStageExecutorRestart(_executor) {
 	return _restart;
 }
 
-/// @func BladeStageExecutorAdvance(executor, kernel, combat_runtime, tick)
-/// Advances only on a new eligible Stage tick and chains forward immediate nodes.
-function BladeStageExecutorAdvance(_executor, _kernel, _runtime, _tick) {
+/// Advances the shared schedule once after its public runtime-specific boundary validates.
+function _BladeStageExecutorAdvanceBound(_executor, _kernel, _runtime, _tick) {
 	_BladeStageExecutorRequire(_executor);
 	_BladeKernelRequire(_kernel);
-	_BladeCombatRuntimeRequire(_runtime);
-	if (_runtime.identity != _kernel.identity) {
-		_BladeStagePlanFail("executor", "requires the combat runtime's kernel identity");
-	}
 	if (!_executor.runtime_bound || _executor.bound_identity != _kernel.identity) {
 		_BladeStagePlanFail("executor", "must bind all runtime spawn specs before advance");
 	}
-	BladeStageExecutorRequireGameplayPlane(_executor, _runtime.plane);
 	var _validated_tick = _BladeStageExecutorTick(_tick);
 	if ((_validated_tick.domain_mask & BladeClockDomain.Stage) == 0) {
 		return BladeStageExecutorSnapshot(_executor);
@@ -382,9 +436,15 @@ function BladeStageExecutorAdvance(_executor, _kernel, _runtime, _tick) {
 	if (_validated_tick.simulation_tick <= _executor.last_simulation_tick) {
 		_BladeStagePlanFail("simulation tick", "must advance on each eligible Stage tick");
 	}
-	BladeStageEncounterRegistryObserve(
-		_executor.encounters, _executor.ports, _runtime, _validated_tick
-	);
+	if (_executor.runtime_kind == "combat") {
+		BladeStageEncounterRegistryObserve(
+			_executor.encounters, _executor.ports, _runtime, _validated_tick
+		);
+	} else {
+		BladeStageEncounterRegistryObservePlayable(
+			_executor.encounters, _executor.ports, _validated_tick
+		);
+	}
 	var _budget = array_length(_executor.plan.stage.nodes) + 1;
 	while (_executor.lifecycle == BladeStageLifecycle.Active && _budget > 0) {
 		var _node = BladeStagePlanFindNode(
@@ -392,10 +452,17 @@ function BladeStageExecutorAdvance(_executor, _kernel, _runtime, _tick) {
 		);
 		if (is_undefined(_node)) _BladeStagePlanFail("executor", "lost its current node");
 		if (_node.kind == "spawn_encounter") {
-			BladeStageEncounterRegistryPreflightPreparedSpawn(
-				_executor.encounters, _kernel, _runtime,
-				_BladeStageExecutorPreparedSpawn(_executor, _node.id)
-			);
+			if (_executor.runtime_kind == "combat") {
+				BladeStageEncounterRegistryPreflightPreparedSpawn(
+					_executor.encounters, _kernel, _runtime,
+					_BladeStageExecutorPreparedSpawn(_executor, _node.id)
+				);
+			} else {
+				BladeStageEncounterRegistryPreflightPlayableSpawn(
+					_executor.encounters, _kernel,
+					_BladeStageExecutorPreparedSpawn(_executor, _node.id)
+				);
+			}
 		}
 		_BladeStageExecutorEnter(_executor, _node, _validated_tick);
 		var _continue = false;
@@ -440,6 +507,56 @@ function BladeStageExecutorAdvance(_executor, _kernel, _runtime, _tick) {
 	return BladeStageExecutorSnapshot(_executor);
 }
 
+/// @func BladeStageExecutorAdvance(executor, kernel, combat_runtime, tick)
+/// Advances the legacy combat-backed schedule on one new eligible Stage tick.
+function BladeStageExecutorAdvance(_executor, _kernel, _runtime, _tick) {
+	_BladeStageExecutorRequire(_executor);
+	_BladeKernelRequire(_kernel);
+	_BladeCombatRuntimeRequire(_runtime);
+	if (_executor.runtime_kind != "combat"
+		|| _runtime.identity != _kernel.identity) {
+		_BladeStagePlanFail(
+			"executor", "requires its combat runtime and shared kernel identity"
+		);
+	}
+	BladeStageExecutorRequireGameplayPlane(_executor, _runtime.plane);
+	return _BladeStageExecutorAdvanceBound(
+		_executor, _kernel, _runtime, _tick
+	);
+}
+
+/// Advances the production object-backed schedule on one new eligible Stage tick.
+function BladeStageExecutorAdvancePlayable(_executor, _kernel, _tick) {
+	_BladeStageExecutorRequire(_executor);
+	_BladeKernelRequire(_kernel);
+	if (_executor.runtime_kind != "playable") {
+		_BladeStagePlanFail("playable executor", "is not bound to playable objects");
+	}
+	return _BladeStageExecutorAdvanceBound(
+		_executor, _kernel, undefined, _tick
+	);
+}
+
+/// Accepts one real enemy defeat from the bound kernel simulation callback.
+function BladeStageExecutorReportPlayableDefeat(
+	_executor, _kernel, _instance_id, _tick
+) {
+	_BladeStageExecutorRequire(_executor);
+	_BladeKernelRequire(_kernel);
+	if (_executor.runtime_kind != "playable"
+		|| _executor.bound_identity != _kernel.identity) {
+		_BladeStagePlanFail(
+			"playable executor defeat", "requires its bound kernel identity"
+		);
+	}
+	if (_executor.lifecycle != BladeStageLifecycle.Active) {
+		return { accepted: false };
+	}
+	return BladeStageEncounterRegistryReportPlayableDefeat(
+		_executor.encounters, _instance_id, _BladeStageExecutorTick(_tick)
+	);
+}
+
 /// Accepts one completion only while the exact typed signal wait is current.
 function BladeStageExecutorSubmitTaskCompletion(
 	_executor, _port_id, _type_id, _signal_id, _signal_type_id,
@@ -473,7 +590,8 @@ function BladeStageExecutorSubmitExternalSignal(
 function BladeStageExecutorAbort(_executor, _runtime, _reason, _tick) {
 	_BladeStageExecutorRequire(_executor);
 	_BladeCombatRuntimeRequire(_runtime);
-	if (!_executor.runtime_bound || _executor.bound_identity != _runtime.identity) {
+	if (!_executor.runtime_bound || _executor.runtime_kind != "combat"
+		|| _executor.bound_identity != _runtime.identity) {
 		_BladeStagePlanFail("executor abort", "requires its bound combat runtime");
 	}
 	var _validated_tick = _BladeStageExecutorTick(_tick);
@@ -482,6 +600,25 @@ function BladeStageExecutorAbort(_executor, _runtime, _reason, _tick) {
 	}
 	BladeStageEncounterRegistryAbort(
 		_executor.encounters, _runtime, _reason, _validated_tick
+	);
+	_executor.lifecycle = BladeStageLifecycle.Aborted;
+	_executor.completion_simulation_tick = _validated_tick.simulation_tick;
+	_executor.completion_stage_tick = _validated_tick.stage_tick;
+	return BladeStageExecutorSnapshot(_executor);
+}
+
+/// Aborts playable stage ownership without converting object cleanup into encounter defeat.
+function BladeStageExecutorAbortPlayable(_executor, _reason, _tick) {
+	_BladeStageExecutorRequire(_executor);
+	if (!_executor.runtime_bound || _executor.runtime_kind != "playable") {
+		_BladeStagePlanFail("playable executor abort", "requires a playable binding");
+	}
+	var _validated_tick = _BladeStageExecutorTick(_tick);
+	if (_executor.lifecycle != BladeStageLifecycle.Active) {
+		return BladeStageExecutorSnapshot(_executor);
+	}
+	BladeStageEncounterRegistryAbortPlayable(
+		_executor.encounters, _reason, _validated_tick
 	);
 	_executor.lifecycle = BladeStageLifecycle.Aborted;
 	_executor.completion_simulation_tick = _validated_tick.simulation_tick;

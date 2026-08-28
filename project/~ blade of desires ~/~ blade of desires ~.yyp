@@ -83,6 +83,7 @@
     {"id":{"name":"BladeStageCatalogNormalization","path":"scripts/BladeStageCatalogNormalization/BladeStageCatalogNormalization.yy",},},
     {"id":{"name":"BladeStagePorts","path":"scripts/BladeStagePorts/BladeStagePorts.yy",},},
     {"id":{"name":"BladeStageEncounterRegistry","path":"scripts/BladeStageEncounterRegistry/BladeStageEncounterRegistry.yy",},},
+    {"id":{"name":"BladeStagePlayableRuntime","path":"scripts/BladeStagePlayableRuntime/BladeStagePlayableRuntime.yy",},},
     {"id":{"name":"BladeStageEventStream","path":"scripts/BladeStageEventStream/BladeStageEventStream.yy",},},
     {"id":{"name":"BladeStageExecutor","path":"scripts/BladeStageExecutor/BladeStageExecutor.yy",},},
     {"id":{"name":"BladeStageContent","path":"scripts/BladeStageContent/BladeStageContent.yy",},},
