@@ -56,12 +56,26 @@ draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
 draw_text(469, 12, "CIELA\nSTAGE 1");
 draw_text(469, 62, route_label);
 if (stage_route_enabled
+    && BladeStage1BossDrawHud(id, 469, 92, 155)) {
+    // Asahi owns the right panel from warning through the boss terminal.
+} else if (stage_route_enabled
     && BladeStage1MidbossDrawHud(id, 469, 100, 155)) {
     // The midboss HUD owns this space while its personal or combo life is active.
+} else if (state == BladeFirstBeatState.Won) {
+    draw_text(469, 100, "CLEAR BONUS"
+        + "\nBASE   " + string(stage_clear_breakdown.base)
+        + "\nLIVES  " + string(stage_clear_breakdown.lives)
+        + "\nBOMBS  " + string(stage_clear_breakdown.bombs));
 } else {
     draw_text(469, 100, "Clear each wave.\nGold carriers hold\none Bomb each.");
 }
-if (economy.bomb_ticks > 0) {
+if (state == BladeFirstBeatState.Won) {
+    draw_set_color(make_color_rgb(255, 232, 142));
+    draw_text(469, 188, "RUN COMPLETE");
+} else if (state == BladeFirstBeatState.Failed) {
+    draw_set_color(make_color_rgb(255, 156, 126));
+    draw_text(469, 188, "ATTEMPT ENDED");
+} else if (economy.bomb_ticks > 0) {
     draw_set_color(make_color_rgb(255, 224, 116));
     draw_text(469, 188, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
 } else if (invulnerable_ticks > 0) {
@@ -99,8 +113,16 @@ if (state != BladeFirstBeatState.Playing) {
         draw_set_alpha(1);
         draw_set_halign(fa_center);
         draw_set_color(c_white);
-        draw_text(320, 145, "WORLD TREE REACHED\nASAHI AWAITS"
-            + "\n\nPress R to traverse again");
+        var _clear_kind = boss_resolution == BladeStage1BossResolution.Defeat
+            ? "ASAHI DEFEATED"
+            : "TIMEOUT SURVIVAL";
+        draw_text(
+            320,
+            139,
+            "STAGE CLEAR\n" + _clear_kind
+                + "\nBONUS  " + string(stage_clear_breakdown.total)
+                + "\n\nR retry   Esc exit"
+        );
         draw_set_halign(fa_left);
     } else if (state == BladeFirstBeatState.Failed) {
         draw_set_alpha(0.82);
@@ -109,7 +131,7 @@ if (state != BladeFirstBeatState.Playing) {
         draw_set_alpha(1);
         draw_set_halign(fa_center);
         draw_set_color(c_white);
-        draw_text(320, 154, "GAME OVER\n\nPress R to retry");
+        draw_text(320, 154, "GAME OVER\n\nR retry   Esc exit");
         draw_set_halign(fa_left);
     }
 }

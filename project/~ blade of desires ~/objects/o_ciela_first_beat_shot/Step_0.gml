@@ -25,6 +25,13 @@ if (_target.target_kind == BladeFirstBeatTargetKind.Stage1FaeMidboss) {
     BladeSurvivalAwardEnemyHit(
         _controller.economy, _midboss_result.applied
     );
+} else if (_target.target_kind == BladeFirstBeatTargetKind.Stage1Asahi) {
+    var _boss_result = BladeStage1BossApplyDamage(
+        _controller, _target, damage
+    );
+    BladeSurvivalAwardEnemyHit(
+        _controller.economy, _boss_result.applied
+    );
 } else {
     var _result = BladeFirstBeatDamageResult(_target.hit_points, damage);
     _target.hit_points = _result.remaining;

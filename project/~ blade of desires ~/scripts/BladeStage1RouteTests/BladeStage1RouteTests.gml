@@ -1,4 +1,4 @@
-/// Focused playable-route tests for Stage 1 and its Maynii-Kolar midboss.
+/// Focused playable-route tests for Stage 1, its midboss, and Asahi finale.
 
 /// Queues every newly spawned ordinary target and records authored carrier count.
 function _BladeStage1RouteTestsQueueOrdinary(_controller, _record) {
@@ -26,12 +26,12 @@ function _BladeStage1RouteTestsReachDuo(_controller, _record) {
     return false;
 }
 
-/// Finishes the post-midboss route while clearing each ordinary encounter once.
-function _BladeStage1RouteTestsReachHandoff(_controller, _record) {
+/// Clears the second half and stops when the authored Asahi body materializes.
+function _BladeStage1RouteTestsReachAsahi(_controller, _record) {
     for (var _tick = 0; _tick < 1600; ++_tick) {
         _BladeStage1RouteTestsQueueOrdinary(_controller, _record);
         BladeStage1RouteAdvance(_controller);
-        if (_controller.state == BladeFirstBeatState.Won) return true;
+        if (instance_number(o_blade_stage1_asahi) == 1) return true;
     }
     return false;
 }
@@ -173,6 +173,7 @@ function BladeStage1RouteTestsRun(_state) {
                 music_travel: -1,
                 music_duo: -1,
                 music_approach: -1,
+                music_boss: -1,
             };
             var _cues = [
                 "cue.stage1.forest_travel",
@@ -180,10 +181,13 @@ function BladeStage1RouteTestsRun(_state) {
                 "cue.stage1.forest_resume",
                 "cue.stage1.world_tree_approach",
                 "cue.stage1.world_tree_handoff",
+                "cue.stage1.asahi_warning",
+                "cue.stage1.stage_clear",
             ];
-            var _notice_ticks = [100, 120, 120, 150, 180];
+            var _notice_ticks = [100, 120, 120, 150, 180, 150, 240];
             var _music_keys = [
-                "travel", "duo", "travel", "approach", "handoff"
+                "travel", "duo", "travel", "approach", "handoff",
+                "asahi", "stage_clear"
             ];
             for (var _index = 0;
                 _index < array_length(_cues);
@@ -212,7 +216,7 @@ function BladeStage1RouteTestsRun(_state) {
 
     BladeFirstBeatTestRunCase(
         _state,
-        "Stage 1 clears simultaneous solos, shared combo, then resumes",
+        "Stage 1 clears the fae duo, resumes, and resolves Asahi",
         function() {
             var _controller = instance_create_layer(
                 0, 0, "Instances", o_blade_first_beat_controller
@@ -435,21 +439,58 @@ function BladeStage1RouteTestsRun(_state) {
             );
 
             BladeKernelTestAssertTrue(
-                _BladeStage1RouteTestsReachHandoff(_controller, _record),
-                "second-half encounters reach the stable World Tree handoff"
+                _BladeStage1RouteTestsReachAsahi(_controller, _record),
+                "second-half encounters reach Asahi at the World Tree"
             );
             BladeKernelTestAssertEqual(
                 _record.carrier_count, 2,
                 "one bomb carrier appears in each route half"
             );
             BladeKernelTestAssertEqual(
-                _controller.stage_executor.lifecycle,
-                BladeStageLifecycle.Completed,
-                "only the explicit handoff completion ends this slice"
+                _controller.stage_executor.current_node_id,
+                "stage_node.stage1.wait_asahi",
+                "the schedule waits on Asahi's concrete encounter"
             );
             BladeKernelTestAssertEqual(
-                _controller.route_label, "WORLD TREE REACHED",
-                "finished slice presents the reached destination"
+                _controller.stage_executor.lifecycle,
+                BladeStageLifecycle.Active,
+                "reaching the boss cannot complete Stage 1 early"
+            );
+            var _asahi = instance_find(o_blade_stage1_asahi, 0);
+            BladeStage1BossActivatePhase(_asahi, 1);
+            BladeStage1BossApplyDamage(
+                _controller, _asahi, BLADE_STAGE1_ASAHI_PHASE_1_HP
+            );
+            for (var _recharge = 0;
+                _recharge < BLADE_STAGE1_ASAHI_RECHARGE_TICKS;
+                ++_recharge) {
+                BladeStage1BossStep(_asahi);
+            }
+            BladeKernelTestAssertEqual(
+                _asahi.boss_phase, 2,
+                "the exact recharge boundary opens Asahi's second phase"
+            );
+            BladeStage1BossApplyDamage(
+                _controller, _asahi, BLADE_STAGE1_ASAHI_PHASE_2_HP
+            );
+            for (var _finish = 0;
+                _finish < 8
+                    && _controller.state != BladeFirstBeatState.Won;
+                ++_finish) {
+                BladeStage1RouteAdvance(_controller);
+            }
+            BladeKernelTestAssertEqual(
+                _controller.stage_executor.lifecycle,
+                BladeStageLifecycle.Completed,
+                "only Asahi resolution reaches the terminal Stage node"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.route_label, "STAGE 1 CLEAR",
+                "finished Stage presents an explicit clear result"
+            );
+            BladeKernelTestAssertTrue(
+                _controller.stage_clear_awarded,
+                "the clear cue awards its stable bonus exactly once"
             );
         }
     );

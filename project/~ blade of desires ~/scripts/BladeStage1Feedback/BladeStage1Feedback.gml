@@ -5,6 +5,8 @@
 #macro BLADE_STAGE1_EFFECT_KOLAR "kolar"
 #macro BLADE_STAGE1_EFFECT_CIELA "ciela"
 #macro BLADE_STAGE1_EFFECT_HANDOFF "handoff"
+#macro BLADE_STAGE1_EFFECT_ASAHI_PHASE "asahi_phase"
+#macro BLADE_STAGE1_EFFECT_ASAHI_DEFEAT "asahi_defeat"
 
 /// Spawns one presentation-only effect; its object initializes next Step.
 function BladeStage1FeedbackSpawn(
@@ -43,6 +45,16 @@ function BladeStage1FeedbackInitialize(_effect) {
             _effect.duration = 100;
             _effect.particle_count = 44;
             _effect.max_radius = 112;
+            break;
+        case BLADE_STAGE1_EFFECT_ASAHI_PHASE:
+            _effect.duration = 120;
+            _effect.particle_count = 48;
+            _effect.max_radius = 86;
+            break;
+        case BLADE_STAGE1_EFFECT_ASAHI_DEFEAT:
+            _effect.duration = 150;
+            _effect.particle_count = 64;
+            _effect.max_radius = 132;
             break;
         default:
             _effect.duration = 42;

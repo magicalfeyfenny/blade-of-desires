@@ -19,12 +19,13 @@ function BladeStage1RouteIncludedPath(_relative_path) {
     throw("BladeStage1Route: bundled file does not exist: " + _relative_path);
 }
 
-/// Recognizes only the four concrete content identities spawned by this route.
+/// Recognizes only the five concrete content identities spawned by this route.
 function BladeStage1RouteKnownContent(_content_id) {
     return _content_id == BLADE_STAGE1_SCOUT_CONTENT_ID
         || _content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID
         || _content_id == "ship.maynii"
-        || _content_id == "ship.kolar";
+        || _content_id == "ship.kolar"
+        || _content_id == BLADE_STAGE1_ASAHI_CONTENT_ID;
 }
 
 /// Maps each authored participant kind directly to its playable content identity.
@@ -40,6 +41,8 @@ function BladeStage1RouteResolveParticipant(
             return { content_id: "ship.maynii" };
         case "participant_kind.stage1.fae_kolar":
             return { content_id: "ship.kolar" };
+        case "participant_kind.stage1.asahi":
+            return { content_id: BLADE_STAGE1_ASAHI_CONTENT_ID };
     }
     throw("BladeStage1Route: unknown participant kind " + _kind_id);
 }
@@ -108,13 +111,28 @@ function BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y) {
     return _member;
 }
 
+/// Creates Asahi at the World Tree and binds her exact schedule ownership.
+function BladeStage1RouteSpawnAsahi(_controller, _spawn, _x, _target_y) {
+    var _boss = instance_create_layer(
+        _x, -48,
+        "Instances", o_blade_stage1_asahi
+    );
+    BladeStage1RouteAssignOwnership(_boss, _spawn);
+    _boss.anchor_x = _x;
+    _boss.anchor_y = _target_y;
+    BladeStage1BossRegister(_controller, _boss);
+    return _boss;
+}
+
 /// Materializes one preflighted Stage participant as an ordinary gameplay object.
 function BladeStage1RouteSpawnParticipant(_spawn) {
     var _controller = self.controller;
     if (!instance_exists(_controller)) return false;
     var _x = real(_spawn.x_q10) / 1024;
     var _target_y = real(_spawn.y_q10) / 1024;
-    if (_spawn.content_id == "ship.maynii"
+    if (_spawn.content_id == BLADE_STAGE1_ASAHI_CONTENT_ID) {
+        BladeStage1RouteSpawnAsahi(_controller, _spawn, _x, _target_y);
+    } else if (_spawn.content_id == "ship.maynii"
         || _spawn.content_id == "ship.kolar") {
         BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y);
     } else {
@@ -233,10 +251,24 @@ function BladeStage1RouteApplyCue(_controller, _cue_id) {
                 1.25
             );
             break;
+
+        case "cue.stage1.asahi_warning":
+            _controller.route_label = "WARNING  ASAHI";
+            _controller.route_notice_text = "ASAHI  SUNNY FAE OF FLAME";
+            _controller.route_notice_ticks = 150;
+            BladeStage1BossBeginWarning(_controller);
+            break;
+
+        case "cue.stage1.stage_clear":
+            _controller.route_label = "STAGE 1 CLEAR";
+            _controller.route_notice_text = "ASAHI RESOLVED  DAWN BREAKS";
+            _controller.route_notice_ticks = 240;
+            BladeStage1BossFinalizeStageClear(_controller);
+            break;
     }
 }
 
-/// Advances Stage 1 once, delivers new cues once, and ends only at the handoff node.
+/// Advances Stage 1 once, delivers new cues once, and ends at Stage Clear.
 function BladeStage1RouteAdvance(_controller) {
     if (!_controller.stage_route_enabled) return undefined;
     var _context = { controller: _controller };
@@ -257,7 +289,7 @@ function BladeStage1RouteAdvance(_controller) {
     if (_controller.stage_executor.lifecycle == BladeStageLifecycle.Completed
         && _controller.state == BladeFirstBeatState.Playing) {
         _controller.state = BladeFirstBeatState.Won;
-        _controller.route_label = "WORLD TREE REACHED";
+        _controller.route_label = "STAGE 1 CLEAR";
         with (o_blade_first_beat_enemy_bullet) instance_destroy();
         with (o_ciela_first_beat_shot) instance_destroy();
     }

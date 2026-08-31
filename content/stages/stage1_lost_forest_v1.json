@@ -19,7 +19,8 @@
     "participant_kind.stage1.scout",
     "participant_kind.stage1.bomb_carrier",
     "participant_kind.stage1.fae_maynii",
-    "participant_kind.stage1.fae_kolar"
+    "participant_kind.stage1.fae_kolar",
+    "participant_kind.stage1.asahi"
   ],
   "task_type_ids": [],
   "signal_type_ids": [
@@ -169,6 +170,26 @@
         "kind": "encounter_completed",
         "source_id": "encounter_schedule.stage1.world_tree_carrier"
       }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.asahi_started",
+      "display_name": "Asahi boss encounter started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.asahi"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.asahi_completed",
+      "display_name": "Asahi boss encounter completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.asahi"
+      }
     }
   ],
   "cues": [
@@ -201,6 +222,18 @@
       "id": "cue.stage1.world_tree_handoff",
       "display_name": "Hold at the World Tree handoff",
       "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.asahi_warning",
+      "display_name": "Warn that Asahi is entering",
+      "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.stage_clear",
+      "display_name": "Present the Stage 1 clear result",
+      "type_id": "cue_type.stage1.route"
     }
   ],
   "stages": [
@@ -209,7 +242,7 @@
       "id": "stage_schedule.stage1.ciela_lost_forest",
       "display_name": "Ciela traverses the Lost Forest",
       "entry_node_id": "stage_node.stage1.begin_travel",
-      "terminal_node_id": "stage_node.stage1.complete_handoff",
+      "terminal_node_id": "stage_node.stage1.complete_stage_clear",
       "nodes": [
         {
           "schema_version": 1,
@@ -520,13 +553,69 @@
           "content_order": 28,
           "kind": "wait",
           "active_ticks": 60,
-          "next_node_id": "stage_node.stage1.complete_handoff"
+          "next_node_id": "stage_node.stage1.warn_asahi"
         },
         {
           "schema_version": 1,
-          "id": "stage_node.stage1.complete_handoff",
-          "display_name": "Complete the route at the Asahi handoff",
+          "id": "stage_node.stage1.warn_asahi",
+          "display_name": "Warn the player that Asahi is entering",
           "content_order": 29,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.asahi_warning",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.asahi_warning_breath"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.asahi_warning_breath",
+          "display_name": "Hold Asahi's readable warning",
+          "content_order": 30,
+          "kind": "wait",
+          "active_ticks": 150,
+          "next_node_id": "stage_node.stage1.spawn_asahi"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_asahi",
+          "display_name": "Spawn Asahi at the World Tree",
+          "content_order": 31,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.asahi",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_asahi"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_asahi",
+          "display_name": "Resolve Asahi's two phases",
+          "content_order": 32,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.asahi",
+          "next_node_id": "stage_node.stage1.present_stage_clear"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.present_stage_clear",
+          "display_name": "Present the Stage 1 clear result",
+          "content_order": 33,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.stage_clear",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.complete_stage_clear"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.complete_stage_clear",
+          "display_name": "Complete Stage 1 after Asahi",
+          "content_order": 34,
           "kind": "complete"
         }
       ]
@@ -866,6 +955,37 @@
         },
         "completed": {
           "signal_id": "signal.stage1.world_tree_carrier_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.asahi",
+      "display_name": "Asahi, Sunny Fae boss",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.asahi",
+          "display_name": "Asahi, Sunny Fae",
+          "kind_id": "participant_kind.stage1.asahi",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": 0, "y": 0},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": ["participant.stage1.asahi"]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.asahi_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.asahi_completed",
           "type_id": "signal_type.stage1.encounter_lifecycle"
         }
       }

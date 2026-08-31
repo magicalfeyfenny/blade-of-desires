@@ -140,6 +140,18 @@ function BladeStage1ForestApplyRouteCue(_renderer, _cue_id) {
             _renderer.route_progress_cap = _renderer.route_progress_limit;
             _renderer.route_scroll_enabled = false;
             return true;
+
+        case "cue.stage1.asahi_warning":
+            _renderer.route_progress = _renderer.route_progress_limit;
+            _renderer.route_progress_cap = _renderer.route_progress_limit;
+            _renderer.route_scroll_enabled = false;
+            _renderer.boss_orbit_active = true;
+            _renderer.boss_orbit_angle = 270;
+            return true;
+
+        case "cue.stage1.stage_clear":
+            _renderer.route_scroll_enabled = false;
+            return true;
     }
     return false;
 }
@@ -152,8 +164,28 @@ function BladeStage1ForestPresentationStep(_renderer) {
             _renderer.route_progress_cap
         );
     }
-    _renderer.camera_y = -18 + _renderer.route_progress;
-    _renderer.look_y = _renderer.camera_y + 24;
+    if (_renderer.boss_orbit_active) {
+        // Only presentation matrices orbit; the canonical 2D plane is untouched.
+        _renderer.boss_orbit_angle = (
+            _renderer.boss_orbit_angle + 0.16
+        ) mod 360;
+        _renderer.camera_x = _renderer.boss_orbit_center_x
+            + dcos(_renderer.boss_orbit_angle) * 28;
+        _renderer.camera_y = _renderer.boss_orbit_center_y
+            + dsin(_renderer.boss_orbit_angle) * 38;
+        _renderer.camera_z = _renderer.boss_orbit_surface_z - 11
+            + dsin(_renderer.boss_orbit_angle * 1.4) * 1.5;
+        _renderer.look_x = _renderer.boss_orbit_center_x;
+        _renderer.look_y = _renderer.boss_orbit_center_y;
+        _renderer.look_z = _renderer.boss_orbit_surface_z - 19;
+    } else {
+        _renderer.camera_x = 0;
+        _renderer.camera_y = -18 + _renderer.route_progress;
+        _renderer.camera_z = -8;
+        _renderer.look_x = 0;
+        _renderer.look_y = _renderer.camera_y + 24;
+        _renderer.look_z = -1.8;
+    }
 
     _renderer.presentation_time += 1;
     var _time = _renderer.presentation_time;
@@ -569,6 +601,7 @@ function BladeStage1ForestAssetsDestroy(_renderer) {
         "grass_sprite", "vines_sprite", "bush_sprite", "ball_light_sprite",
         "maynii_sprite", "kolar_sprite", "ciela_sprite",
         "ciela_wave_sprite", "maynii_leaf_sprite", "kolar_crystal_sprite",
+        "asahi_sprite", "asahi_sunfire_sprite", "asahi_hud_frame_sprite",
     ];
     for (var _sprite_index = 0;
         _sprite_index < array_length(_sprite_fields);

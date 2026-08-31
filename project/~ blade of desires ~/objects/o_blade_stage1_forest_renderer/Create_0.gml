@@ -61,6 +61,13 @@ maynii_leaf_sprite = BladeStage1ForestTextureLoad("sprites/stage1/maynii_leaf.pn
 kolar_crystal_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/kolar_crystal.png"
 );
+asahi_sprite = BladeStage1ForestTextureLoad("sprites/stage1/asahi_boss.png");
+asahi_sunfire_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/asahi_sunfire.png"
+);
+asahi_hud_frame_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/asahi_hud_frame.png"
+);
 
 tree_placements = BladeStage1ForestTreePlacementsCreate();
 foliage_placements = BladeStage1ForestFoliagePlacementsCreate();
@@ -104,7 +111,10 @@ assets_ready = terrain_buffer >= 0
     && sprite_exists(ciela_sprite)
     && sprite_exists(ciela_wave_sprite)
     && sprite_exists(maynii_leaf_sprite)
-    && sprite_exists(kolar_crystal_sprite);
+    && sprite_exists(kolar_crystal_sprite)
+    && sprite_exists(asahi_sprite)
+    && sprite_exists(asahi_sunfire_sprite)
+    && sprite_exists(asahi_hud_frame_sprite);
 
 route_progress = 0;
 route_progress_limit = 218;
@@ -118,4 +128,11 @@ camera_z = -8;
 look_x = 0;
 look_y = 6;
 look_z = -1.8;
+boss_orbit_active = false;
+boss_orbit_angle = 270;
+boss_orbit_center_x = BladeStage1ForestRouteCenter(248);
+boss_orbit_center_y = 248;
+boss_orbit_surface_z = BladeStage1ForestSurfaceZ(
+    boss_orbit_center_x, boss_orbit_center_y
+);
 depth = 1500;

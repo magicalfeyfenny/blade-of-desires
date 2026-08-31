@@ -1,4 +1,10 @@
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
+    && keyboard_check_pressed(vk_escape)) {
+    game_end();
+    exit;
+}
+
+if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     && keyboard_check_pressed(ord("R"))) {
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
@@ -130,6 +136,10 @@ if (stage_route_enabled
     && state == BladeFirstBeatState.Playing
     && BladeSurvivalGameplayAdvances(id)) {
     BladeStage1RouteAdvance(id);
+}
+
+if (boss_instance != noone && !instance_exists(boss_instance)) {
+    boss_instance = noone;
 }
 
 if (state == BladeFirstBeatState.Rewarding) {
