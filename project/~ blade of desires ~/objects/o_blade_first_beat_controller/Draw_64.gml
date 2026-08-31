@@ -42,8 +42,8 @@ draw_rectangle(
 );
 draw_set_color(c_white);
 if (economy.active_hyper_tier > 0) {
-    draw_text(12, 208, "ACTIVE T" + string(economy.active_hyper_tier)
-        + "  " + string(economy.hyper_ticks));
+    draw_text(12, 208, "BONUS T" + string(economy.active_hyper_tier)
+        + "  DANGER UP\n" + string(economy.hyper_ticks));
 } else if (_ready_tier > 0) {
     draw_text(12, 208, "READY T" + string(_ready_tier));
 } else {
@@ -51,7 +51,7 @@ if (economy.active_hyper_tier > 0) {
 }
 
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
-    + "\nPower  X\nHyper takes priority");
+    + "\nPower  X\nHyper boosts danger");
 
 draw_text(469, 12, "CIELA\nSTAGE 1");
 draw_text(469, 62, route_label);
@@ -76,6 +76,19 @@ draw_text(469, 238, "Every emission uses\nthe shared 2D plane\nand current hurtb
 if (feedback_ticks > 0) {
     draw_set_color(make_color_rgb(255, 239, 145));
     draw_text(469, 298, feedback_text);
+}
+
+if (route_notice_ticks > 0) {
+    var _notice_alpha = min(1, route_notice_ticks / 20);
+    draw_set_alpha(0.72 * _notice_alpha);
+    draw_set_color(make_color_rgb(4, 16, 20));
+    draw_rectangle(214, 28, 426, 66, false);
+    draw_set_alpha(_notice_alpha);
+    draw_set_halign(fa_center);
+    draw_set_color(make_color_rgb(255, 241, 170));
+    draw_text(320, 38, route_notice_text);
+    draw_set_halign(fa_left);
+    draw_set_alpha(1);
 }
 
 if (state != BladeFirstBeatState.Playing) {
@@ -110,10 +123,7 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
     draw_set_color(c_white);
     var _response_action = BladeSurvivalPowerActionForX(economy, true);
     var _response_prompt = "NO DEFENSE READY\nDEATH WILL COMMIT";
-    if (_response_action == BladeSurvivalPowerAction.Hyper) {
-        _response_prompt = "PRESS X: HYPER DEFENSE T"
-            + string(BladeSurvivalHyperTierForMeter(economy.hyper_meter));
-    } else if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
+    if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
         _response_prompt = "PRESS X: SPEND ALL BOMBS";
     }
     draw_text(320, 156, "HIT RESPONSE  " + string(hit_response_ticks)

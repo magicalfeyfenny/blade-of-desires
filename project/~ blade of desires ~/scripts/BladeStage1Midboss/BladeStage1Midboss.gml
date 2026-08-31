@@ -101,6 +101,18 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
     if (!_member.combo_active) {
         _member.hit_points = _result.remaining;
         if (_result.defeated) {
+            var _personal_kind = _member.fae_role == BladeStage1FaeRole.Maynii
+                ? BLADE_STAGE1_EFFECT_MAYNII
+                : BLADE_STAGE1_EFFECT_KOLAR;
+            var _personal_color = _member.fae_role == BladeStage1FaeRole.Maynii
+                ? make_color_rgb(116, 236, 116)
+                : make_color_rgb(211, 170, 255);
+            BladeStage1FeedbackSpawn(
+                _member.x, _member.y, _personal_kind, _personal_color, 1.1
+            );
+            BladeStage1AudioPlayForController(
+                _controller, BladeStage1AudioSfx.Phase, 0.64
+            );
             _member.personal_defeated = true;
             _member.targetable = false;
             _member.hit_radius = 0;
@@ -139,23 +151,44 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
             _destroy_index < array_length(_state.members); ++_destroy_index) {
             var _destroyed_member = _state.members[_destroy_index];
             if (instance_exists(_destroyed_member)) {
+                var _combo_kind = _destroyed_member.fae_role
+                        == BladeStage1FaeRole.Maynii
+                    ? BLADE_STAGE1_EFFECT_MAYNII
+                    : BLADE_STAGE1_EFFECT_KOLAR;
+                var _combo_color = _destroyed_member.fae_role
+                        == BladeStage1FaeRole.Maynii
+                    ? make_color_rgb(116, 236, 116)
+                    : make_color_rgb(211, 170, 255);
+                BladeStage1FeedbackSpawn(
+                    _destroyed_member.x,
+                    _destroyed_member.y,
+                    _combo_kind,
+                    _combo_color,
+                    1.45
+                );
                 with (_destroyed_member) instance_destroy();
             }
         }
+        BladeStage1AudioPlayForController(
+            _controller, BladeStage1AudioSfx.EnemyDefeat, 0.92
+        );
     }
     return _result;
 }
 
 /// Creates one themed hostile bullet with explicit Stage participant ownership.
 function BladeStage1MidbossBulletSpawn(
-    _member, _direction, _speed, _kind, _outer, _inner
+    _member, _direction, _speed, _kind, _outer, _inner, _hyper_tier = 0
 ) {
     var _bullet = instance_create_layer(
         _member.x, _member.y + 12,
         "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    _bullet.velocity_x = lengthdir_x(_speed, _direction);
-    _bullet.velocity_y = lengthdir_y(_speed, _direction);
+    var _shot_speed = BladeSurvivalHyperHostileBulletSpeed(
+        _speed, _hyper_tier
+    );
+    _bullet.velocity_x = lengthdir_x(_shot_speed, _direction);
+    _bullet.velocity_y = lengthdir_y(_shot_speed, _direction);
     _bullet.owner_stage_instance_id = _member.stage_instance_id;
     _bullet.bullet_kind = _kind;
     _bullet.outer_color = _outer;
@@ -165,61 +198,70 @@ function BladeStage1MidbossBulletSpawn(
 }
 
 /// Fires Maynii's leaf-wing fan while leaving a readable central lane.
-function BladeStage1MidbossMayniiSolo(_member, _player) {
-    if (_member.attack_ticks mod 54 != 0) return false;
+function BladeStage1MidbossMayniiSolo(_member, _player, _hyper_tier = 0) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(54, _hyper_tier);
+    if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _offsets = [-42, -24, 24, 42];
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.05 + _index * 0.08,
             BladeFirstBeatBulletKind.MayniiLeaf,
-            make_color_rgb(64, 204, 92), make_color_rgb(212, 255, 134)
+            make_color_rgb(64, 204, 92), make_color_rgb(212, 255, 134),
+            _hyper_tier
         );
     }
     return true;
 }
 
 /// Fires Kolar's compact crystal fan from beneath her sparkly mountain cape.
-function BladeStage1MidbossKolarSolo(_member, _player) {
-    if (_member.attack_ticks mod 64 != 0) return false;
+function BladeStage1MidbossKolarSolo(_member, _player, _hyper_tier = 0) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(64, _hyper_tier);
+    if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _offsets = [-30, -15, 0, 15, 30];
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.25 + abs(_index - 2) * 0.12,
             BladeFirstBeatBulletKind.KolarCrystal,
-            make_color_rgb(176, 150, 226), make_color_rgb(247, 232, 255)
+            make_color_rgb(176, 150, 226), make_color_rgb(247, 232, 255),
+            _hyper_tier
         );
     }
     return true;
 }
 
 /// Fires Maynii's half of the combo as a leaf curtain with one moving gap.
-function BladeStage1MidbossMayniiCombo(_member) {
-    if (_member.attack_ticks mod 72 != 0) return false;
+function BladeStage1MidbossMayniiCombo(_member, _hyper_tier = 0) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(72, _hyper_tier);
+    if (_member.attack_ticks mod _interval != 0) return false;
     var _lane_count = 9;
-    var _open_lane = 1 + ((_member.attack_ticks div 72) mod 7);
+    var _open_lane = 1 + ((_member.attack_ticks div _interval) mod 7);
     for (var _lane = 0; _lane < _lane_count; ++_lane) {
         if (_lane == _open_lane) continue;
         BladeStage1MidbossBulletSpawn(
             _member, 222 + _lane * 12, 2.05 + (_lane mod 3) * 0.12,
             BladeFirstBeatBulletKind.ComboLeaf,
-            make_color_rgb(54, 226, 112), make_color_rgb(255, 240, 132)
+            make_color_rgb(54, 226, 112), make_color_rgb(255, 240, 132),
+            _hyper_tier
         );
     }
     return true;
 }
 
 /// Fires Kolar's answering combo fan halfway between Maynii's leaf curtains.
-function BladeStage1MidbossKolarCombo(_member, _player) {
-    if (_member.attack_ticks mod 72 != 36) return false;
+function BladeStage1MidbossKolarCombo(_member, _player, _hyper_tier = 0) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(72, _hyper_tier);
+    var _answer_tick = max(1, _interval div 2);
+    if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _offsets = [-34, -17, 0, 17, 34];
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.7 - abs(_index - 2) * 0.12,
             BladeFirstBeatBulletKind.ComboCrystal,
-            make_color_rgb(202, 132, 255), make_color_rgb(124, 244, 196)
+            make_color_rgb(202, 132, 255), make_color_rgb(124, 244, 196),
+            _hyper_tier
         );
     }
     return true;
@@ -258,17 +300,30 @@ function BladeStage1MidbossStep(_member) {
     )) return;
     var _player = instance_find(o_ciela_first_beat_player, 0);
     if (_player == noone) return;
+    var _hyper_tier = _controller.economy.active_hyper_tier;
 
+    var _fired = false;
     if (_member.combo_active) {
         if (_member.fae_role == BladeStage1FaeRole.Maynii) {
-            BladeStage1MidbossMayniiCombo(_member);
+            _fired = BladeStage1MidbossMayniiCombo(_member, _hyper_tier);
         } else {
-            BladeStage1MidbossKolarCombo(_member, _player);
+            _fired = BladeStage1MidbossKolarCombo(
+                _member, _player, _hyper_tier
+            );
         }
     } else if (_member.fae_role == BladeStage1FaeRole.Maynii) {
-        BladeStage1MidbossMayniiSolo(_member, _player);
+        _fired = BladeStage1MidbossMayniiSolo(
+            _member, _player, _hyper_tier
+        );
     } else {
-        BladeStage1MidbossKolarSolo(_member, _player);
+        _fired = BladeStage1MidbossKolarSolo(
+            _member, _player, _hyper_tier
+        );
+    }
+    if (_fired) {
+        BladeStage1AudioPlayForController(
+            _controller, BladeStage1AudioSfx.EnemyVolley, 0.22
+        );
     }
 }
 
@@ -276,39 +331,58 @@ function BladeStage1MidbossStep(_member) {
 function BladeStage1MidbossDraw(_member) {
     var _waiting = _member.personal_defeated && !_member.combo_active;
     draw_set_alpha(_waiting ? 0.32 : 1);
-    if (_member.fae_role == BladeStage1FaeRole.Maynii) {
-        draw_set_color(make_color_rgb(83, 196, 92));
-        draw_triangle(_member.x - 6, _member.y - 2,
-            _member.x - 25, _member.y - 16,
-            _member.x - 19, _member.y + 2, false);
-        draw_triangle(_member.x + 6, _member.y - 2,
-            _member.x + 25, _member.y - 16,
-            _member.x + 19, _member.y + 2, false);
-        draw_set_color(make_color_rgb(164, 234, 106));
-        draw_triangle(_member.x - 5, _member.y + 2,
-            _member.x - 22, _member.y + 15,
-            _member.x - 15, _member.y - 2, false);
-        draw_triangle(_member.x + 5, _member.y + 2,
-            _member.x + 22, _member.y + 15,
-            _member.x + 15, _member.y - 2, false);
-        draw_set_color(make_color_rgb(28, 98, 51));
-    } else {
-        draw_set_color(make_color_rgb(104, 86, 146));
-        draw_triangle(_member.x, _member.y - 7,
-            _member.x - 23, _member.y + 23,
-            _member.x + 23, _member.y + 23, false);
-        draw_set_color(make_color_rgb(218, 202, 255));
-        for (var _spark = -1; _spark <= 1; ++_spark) {
-            var _spark_x = _member.x + _spark * 10;
-            var _spark_y = _member.y + 9 + abs(_spark) * 5;
-            draw_line(_spark_x - 3, _spark_y, _spark_x + 3, _spark_y);
-            draw_line(_spark_x, _spark_y - 3, _spark_x, _spark_y + 3);
-        }
-        draw_set_color(make_color_rgb(74, 72, 92));
+    var _renderer = instance_find(o_blade_stage1_forest_renderer, 0);
+    var _art = -1;
+    if (_renderer != noone) {
+        _art = _member.fae_role == BladeStage1FaeRole.Maynii
+            ? _renderer.maynii_sprite
+            : _renderer.kolar_sprite;
     }
-    draw_circle(_member.x, _member.y - 3, 10, false);
-    draw_set_color(_member.hit_flash > 0 ? c_white : make_color_rgb(245, 226, 198));
-    draw_circle(_member.x, _member.y - 8, 5, false);
+    if (sprite_exists(_art)) {
+        draw_sprite_ext(_art, 0, _member.x, _member.y, 1, 1, 0, c_white, 1);
+        if (_member.hit_flash > 0) {
+            draw_set_alpha(0.55);
+            draw_set_color(c_white);
+            draw_circle(_member.x, _member.y, 24, false);
+            draw_set_alpha(_waiting ? 0.32 : 1);
+        }
+    } else {
+        if (_member.fae_role == BladeStage1FaeRole.Maynii) {
+            draw_set_color(make_color_rgb(83, 196, 92));
+            draw_triangle(_member.x - 6, _member.y - 2,
+                _member.x - 25, _member.y - 16,
+                _member.x - 19, _member.y + 2, false);
+            draw_triangle(_member.x + 6, _member.y - 2,
+                _member.x + 25, _member.y - 16,
+                _member.x + 19, _member.y + 2, false);
+            draw_set_color(make_color_rgb(164, 234, 106));
+            draw_triangle(_member.x - 5, _member.y + 2,
+                _member.x - 22, _member.y + 15,
+                _member.x - 15, _member.y - 2, false);
+            draw_triangle(_member.x + 5, _member.y + 2,
+                _member.x + 22, _member.y + 15,
+                _member.x + 15, _member.y - 2, false);
+            draw_set_color(make_color_rgb(28, 98, 51));
+        } else {
+            draw_set_color(make_color_rgb(104, 86, 146));
+            draw_triangle(_member.x, _member.y - 7,
+                _member.x - 23, _member.y + 23,
+                _member.x + 23, _member.y + 23, false);
+            draw_set_color(make_color_rgb(218, 202, 255));
+            for (var _spark = -1; _spark <= 1; ++_spark) {
+                var _spark_x = _member.x + _spark * 10;
+                var _spark_y = _member.y + 9 + abs(_spark) * 5;
+                draw_line(_spark_x - 3, _spark_y, _spark_x + 3, _spark_y);
+                draw_line(_spark_x, _spark_y - 3, _spark_x, _spark_y + 3);
+            }
+            draw_set_color(make_color_rgb(74, 72, 92));
+        }
+        draw_circle(_member.x, _member.y - 3, 10, false);
+        draw_set_color(_member.hit_flash > 0
+            ? c_white
+            : make_color_rgb(245, 226, 198));
+        draw_circle(_member.x, _member.y - 8, 5, false);
+    }
 
     if (_member.phase_transition_ticks > 0 && !_waiting) {
         var _total = _member.combo_active

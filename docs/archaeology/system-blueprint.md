@@ -15,7 +15,8 @@ These explicit project decisions outrank suggestions inferred from the archive:
 - Maynii is the all-around ship, mixing dependable forward damage with tracking coverage. Ciela is the spread specialist. Kolar is the close-range specialist: fighting near targets is her primary strength, while dependable, meaningful ranged damage remains mandatory. This role cannot be interpreted as collision-only, melee-only, zero-range, or negligible-ranged gameplay; #23 owns her exact weapon form, melee use or non-use, emitters, option formation, cadence, damage, distance bands, and final balance.
 - Boss phase breaks receive a readable recharge telegraph lasting roughly two seconds, with a Selkies-like ring presentation. Large bosses may lose parts as phase transitions and may replace, regrow, or transform parts in later phases.
 - Ordinary enemy defeats should erupt into a generous burst of large, readable particles. Density remains accessibility-adjustable and cannot obscure dangerous bullets.
-- Stage 1 is a high-quality, somewhat photorealistic pixel-art forest. Camera-facing 3D billboards render softly floating balls of light and other particles so crunchy textures remain attractive from the moving perspective camera.
+- Stage 1 is a textured perspective 3D forest with a rolling central path, raised banks, dawn sky, ambient light, and reusable terrain, tree, and World Tree models. Foliage, fae, each fae-trail light, and colored ball lights use their own camera-facing billboard buffers so they can move independently through the world and contribute local colored light.
+- In the current Ciela slice, Maynii and Kolar are the Stage 1 midboss pair. Their single personal attacks run simultaneously, then they perform one shared Maynii-Kolar combo; defeating it resumes the second half of the same stage. Ciela's personal and Ciela-inclusive pair attacks wait for the other two playable ships.
 - Ornate Selkies-like UI composition remains part of Blade's identity, though its motifs and exact layout should be re-authored for Blade.
 - New artistic assets must use the governed editable/runtime asset pipeline. When Codex creates raster art, it uses proper image generation and deliberate pixel-art finishing; quick geometry-drawn stand-ins are not acceptable production art.
 
@@ -519,7 +520,7 @@ Central feedback commands own shake, hit stop, vignette, flash, low-pass/muffle,
 
 Each pass sets and restores all matrices, depth, blend, shader, color, alpha, and target state it owns.
 
-Stage 1 uses camera-facing billboard particles for gently floating balls of light in the perspective forest. Billboard instances have bounded counts, deterministic presentation-only drift, explicit blend/depth state, and a shared texture/material; they never enter gameplay collision or replay state.
+Stage 1 uses separate camera-facing billboard buffers for foliage, fae, each trailing fae light, and colored ball lights in the perspective forest. Instances have bounded counts, deterministic presentation-only drift, and explicit blend/depth state. Each prop family retains its own texture and movement while remaining outside gameplay collision and replay state.
 
 ### Offline 3D
 
@@ -529,7 +530,7 @@ Stage 1 uses camera-facing billboard particles for gently floating balls of ligh
 
 Use archived assets as style/cue references until creator, license, editable source, and original-IP fit are established. Re-author Touhou/Neuro/team/third-party material. Follow the current repository's KRA/SVG/Logic/MIDI/Blend source rules and runtime formats.
 
-The Stage 1 forest targets high-quality, somewhat photorealistic pixel art rather than primitive debug shapes. Generated raster concepts/assets use the image-generation workflow, are deliberately finished into coherent pixel art, retain editable `.kra` authority, and export governed `.png` runtime derivatives. Quick rectangles, circles, gradients, or other geometry-drawn substitutes may be temporary diagnostics only and cannot satisfy production-art acceptance. The ornate UI follows the same authored-asset standard.
+The Stage 1 forest targets a lush textured perspective 3D scene rather than primitive debug shapes or a flat backdrop. Terrain, trees, and the World Tree remain separate reusable models; foliage and light-bearing props remain separate authored billboards. Character, attack, billboard, and texture raster assets use the image-generation workflow where appropriate, are deliberately finished into coherent pixel art, retain editable `.kra` authority, and export governed `.png` runtime derivatives. Quick rectangles, circles, gradients, or other geometry-drawn substitutes may be temporary diagnostics only and cannot satisfy production-art acceptance. The ornate UI follows the same authored-asset standard.
 
 ## Testing ladder
 

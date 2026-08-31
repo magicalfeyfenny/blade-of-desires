@@ -35,6 +35,9 @@ if (_controller.state == BladeFirstBeatState.Playing) {
             _shot.damage = BladeSurvivalPlayerShotDamage(_controller.economy);
             _shot.hyper_tier = _controller.economy.active_hyper_tier;
         }
+        BladeStage1AudioPlayForController(
+            _controller, BladeStage1AudioSfx.PlayerVolley, 0.13
+        );
     }
 }
 

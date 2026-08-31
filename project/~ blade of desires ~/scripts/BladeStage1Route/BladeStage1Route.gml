@@ -104,7 +104,7 @@ function BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y) {
         ? BladeStage1FaeRole.Maynii
         : BladeStage1FaeRole.Kolar;
     BladeStage1MidbossRegister(_controller, _member, _role);
-    _controller.route_label = "MIDBOSS  MAYNII + KOLAR";
+    _controller.route_label = "MAYNII + KOLAR";
     return _member;
 }
 
@@ -130,7 +130,7 @@ function BladeStage1RouteInitialize(_controller) {
     _controller.stage_last_defeat_results = [];
     _controller.stage_cue_cursor = 0;
     _controller.route_cue_id = "";
-    _controller.route_label = "LOST FOREST  FIRST HALF";
+    _controller.route_label = "FOREST  FIRST HALF";
     _controller.midboss_state = BladeStage1MidbossStateCreate();
 
     var _product_path = BladeStage1RouteIncludedPath(
@@ -195,33 +195,43 @@ function BladeStage1RouteApplyCue(_controller, _cue_id) {
     if (_renderer != noone) {
         BladeStage1ForestApplyRouteCue(_renderer, _cue_id);
     }
+    BladeStage1AudioApplyRouteCue(_controller, _cue_id);
     switch (_cue_id) {
         case "cue.stage1.forest_travel":
-            _controller.route_label = "LOST FOREST  FIRST HALF";
+            _controller.route_label = "FOREST  FIRST HALF";
+            _controller.route_notice_text = "ENTER THE LOST FOREST";
+            _controller.route_notice_ticks = 100;
             break;
 
         case "cue.stage1.midboss_stop":
             _controller.route_label = "MIDBOSS STOP";
-            _controller.feedback_text = "THE FOREST HOLDS ITS BREATH";
-            _controller.feedback_ticks = 90;
+            _controller.route_notice_text = "THE FOREST HOLDS BREATH";
+            _controller.route_notice_ticks = 120;
             break;
 
         case "cue.stage1.forest_resume":
-            _controller.route_label = "LOST FOREST  SECOND HALF";
-            _controller.feedback_text = "PATH REOPENED\nFORWARD";
-            _controller.feedback_ticks = 120;
+            _controller.route_label = "FOREST  SECOND HALF";
+            _controller.route_notice_text = "PATH REOPENED  FORWARD";
+            _controller.route_notice_ticks = 120;
             break;
 
         case "cue.stage1.world_tree_approach":
             _controller.route_label = "WORLD TREE APPROACH";
-            _controller.feedback_text = "THE WORLD TREE FILLS THE HORIZON";
-            _controller.feedback_ticks = 150;
+            _controller.route_notice_text = "WORLD TREE ON THE HORIZON";
+            _controller.route_notice_ticks = 150;
             break;
 
         case "cue.stage1.world_tree_handoff":
-            _controller.route_label = "WORLD TREE  ASAHI AHEAD";
-            _controller.feedback_text = "THE WORLD TREE\nASAHI AWAITS";
-            _controller.feedback_ticks = 180;
+            _controller.route_label = "WORLD TREE  ASAHI";
+            _controller.route_notice_text = "ASAHI AWAITS AT THE TREE";
+            _controller.route_notice_ticks = 180;
+            BladeStage1FeedbackSpawn(
+                320,
+                154,
+                BLADE_STAGE1_EFFECT_HANDOFF,
+                make_color_rgb(255, 232, 142),
+                1.25
+            );
             break;
     }
 }

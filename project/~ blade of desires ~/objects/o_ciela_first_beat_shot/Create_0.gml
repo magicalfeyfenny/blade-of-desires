@@ -2,5 +2,6 @@
 velocity_x = 0;
 velocity_y = -7;
 damage = 2;
-radius = 3;
+// The visible water crest is deliberately wider than the old needle shot.
+radius = 8;
 hyper_tier = 0;

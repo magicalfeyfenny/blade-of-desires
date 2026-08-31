@@ -88,6 +88,7 @@ function BladeFirstBeatCleanupTransientInstances() {
     with (o_blade_reward_item) instance_destroy();
     with (o_blade_enemy_target) instance_destroy();
     with (o_ciela_first_beat_player) instance_destroy();
+    with (o_blade_stage1_feedback_effect) instance_destroy();
 }
 
 /// Returns the nearest currently damageable ordinary or midboss target.
@@ -168,6 +169,18 @@ function BladeFirstBeatSpawnTargetRewards(_controller, _target) {
 /// Resolves one ordinary enemy defeat through either Stage ownership or the legacy beat.
 function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
     var _is_carrier = BladeSurvivalEnemyIsBombCarrier(_target.archetype_id);
+    BladeStage1FeedbackSpawn(
+        _target.x,
+        _target.y,
+        BLADE_STAGE1_EFFECT_ENEMY,
+        _is_carrier
+            ? make_color_rgb(255, 221, 96)
+            : make_color_rgb(100, 242, 174),
+        _is_carrier ? 1.25 : 1
+    );
+    BladeStage1AudioPlayForController(
+        _controller, BladeStage1AudioSfx.EnemyDefeat, _is_carrier ? 0.78 : 0.52
+    );
     BladeFirstBeatSpawnTargetRewards(_controller, _target);
     if (_target.stage_managed) {
         BladeFirstBeatQueueStageDefeat(_controller, _target);

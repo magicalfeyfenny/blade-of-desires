@@ -123,6 +123,93 @@ function BladeStage1RouteTestsRun(_state) {
         }
     );
 
+    BladeKernelTestRunCase(
+        _state,
+        "ambient fae own individual light billboard trails",
+        function() {
+            var _fae = BladeStage1ForestFaePlacementsCreate();
+            var _trails = BladeStage1ForestFaeTrailPlacementsCreate(_fae);
+            BladeKernelTestAssertEqual(
+                array_length(_trails),
+                array_length(_fae) * BLADE_STAGE1_FOREST_FAE_TRAIL_LIGHTS,
+                "every fae owns the declared number of separate light props"
+            );
+            for (var _index = 0;
+                _index < array_length(_trails);
+                ++_index) {
+                BladeKernelTestAssertTrue(
+                    _trails[_index].fae_index >= 0
+                        && _trails[_index].fae_index < array_length(_fae),
+                    "each trail billboard names one concrete fae owner"
+                );
+            }
+            var _leader = BladeStage1ForestFaePathPosition(_fae[0], 90);
+            var _follower = BladeStage1ForestFaePathPosition(
+                _fae[0], 90 - _trails[0].lag_ticks
+            );
+            BladeKernelTestAssertTrue(
+                _leader.x != _follower.x || _leader.y != _follower.y,
+                "trail lights sample earlier path positions instead of the fae center"
+            );
+        }
+    );
+
+    BladeFirstBeatTestRunCase(
+        _state,
+        "Stage 1 cues own readable notices and semantic music states",
+        function() {
+            var _controller = instance_create_layer(
+                0, 0, "Instances", o_blade_first_beat_controller
+            );
+            _controller.stage_audio = {
+                buffers: [],
+                sounds: [],
+                sfx: array_create(BLADE_STAGE1_AUDIO_SFX_COUNT, -1),
+                master_gain: 1,
+                music_gain: 1,
+                sfx_gain: 1,
+                music_instance: -1,
+                music_key: "",
+                music_travel: -1,
+                music_duo: -1,
+                music_approach: -1,
+            };
+            var _cues = [
+                "cue.stage1.forest_travel",
+                "cue.stage1.midboss_stop",
+                "cue.stage1.forest_resume",
+                "cue.stage1.world_tree_approach",
+                "cue.stage1.world_tree_handoff",
+            ];
+            var _notice_ticks = [100, 120, 120, 150, 180];
+            var _music_keys = [
+                "travel", "duo", "travel", "approach", "handoff"
+            ];
+            for (var _index = 0;
+                _index < array_length(_cues);
+                ++_index) {
+                BladeStage1RouteApplyCue(_controller, _cues[_index]);
+                BladeKernelTestAssertEqual(
+                    _controller.route_cue_id, _cues[_index],
+                    "controller retains the exact authored route cue"
+                );
+                BladeKernelTestAssertTrue(
+                    string_length(_controller.route_notice_text) > 0,
+                    "each route transition gives the player a readable notice"
+                );
+                BladeKernelTestAssertEqual(
+                    _controller.route_notice_ticks, _notice_ticks[_index],
+                    "each notice has its authored visible duration"
+                );
+                BladeKernelTestAssertEqual(
+                    _controller.stage_audio.music_key, _music_keys[_index],
+                    "the same route cue owns its semantic music state"
+                );
+            }
+            with (_controller) instance_destroy();
+        }
+    );
+
     BladeFirstBeatTestRunCase(
         _state,
         "Stage 1 clears simultaneous solos, shared combo, then resumes",
@@ -218,6 +305,30 @@ function BladeStage1RouteTestsRun(_state) {
                 "Kolar contributes one mountain-crystal solo pattern"
             );
             BladeStage1MidbossClearPairBullets(_controller);
+
+            _controller.economy.active_hyper_tier = 2;
+            _controller.economy.hyper_ticks = 100;
+            var _hyper_interval = BladeSurvivalHyperHostileFireInterval(54, 2);
+            _maynii.attack_ticks = _hyper_interval - 1;
+            BladeStage1MidbossStep(_maynii);
+            var _hyper_leaf = instance_find(
+                o_blade_first_beat_enemy_bullet, 0
+            );
+            BladeKernelTestAssertTrue(
+                _hyper_interval < 54,
+                "Hyper shortens Maynii's solo pattern interval"
+            );
+            BladeKernelTestAssertTrue(
+                _hyper_leaf != noone
+                    && point_distance(
+                        0, 0,
+                        _hyper_leaf.velocity_x, _hyper_leaf.velocity_y
+                    ) > 2.05,
+                "Hyper makes Maynii's emitted leaves travel faster"
+            );
+            BladeStage1MidbossClearPairBullets(_controller);
+            _controller.economy.active_hyper_tier = 0;
+            _controller.economy.hyper_ticks = 0;
 
             var _maynii_solo = BladeStage1MidbossApplyDamage(
                 _controller, _maynii, BLADE_STAGE1_MIDBOSS_PERSONAL_HP

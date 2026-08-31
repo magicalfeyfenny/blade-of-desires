@@ -23,7 +23,7 @@ enum BladeSurvivalPowerAction {
     EmergencyBomb = 3
 }
 
-#macro BLADE_SURVIVAL_STARTING_LIVES 3
+#macro BLADE_SURVIVAL_STARTING_LIVES 2
 #macro BLADE_SURVIVAL_STARTING_BOMBS 3
 #macro BLADE_SURVIVAL_BOMB_CAP 5
 #macro BLADE_SURVIVAL_STARTING_POINT_VALUE 1000
@@ -83,9 +83,10 @@ function BladeSurvivalHyperTierForMeter(_meter) {
     return 0;
 }
 
-/// Gives stocked Hyper first claim on X, then selects the available Bomb action.
+/// Gives stocked Hyper first claim in normal play; only Bomb can answer a hit.
 function BladeSurvivalPowerActionForX(_economy, _during_hit_response = false) {
-    if (_economy.active_hyper_tier == 0
+    if (!_during_hit_response
+        && _economy.active_hyper_tier == 0
         && BladeSurvivalHyperTierForMeter(_economy.hyper_meter) > 0) {
         return BladeSurvivalPowerAction.Hyper;
     }
@@ -115,6 +116,25 @@ function BladeSurvivalHyperDamageMultiplier(_tier) {
 /// Returns the direct score multiplier supplied by active Hyper.
 function BladeSurvivalHyperScoreMultiplier(_tier) {
     return clamp(_tier + 1, 1, 4);
+}
+
+/// Raises new hostile-bullet speed while Hyper is active.
+function BladeSurvivalHyperHostileBulletSpeed(_base_speed, _tier) {
+    var _strength = clamp(floor(_tier), 0, 3);
+    return max(0, _base_speed) * (1 + _strength * 0.2);
+}
+
+/// Returns how quickly enemy fire cooldowns advance during active Hyper.
+function BladeSurvivalHyperHostileFireRate(_tier) {
+    return 1 + clamp(floor(_tier), 0, 3) * 0.25;
+}
+
+/// Shortens a pattern interval without allowing a zero-tick firing loop.
+function BladeSurvivalHyperHostileFireInterval(_base_ticks, _tier) {
+    return max(
+        1,
+        round(max(1, _base_ticks) / BladeSurvivalHyperHostileFireRate(_tier))
+    );
 }
 
 /// Adds stocked Hyper from active play, but does not restock during an active Hyper.
@@ -290,6 +310,9 @@ function BladeSurvivalBeginPlayerHit(_controller) {
     _controller.hit_response_ticks = BLADE_SURVIVAL_HIT_RESPONSE_TICKS;
     _controller.feedback_text = "HIT!\nCHOOSE NOW";
     _controller.feedback_ticks = BLADE_SURVIVAL_HIT_RESPONSE_TICKS;
+    BladeStage1AudioPlayForController(
+        _controller, BladeStage1AudioSfx.PlayerHit, 0.82
+    );
     return true;
 }
 

@@ -257,7 +257,7 @@ source filenames or authored JSON ordering:
   "schema_version": 1,
   "product_contract": {
     "id": "contract.blade",
-    "content_version": "1.2.0"
+    "content_version": "1.3.0"
   },
   "catalogs": []
 }

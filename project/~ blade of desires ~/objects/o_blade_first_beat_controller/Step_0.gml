@@ -7,6 +7,7 @@ if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     exit;
 }
 
+if (route_notice_ticks > 0) route_notice_ticks -= 1;
 var _bomb_was_active = economy.bomb_ticks > 0;
 var _hyper_was_active = economy.hyper_ticks > 0;
 BladeSurvivalAdvancePowerTimers(economy);
@@ -28,16 +29,11 @@ var _power_key = variable_struct_get(keyboard_bindings, "input.bomb");
 if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
     if (keyboard_check_pressed(_power_key)) {
         var _response_action = BladeSurvivalPowerActionForX(economy, true);
-        if (_response_action == BladeSurvivalPowerAction.Hyper) {
-            var _response_hyper = BladeSurvivalTryActivateHyper(economy);
-            player_phase = BladeSurvivalPlayerPhase.Active;
-            hit_response_ticks = 0;
-            invulnerable_ticks = max(invulnerable_ticks, 60);
-            feedback_text = "HYPER DEFENSE T" + string(_response_hyper.tier);
-            feedback_ticks = 120;
-            with (o_blade_first_beat_enemy_bullet) instance_destroy();
-        } else if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
+        if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
             var _emergency = BladeSurvivalUseBomb(economy, true);
+            BladeStage1AudioPlayForController(
+                id, BladeStage1AudioSfx.Bomb, 0.82
+            );
             bomb_clears_this_frame = true;
             player_phase = BladeSurvivalPlayerPhase.Active;
             hit_response_ticks = 0;
@@ -54,6 +50,16 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
             with (o_ciela_first_beat_shot) instance_destroy();
             var _player = instance_find(o_ciela_first_beat_player, 0);
             if (_player != noone) {
+                BladeStage1FeedbackSpawn(
+                    _player.x,
+                    _player.y,
+                    BLADE_STAGE1_EFFECT_CIELA,
+                    make_color_rgb(98, 232, 255),
+                    1.25
+                );
+                BladeStage1AudioPlayForController(
+                    id, BladeStage1AudioSfx.PlayerDeath, 0.92
+                );
                 _player.x = BLADE_SURVIVAL_PLAYER_START_X;
                 _player.y = BLADE_SURVIVAL_PLAYER_START_Y;
                 _player.focused = false;
@@ -97,12 +103,18 @@ if (state == BladeFirstBeatState.Playing
         var _power_action = BladeSurvivalPowerActionForX(economy, false);
         if (_power_action == BladeSurvivalPowerAction.Hyper) {
             var _hyper = BladeSurvivalTryActivateHyper(economy);
-            invulnerable_ticks = max(invulnerable_ticks, 60);
+            BladeStage1AudioPlayForController(
+                id, BladeStage1AudioSfx.Hyper, 0.82
+            );
             with (o_blade_first_beat_enemy_bullet) instance_destroy();
-            feedback_text = "HYPER TIER " + string(_hyper.tier);
+            feedback_text = "HYPER BONUS T" + string(_hyper.tier)
+                + "\nDANGER UP";
             feedback_ticks = 120;
         } else if (_power_action == BladeSurvivalPowerAction.Bomb) {
             var _bomb = BladeSurvivalUseBomb(economy, false);
+            BladeStage1AudioPlayForController(
+                id, BladeStage1AudioSfx.Bomb, 0.82
+            );
             bomb_clears_this_frame = true;
             with (o_blade_first_beat_enemy_bullet) instance_destroy();
             feedback_text = "BOMB  SCORE -20%";

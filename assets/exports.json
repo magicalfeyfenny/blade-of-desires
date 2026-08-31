@@ -13,30 +13,149 @@
     {
       "kind": "raster",
       "sources": [
-        "assets/source/textures/stage1/lost_forest_fae.kra"
+        "assets/source/textures/stage1/lost_forest_fae.kra",
+        "assets/source/textures/stage1/lost_forest_grass.kra",
+        "assets/source/textures/stage1/lost_forest_vines.kra",
+        "assets/source/textures/stage1/lost_forest_bush.kra",
+        "assets/source/textures/stage1/lost_forest_ball_light.kra",
+        "assets/source/textures/stage1/lost_forest_skybox.kra"
       ],
       "runtime": [
-        "assets/runtime/textures/stage1/lost_forest_fae.png"
+        "assets/runtime/textures/stage1/lost_forest_fae.png",
+        "assets/runtime/textures/stage1/lost_forest_grass.png",
+        "assets/runtime/textures/stage1/lost_forest_vines.png",
+        "assets/runtime/textures/stage1/lost_forest_bush.png",
+        "assets/runtime/textures/stage1/lost_forest_ball_light.png",
+        "assets/runtime/textures/stage1/lost_forest_skybox.png"
       ]
     },
     {
       "kind": "raster",
       "sources": [
-        "assets/source/textures/stage1/lost_forest_fae_light.kra"
+        "assets/source/sprites/stage1/maynii_boss.kra",
+        "assets/source/sprites/stage1/kolar_boss.kra",
+        "assets/source/sprites/stage1/ciela_player.kra",
+        "assets/source/sprites/stage1/ciela_wave.kra",
+        "assets/source/sprites/stage1/maynii_leaf.kra",
+        "assets/source/sprites/stage1/kolar_crystal.kra"
       ],
       "runtime": [
-        "assets/runtime/textures/stage1/lost_forest_fae_light.png"
+        "assets/runtime/sprites/stage1/maynii_boss.png",
+        "assets/runtime/sprites/stage1/kolar_boss.png",
+        "assets/runtime/sprites/stage1/ciela_player.png",
+        "assets/runtime/sprites/stage1/ciela_wave.png",
+        "assets/runtime/sprites/stage1/maynii_leaf.png",
+        "assets/runtime/sprites/stage1/kolar_crystal.png"
       ]
     },
     {
       "kind": "model_3d",
       "sources": [
-        "assets/source/models/stage1/lost_forest_route.blend",
-        "assets/source/models/stage1/lost_forest_route.obj",
-        "assets/source/models/stage1/lost_forest_route.mtl"
+        "assets/source/models/stage1/lost_forest_terrain.blend",
+        "assets/source/models/stage1/lost_forest_terrain.obj",
+        "assets/source/models/stage1/lost_forest_terrain.mtl"
       ],
       "runtime": [
-        "assets/runtime/models/stage1/lost_forest_route.vbuff"
+        "assets/runtime/models/stage1/lost_forest_terrain.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_tree_a.blend",
+        "assets/source/models/stage1/lost_forest_tree_a.obj",
+        "assets/source/models/stage1/lost_forest_tree_a.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_tree_a.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_tree_b.blend",
+        "assets/source/models/stage1/lost_forest_tree_b.obj",
+        "assets/source/models/stage1/lost_forest_tree_b.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_tree_b.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_world_tree.blend",
+        "assets/source/models/stage1/lost_forest_world_tree.obj",
+        "assets/source/models/stage1/lost_forest_world_tree.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_world_tree.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_skybox.blend",
+        "assets/source/models/stage1/lost_forest_skybox.obj",
+        "assets/source/models/stage1/lost_forest_skybox.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_skybox.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_grass_billboard.blend",
+        "assets/source/models/stage1/lost_forest_grass_billboard.obj",
+        "assets/source/models/stage1/lost_forest_grass_billboard.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_grass_billboard.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_vines_billboard.blend",
+        "assets/source/models/stage1/lost_forest_vines_billboard.obj",
+        "assets/source/models/stage1/lost_forest_vines_billboard.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_vines_billboard.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_bush_billboard.blend",
+        "assets/source/models/stage1/lost_forest_bush_billboard.obj",
+        "assets/source/models/stage1/lost_forest_bush_billboard.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_bush_billboard.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_fae_billboard.blend",
+        "assets/source/models/stage1/lost_forest_fae_billboard.obj",
+        "assets/source/models/stage1/lost_forest_fae_billboard.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_fae_billboard.vbuff"
+      ]
+    },
+    {
+      "kind": "model_3d",
+      "sources": [
+        "assets/source/models/stage1/lost_forest_ball_light_billboard.blend",
+        "assets/source/models/stage1/lost_forest_ball_light_billboard.obj",
+        "assets/source/models/stage1/lost_forest_ball_light_billboard.mtl"
+      ],
+      "runtime": [
+        "assets/runtime/models/stage1/lost_forest_ball_light_billboard.vbuff"
       ]
     }
   ]

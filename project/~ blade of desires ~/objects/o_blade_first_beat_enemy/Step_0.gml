@@ -21,7 +21,11 @@ if (x <= 230 || x >= 410) {
     travel_speed_x = -travel_speed_x;
 }
 
-fire_cooldown = max(0, fire_cooldown - 1);
+var _hyper_tier = _controller.economy.active_hyper_tier;
+fire_cooldown = max(
+    0,
+    fire_cooldown - BladeSurvivalHyperHostileFireRate(_hyper_tier)
+);
 if (_controller.bomb_clears_this_frame
     || fire_cooldown > 0
     || !BladeCombatPlaneContainsPixelCircle(
@@ -36,8 +40,14 @@ for (var _index = 0; _index < array_length(bullet_offsets); ++_index) {
     var _bullet = instance_create_layer(
         x, y + hit_radius, "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    _bullet.velocity_x = lengthdir_x(bullet_speed, _direction);
-    _bullet.velocity_y = lengthdir_y(bullet_speed, _direction);
+    var _shot_speed = BladeSurvivalHyperHostileBulletSpeed(
+        bullet_speed, _hyper_tier
+    );
+    _bullet.velocity_x = lengthdir_x(_shot_speed, _direction);
+    _bullet.velocity_y = lengthdir_y(_shot_speed, _direction);
     _bullet.owner_stage_instance_id = stage_instance_id;
 }
+BladeStage1AudioPlayForController(
+    _controller, BladeStage1AudioSfx.EnemyVolley, 0.12
+);
 fire_cooldown = fire_repeat_ticks;

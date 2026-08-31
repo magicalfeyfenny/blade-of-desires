@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeStage1ForestProps",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeStage1ForestProps",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}
