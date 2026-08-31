@@ -35,17 +35,23 @@
         "assets/source/sprites/stage1/maynii_boss.kra",
         "assets/source/sprites/stage1/kolar_boss.kra",
         "assets/source/sprites/stage1/ciela_player.kra",
-        "assets/source/sprites/stage1/ciela_wave.kra",
-        "assets/source/sprites/stage1/maynii_leaf.kra",
-        "assets/source/sprites/stage1/kolar_crystal.kra"
+      "assets/source/sprites/stage1/ciela_wave.kra",
+      "assets/source/sprites/stage1/maynii_leaf.kra",
+      "assets/source/sprites/stage1/kolar_crystal.kra",
+      "assets/source/sprites/stage1/asahi_boss.kra",
+      "assets/source/sprites/stage1/asahi_sunfire.kra",
+      "assets/source/sprites/stage1/asahi_hud_frame.kra"
       ],
       "runtime": [
         "assets/runtime/sprites/stage1/maynii_boss.png",
         "assets/runtime/sprites/stage1/kolar_boss.png",
         "assets/runtime/sprites/stage1/ciela_player.png",
-        "assets/runtime/sprites/stage1/ciela_wave.png",
-        "assets/runtime/sprites/stage1/maynii_leaf.png",
-        "assets/runtime/sprites/stage1/kolar_crystal.png"
+      "assets/runtime/sprites/stage1/ciela_wave.png",
+      "assets/runtime/sprites/stage1/maynii_leaf.png",
+      "assets/runtime/sprites/stage1/kolar_crystal.png",
+      "assets/runtime/sprites/stage1/asahi_boss.png",
+      "assets/runtime/sprites/stage1/asahi_sunfire.png",
+      "assets/runtime/sprites/stage1/asahi_hud_frame.png"
       ]
     },
     {

@@ -1,0 +1,1 @@
+BladeStage1BossDraw(id);

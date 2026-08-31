@@ -10,11 +10,12 @@ enum BladeStage1AudioSfx {
     Bomb = 6,
     Hyper = 7,
     Phase = 8,
-    Handoff = 9
+    Handoff = 9,
+    BossDefeat = 10
 }
 
 #macro BLADE_STAGE1_AUDIO_RATE 16000
-#macro BLADE_STAGE1_AUDIO_SFX_COUNT 10
+#macro BLADE_STAGE1_AUDIO_SFX_COUNT 11
 
 /// Writes one clamped stereo sample without changing the sound after creation.
 function _BladeStage1AudioWriteStereo(_buffer, _left, _right) {
@@ -131,6 +132,7 @@ function BladeStage1AudioCreate(_config_audio) {
         music_travel: -1,
         music_duo: -1,
         music_approach: -1,
+        music_boss: -1,
     };
 
     _audio.music_travel = _BladeStage1AudioMusicCreate(
@@ -156,6 +158,14 @@ function BladeStage1AudioCreate(_config_audio) {
         0.52,
         0.88,
         0.035
+    );
+    _audio.music_boss = _BladeStage1AudioMusicCreate(
+        _audio,
+        [196.00, 246.94, 220.00, 293.66],
+        [392.00, 493.88, 587.33, 659.25, 587.33, 493.88, 440.00, 523.25],
+        0.26,
+        1.12,
+        0.095
     );
 
     _audio.sfx[BladeStage1AudioSfx.PlayerVolley] = _BladeStage1AudioSfxCreate(
@@ -187,6 +197,9 @@ function BladeStage1AudioCreate(_config_audio) {
     );
     _audio.sfx[BladeStage1AudioSfx.Handoff] = _BladeStage1AudioSfxCreate(
         _audio, 0.780, 390, 880, 2.0, 0.025
+    );
+    _audio.sfx[BladeStage1AudioSfx.BossDefeat] = _BladeStage1AudioSfxCreate(
+        _audio, 1.120, 820, 42, 2.8, 0.220
     );
     return _audio;
 }
@@ -256,6 +269,16 @@ function BladeStage1AudioApplyRouteCue(_controller, _cue_id) {
             BladeStage1AudioMusicSwitch(_audio, "handoff", -1);
             return BladeStage1AudioPlay(
                 _audio, BladeStage1AudioSfx.Handoff, 0.82
+            );
+        case "cue.stage1.asahi_warning":
+            BladeStage1AudioPlay(_audio, BladeStage1AudioSfx.Handoff, 0.94);
+            return BladeStage1AudioMusicSwitch(
+                _audio, "asahi", _audio.music_boss
+            );
+        case "cue.stage1.stage_clear":
+            BladeStage1AudioMusicSwitch(_audio, "stage_clear", -1);
+            return BladeStage1AudioPlay(
+                _audio, BladeStage1AudioSfx.Handoff, 0.92
             );
     }
     return false;

@@ -26,6 +26,11 @@ stage_cue_cursor = 0;
 route_cue_id = "";
 route_label = "FIRST COMBAT BEAT";
 midboss_state = BladeStage1MidbossStateCreate();
+boss_warning_active = false;
+boss_instance = noone;
+boss_resolution = BladeStage1BossResolution.None;
+stage_clear_awarded = false;
+stage_clear_breakdown = { base: 0, lives: 0, bombs: 0, total: 0 };
 depth = 1000;
 
 // Only the production Stage 1 room consumes the authored deterministic route.

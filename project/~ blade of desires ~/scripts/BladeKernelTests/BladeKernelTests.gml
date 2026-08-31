@@ -23,6 +23,7 @@ function BladeKernelTestsRun() {
     BladeFirstCombatBeatTestsRun(_state);
     BladeFirstBeatSurvivalTestsRun(_state);
     BladeStage1RouteTestsRun(_state);
+    BladeStage1BossTestsRun(_state);
     BladeStagePlanTestsRun(_state);
     BladeStageRuntimeTestsRun(_state);
     BladeRunStageTestsRun(_state);

@@ -16,7 +16,8 @@ enum BladeFirstBeatEvent {
 
 enum BladeFirstBeatTargetKind {
     Ordinary = 1,
-    Stage1FaeMidboss = 2
+    Stage1FaeMidboss = 2,
+    Stage1Asahi = 3
 }
 
 enum BladeFirstBeatBulletKind {
@@ -24,7 +25,9 @@ enum BladeFirstBeatBulletKind {
     MayniiLeaf = 2,
     KolarCrystal = 3,
     ComboLeaf = 4,
-    ComboCrystal = 5
+    ComboCrystal = 5,
+    AsahiFlame = 6,
+    AsahiCrown = 7
 }
 
 #macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"
@@ -87,6 +90,7 @@ function BladeFirstBeatCleanupTransientInstances() {
     with (o_ciela_first_beat_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
     with (o_blade_enemy_target) instance_destroy();
+    with (o_blade_stage1_asahi) instance_destroy();
     with (o_ciela_first_beat_player) instance_destroy();
     with (o_blade_stage1_feedback_effect) instance_destroy();
 }

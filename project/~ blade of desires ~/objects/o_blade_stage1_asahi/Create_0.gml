@@ -1,0 +1,27 @@
+/// Initialize Asahi before the authored Stage participant assigns ownership.
+content_id = BLADE_STAGE1_ASAHI_CONTENT_ID;
+participant_id = "";
+stage_instance_id = "";
+stage_encounter_id = "";
+stage_managed = true;
+defeat_queued = false;
+target_kind = BladeFirstBeatTargetKind.Stage1Asahi;
+targetable = false;
+max_health = BLADE_STAGE1_ASAHI_PHASE_1_HP;
+hit_points = max_health;
+hit_radius = 22;
+hit_flash = 0;
+anchor_x = x;
+anchor_y = 82;
+boss_phase = 1;
+boss_state = BladeStage1BossState.Entry;
+phase_resolved = false;
+phase_ticks = 0;
+phase_time_limit = BLADE_STAGE1_ASAHI_PHASE_1_TICKS;
+entry_ticks = BLADE_STAGE1_ASAHI_ENTRY_TICKS;
+recharge_ticks = 0;
+next_phase = 2;
+terminal_ticks = 0;
+attack_ticks = 0;
+attack_tell_ticks = 0;
+motion_ticks = 0;
