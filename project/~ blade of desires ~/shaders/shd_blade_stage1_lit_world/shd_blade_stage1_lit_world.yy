@@ -1,0 +1,9 @@
+{
+  "$GMShader":"",
+  "%Name":"shd_blade_stage1_lit_world",
+  "name":"shd_blade_stage1_lit_world",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

@@ -1,21 +1,18 @@
-draw_clear(make_color_rgb(6, 16, 18));
+display_set_gui_size(room_width, room_height);
 var _bounds = BladeCombatPlanePixelBounds(gameplay_plane);
 
-// The simple forest shapes are readable gameplay presentation, not final art.
-draw_set_color(make_color_rgb(16, 43, 34));
+// The world renderer owns the clear; these translucent panels keep combat readable.
+draw_set_alpha(0.88);
+draw_set_color(make_color_rgb(6, 18, 22));
 draw_rectangle(0, 0, _bounds.left - 1, 359, false);
 draw_rectangle(_bounds.right_exclusive, 0, 639, 359, false);
-draw_set_color(make_color_rgb(24, 67, 47));
-for (var _trunk_x = 22; _trunk_x < 640; _trunk_x += 54) {
-    if (_trunk_x >= _bounds.left && _trunk_x < _bounds.right_exclusive) continue;
-    draw_rectangle(_trunk_x, 0, _trunk_x + 13, 360, false);
-}
-
-draw_set_color(make_color_rgb(9, 28, 34));
+draw_set_alpha(0.12);
+draw_set_color(make_color_rgb(5, 22, 28));
 draw_rectangle(
     _bounds.left, _bounds.top,
     _bounds.right_exclusive - 1, _bounds.bottom_exclusive - 1, false
 );
+draw_set_alpha(1);
 draw_set_color(make_color_rgb(78, 154, 125));
 draw_rectangle(
     _bounds.left, _bounds.top,
@@ -45,8 +42,8 @@ draw_rectangle(
 );
 draw_set_color(c_white);
 if (economy.active_hyper_tier > 0) {
-    draw_text(12, 208, "ACTIVE T" + string(economy.active_hyper_tier)
-        + "  " + string(economy.hyper_ticks));
+    draw_text(12, 208, "BONUS T" + string(economy.active_hyper_tier)
+        + "  DANGER UP\n" + string(economy.hyper_ticks));
 } else if (_ready_tier > 0) {
     draw_text(12, 208, "READY T" + string(_ready_tier));
 } else {
@@ -54,25 +51,44 @@ if (economy.active_hyper_tier > 0) {
 }
 
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
-    + "\nPower  X\nHyper takes priority");
+    + "\nPower  X\nHyper boosts danger");
 
-draw_text(469, 12, "CIELA\nARCADE");
-draw_text(469, 62, "Defeat the gold\nbomb carrier, then\ncollect its rewards.");
+draw_text(469, 12, "CIELA\nSTAGE 1");
+draw_text(469, 62, route_label);
+if (stage_route_enabled
+    && BladeStage1MidbossDrawHud(id, 469, 100, 155)) {
+    // The midboss HUD owns this space while its personal or combo life is active.
+} else {
+    draw_text(469, 100, "Clear each wave.\nGold carriers hold\none Bomb each.");
+}
 if (economy.bomb_ticks > 0) {
     draw_set_color(make_color_rgb(255, 224, 116));
-    draw_text(469, 132, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
+    draw_text(469, 188, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
 } else if (invulnerable_ticks > 0) {
     draw_set_color(make_color_rgb(126, 228, 255));
-    draw_text(469, 132, "PROTECTED\n" + string(invulnerable_ticks));
+    draw_text(469, 188, "PROTECTED\n" + string(invulnerable_ticks));
 } else {
     draw_set_color(make_color_rgb(255, 156, 126));
-    draw_text(469, 132, "VULNERABLE");
+    draw_text(469, 188, "VULNERABLE");
 }
 draw_set_color(c_white);
-draw_text(469, 190, "Enemy fire uses\none shared plane\nand hurtbox gate.");
+draw_text(469, 238, "Every emission uses\nthe shared 2D plane\nand current hurtbox.");
 if (feedback_ticks > 0) {
     draw_set_color(make_color_rgb(255, 239, 145));
-    draw_text(469, 270, feedback_text);
+    draw_text(469, 298, feedback_text);
+}
+
+if (route_notice_ticks > 0) {
+    var _notice_alpha = min(1, route_notice_ticks / 20);
+    draw_set_alpha(0.72 * _notice_alpha);
+    draw_set_color(make_color_rgb(4, 16, 20));
+    draw_rectangle(214, 28, 426, 66, false);
+    draw_set_alpha(_notice_alpha);
+    draw_set_halign(fa_center);
+    draw_set_color(make_color_rgb(255, 241, 170));
+    draw_text(320, 38, route_notice_text);
+    draw_set_halign(fa_left);
+    draw_set_alpha(1);
 }
 
 if (state != BladeFirstBeatState.Playing) {
@@ -83,7 +99,8 @@ if (state != BladeFirstBeatState.Playing) {
         draw_set_alpha(1);
         draw_set_halign(fa_center);
         draw_set_color(c_white);
-        draw_text(320, 154, "COMBAT BEAT CLEAR\n\nPress R to play again");
+        draw_text(320, 145, "WORLD TREE REACHED\nASAHI AWAITS"
+            + "\n\nPress R to traverse again");
         draw_set_halign(fa_left);
     } else if (state == BladeFirstBeatState.Failed) {
         draw_set_alpha(0.82);
@@ -106,10 +123,7 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
     draw_set_color(c_white);
     var _response_action = BladeSurvivalPowerActionForX(economy, true);
     var _response_prompt = "NO DEFENSE READY\nDEATH WILL COMMIT";
-    if (_response_action == BladeSurvivalPowerAction.Hyper) {
-        _response_prompt = "PRESS X: HYPER DEFENSE T"
-            + string(BladeSurvivalHyperTierForMeter(economy.hyper_meter));
-    } else if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
+    if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
         _response_prompt = "PRESS X: SPEND ALL BOMBS";
     }
     draw_text(320, 156, "HIT RESPONSE  " + string(hit_response_ticks)

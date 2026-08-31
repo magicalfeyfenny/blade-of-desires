@@ -1,0 +1,874 @@
+{
+  "schema_version": 1,
+  "id": "stage_catalog.stage1_lost_forest",
+  "display_name": "Stage 1 Lost Forest playable route",
+  "product_contract": {
+    "id": "contract.blade",
+    "content_version": "1.3.0"
+  },
+  "named_anchors": [
+    {
+      "schema_version": 1,
+      "id": "anchor.stage1.combat_center",
+      "display_name": "Stage 1 upper combat center",
+      "x_q10": 327680,
+      "y_q10": 73728
+    }
+  ],
+  "participant_kind_ids": [
+    "participant_kind.stage1.scout",
+    "participant_kind.stage1.bomb_carrier",
+    "participant_kind.stage1.fae_maynii",
+    "participant_kind.stage1.fae_kolar"
+  ],
+  "task_type_ids": [],
+  "signal_type_ids": [
+    "signal_type.stage1.encounter_lifecycle"
+  ],
+  "cue_type_ids": [
+    "cue_type.stage1.route"
+  ],
+  "task_ports": [],
+  "signals": [
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.opening_wave_started",
+      "display_name": "Opening wave started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.opening_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.opening_wave_completed",
+      "display_name": "Opening wave completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.opening_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.weave_wave_started",
+      "display_name": "Weave wave started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.weave_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.weave_wave_completed",
+      "display_name": "Weave wave completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.weave_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.midboss_carrier_started",
+      "display_name": "Midboss approach carrier started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.midboss_carrier"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.midboss_carrier_completed",
+      "display_name": "Midboss approach carrier completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.midboss_carrier"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.fae_duo_started",
+      "display_name": "Maynii and Kolar started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.maynii_kolar_duo"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.fae_duo_completed",
+      "display_name": "Maynii and Kolar completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.maynii_kolar_duo"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.return_wave_started",
+      "display_name": "Return wave started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.return_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.return_wave_completed",
+      "display_name": "Return wave completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.return_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.ridge_wave_started",
+      "display_name": "Ridge wave started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.ridge_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.ridge_wave_completed",
+      "display_name": "Ridge wave completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.ridge_wave"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.world_tree_carrier_started",
+      "display_name": "World Tree approach carrier started",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_started",
+        "source_id": "encounter_schedule.stage1.world_tree_carrier"
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "signal.stage1.world_tree_carrier_completed",
+      "display_name": "World Tree approach carrier completed",
+      "type_id": "signal_type.stage1.encounter_lifecycle",
+      "source": {
+        "kind": "encounter_completed",
+        "source_id": "encounter_schedule.stage1.world_tree_carrier"
+      }
+    }
+  ],
+  "cues": [
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.forest_travel",
+      "display_name": "Travel through the Lost Forest",
+      "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.midboss_stop",
+      "display_name": "Stop for Maynii and Kolar",
+      "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.forest_resume",
+      "display_name": "Resume the Lost Forest route",
+      "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.world_tree_approach",
+      "display_name": "Approach the World Tree",
+      "type_id": "cue_type.stage1.route"
+    },
+    {
+      "schema_version": 1,
+      "id": "cue.stage1.world_tree_handoff",
+      "display_name": "Hold at the World Tree handoff",
+      "type_id": "cue_type.stage1.route"
+    }
+  ],
+  "stages": [
+    {
+      "schema_version": 1,
+      "id": "stage_schedule.stage1.ciela_lost_forest",
+      "display_name": "Ciela traverses the Lost Forest",
+      "entry_node_id": "stage_node.stage1.begin_travel",
+      "terminal_node_id": "stage_node.stage1.complete_handoff",
+      "nodes": [
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.begin_travel",
+          "display_name": "Begin forest travel",
+          "content_order": 0,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.forest_travel",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.opening_breath"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.opening_breath",
+          "display_name": "Establish the route before combat",
+          "content_order": 1,
+          "kind": "wait",
+          "active_ticks": 90,
+          "next_node_id": "stage_node.stage1.spawn_opening_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_opening_wave",
+          "display_name": "Spawn the opening scouts",
+          "content_order": 2,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.opening_wave",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_opening_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_opening_wave",
+          "display_name": "Clear the opening scouts",
+          "content_order": 3,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.opening_wave",
+          "next_node_id": "stage_node.stage1.breathe_after_opening"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.breathe_after_opening",
+          "display_name": "Breathe after the opening scouts",
+          "content_order": 4,
+          "kind": "wait",
+          "active_ticks": 50,
+          "next_node_id": "stage_node.stage1.spawn_weave_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_weave_wave",
+          "display_name": "Spawn the weaving scouts",
+          "content_order": 5,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.weave_wave",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_weave_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_weave_wave",
+          "display_name": "Clear the weaving scouts",
+          "content_order": 6,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.weave_wave",
+          "next_node_id": "stage_node.stage1.breathe_before_midboss_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.breathe_before_midboss_carrier",
+          "display_name": "Open the midboss approach",
+          "content_order": 7,
+          "kind": "wait",
+          "active_ticks": 45,
+          "next_node_id": "stage_node.stage1.spawn_midboss_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_midboss_carrier",
+          "display_name": "Spawn the midboss approach bomb carrier",
+          "content_order": 8,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.midboss_carrier",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_midboss_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_midboss_carrier",
+          "display_name": "Clear the midboss approach bomb carrier",
+          "content_order": 9,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.midboss_carrier",
+          "next_node_id": "stage_node.stage1.midboss_approach_breath"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.midboss_approach_breath",
+          "display_name": "Breathe before the fae duo",
+          "content_order": 10,
+          "kind": "wait",
+          "active_ticks": 45,
+          "next_node_id": "stage_node.stage1.stop_for_midboss"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.stop_for_midboss",
+          "display_name": "Stop the route for Maynii and Kolar",
+          "content_order": 11,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.midboss_stop",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.midboss_stop_tell"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.midboss_stop_tell",
+          "display_name": "Hold the deliberate midboss stop",
+          "content_order": 12,
+          "kind": "wait",
+          "active_ticks": 60,
+          "next_node_id": "stage_node.stage1.spawn_fae_duo"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_fae_duo",
+          "display_name": "Spawn Maynii and Kolar together",
+          "content_order": 13,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.maynii_kolar_duo",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 18432
+          },
+          "next_node_id": "stage_node.stage1.wait_fae_duo"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_fae_duo",
+          "display_name": "Clear both solos and the shared combo",
+          "content_order": 14,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.maynii_kolar_duo",
+          "next_node_id": "stage_node.stage1.resume_forest"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.resume_forest",
+          "display_name": "Resume forest travel after the duo",
+          "content_order": 15,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.forest_resume",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.second_half_breath"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.second_half_breath",
+          "display_name": "Establish the second half of Stage 1",
+          "content_order": 16,
+          "kind": "wait",
+          "active_ticks": 80,
+          "next_node_id": "stage_node.stage1.spawn_return_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_return_wave",
+          "display_name": "Spawn the returning scouts",
+          "content_order": 17,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.return_wave",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_return_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_return_wave",
+          "display_name": "Clear the returning scouts",
+          "content_order": 18,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.return_wave",
+          "next_node_id": "stage_node.stage1.breathe_after_return_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.breathe_after_return_wave",
+          "display_name": "Breathe after the returning scouts",
+          "content_order": 19,
+          "kind": "wait",
+          "active_ticks": 50,
+          "next_node_id": "stage_node.stage1.spawn_ridge_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_ridge_wave",
+          "display_name": "Spawn the ridge scouts",
+          "content_order": 20,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.ridge_wave",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_ridge_wave"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_ridge_wave",
+          "display_name": "Clear the ridge scouts",
+          "content_order": 21,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.ridge_wave",
+          "next_node_id": "stage_node.stage1.breathe_before_world_tree_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.breathe_before_world_tree_carrier",
+          "display_name": "Open the World Tree approach",
+          "content_order": 22,
+          "kind": "wait",
+          "active_ticks": 40,
+          "next_node_id": "stage_node.stage1.spawn_world_tree_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.spawn_world_tree_carrier",
+          "display_name": "Spawn the World Tree approach bomb carrier",
+          "content_order": 23,
+          "kind": "spawn_encounter",
+          "encounter_id": "encounter_schedule.stage1.world_tree_carrier",
+          "anchor_id": "anchor.stage1.combat_center",
+          "local_offset_q10": {
+            "x": 0,
+            "y": 0
+          },
+          "next_node_id": "stage_node.stage1.wait_world_tree_carrier"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.wait_world_tree_carrier",
+          "display_name": "Clear the World Tree approach bomb carrier",
+          "content_order": 24,
+          "kind": "wait_encounter_completion",
+          "encounter_id": "encounter_schedule.stage1.world_tree_carrier",
+          "next_node_id": "stage_node.stage1.approach_world_tree"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.approach_world_tree",
+          "display_name": "Begin the World Tree approach",
+          "content_order": 25,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.world_tree_approach",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.world_tree_travel"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.world_tree_travel",
+          "display_name": "Travel to the World Tree",
+          "content_order": 26,
+          "kind": "wait",
+          "active_ticks": 180,
+          "next_node_id": "stage_node.stage1.hold_world_tree_handoff"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.hold_world_tree_handoff",
+          "display_name": "Hold the stable World Tree handoff",
+          "content_order": 27,
+          "kind": "emit_presentation_cue",
+          "cue": {
+            "cue_id": "cue.stage1.world_tree_handoff",
+            "type_id": "cue_type.stage1.route"
+          },
+          "next_node_id": "stage_node.stage1.handoff_breath"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.handoff_breath",
+          "display_name": "Keep the World Tree handoff stable",
+          "content_order": 28,
+          "kind": "wait",
+          "active_ticks": 60,
+          "next_node_id": "stage_node.stage1.complete_handoff"
+        },
+        {
+          "schema_version": 1,
+          "id": "stage_node.stage1.complete_handoff",
+          "display_name": "Complete the route at the Asahi handoff",
+          "content_order": 29,
+          "kind": "complete"
+        }
+      ]
+    }
+  ],
+  "encounters": [
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.opening_wave",
+      "display_name": "Opening scout wave",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.opening_left",
+          "display_name": "Opening left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": -71680, "y": 0},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.opening_center",
+          "display_name": "Opening center scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 1,
+          "local_offset_q10": {"x": 0, "y": -12288},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.opening_right",
+          "display_name": "Opening right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 2,
+          "local_offset_q10": {"x": 71680, "y": 0},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.stage1.opening_left",
+          "participant.stage1.opening_center",
+          "participant.stage1.opening_right"
+        ]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.opening_wave_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.opening_wave_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.weave_wave",
+      "display_name": "Weaving scout wave",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.weave_far_left",
+          "display_name": "Weave far-left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": -87040, "y": 12288},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.weave_left",
+          "display_name": "Weave left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 1,
+          "local_offset_q10": {"x": -28672, "y": -8192},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.weave_right",
+          "display_name": "Weave right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 2,
+          "local_offset_q10": {"x": 28672, "y": -8192},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.weave_far_right",
+          "display_name": "Weave far-right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 3,
+          "local_offset_q10": {"x": 87040, "y": 12288},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.stage1.weave_far_left",
+          "participant.stage1.weave_left",
+          "participant.stage1.weave_right",
+          "participant.stage1.weave_far_right"
+        ]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.weave_wave_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.weave_wave_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.midboss_carrier",
+      "display_name": "Midboss approach bomb carrier",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.midboss_carrier",
+          "display_name": "Midboss approach bomb carrier",
+          "kind_id": "participant_kind.stage1.bomb_carrier",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": 0, "y": 0},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": ["participant.stage1.midboss_carrier"]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.midboss_carrier_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.midboss_carrier_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.maynii_kolar_duo",
+      "display_name": "Maynii and Kolar midboss duo",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.fae_maynii",
+          "display_name": "Maynii, Forest Fae",
+          "kind_id": "participant_kind.stage1.fae_maynii",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": -49152, "y": 0},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.fae_kolar",
+          "display_name": "Kolar, Mountain Fae",
+          "kind_id": "participant_kind.stage1.fae_kolar",
+          "spawn_order": 1,
+          "local_offset_q10": {"x": 49152, "y": 0},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.stage1.fae_maynii",
+          "participant.stage1.fae_kolar"
+        ]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.fae_duo_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.fae_duo_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.return_wave",
+      "display_name": "Second-half return wave",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.return_left",
+          "display_name": "Return left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": -66560, "y": -8192},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.return_center",
+          "display_name": "Return center scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 1,
+          "local_offset_q10": {"x": 0, "y": 10240},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.return_right",
+          "display_name": "Return right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 2,
+          "local_offset_q10": {"x": 66560, "y": -8192},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.stage1.return_left",
+          "participant.stage1.return_center",
+          "participant.stage1.return_right"
+        ]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.return_wave_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.return_wave_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.ridge_wave",
+      "display_name": "Second-half ridge wave",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.ridge_far_left",
+          "display_name": "Ridge far-left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": -81920, "y": 8192},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.ridge_left",
+          "display_name": "Ridge left scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 1,
+          "local_offset_q10": {"x": -24576, "y": -10240},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.ridge_right",
+          "display_name": "Ridge right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 2,
+          "local_offset_q10": {"x": 24576, "y": -10240},
+          "defeat_disposition": "remove"
+        },
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.ridge_far_right",
+          "display_name": "Ridge far-right scout",
+          "kind_id": "participant_kind.stage1.scout",
+          "spawn_order": 3,
+          "local_offset_q10": {"x": 81920, "y": 8192},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": [
+          "participant.stage1.ridge_far_left",
+          "participant.stage1.ridge_left",
+          "participant.stage1.ridge_right",
+          "participant.stage1.ridge_far_right"
+        ]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.ridge_wave_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.ridge_wave_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    },
+    {
+      "schema_version": 1,
+      "id": "encounter_schedule.stage1.world_tree_carrier",
+      "display_name": "World Tree approach bomb carrier",
+      "participants": [
+        {
+          "schema_version": 1,
+          "id": "participant.stage1.world_tree_carrier",
+          "display_name": "World Tree approach bomb carrier",
+          "kind_id": "participant_kind.stage1.bomb_carrier",
+          "spawn_order": 0,
+          "local_offset_q10": {"x": 0, "y": 0},
+          "defeat_disposition": "remove"
+        }
+      ],
+      "completion_predicate": {
+        "kind": "all_participants_defeated",
+        "participant_ids": ["participant.stage1.world_tree_carrier"]
+      },
+      "cleanup_policy": {"on_completion": "cleanup.stage_end"},
+      "stage_signals": {
+        "started": {
+          "signal_id": "signal.stage1.world_tree_carrier_started",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        },
+        "completed": {
+          "signal_id": "signal.stage1.world_tree_carrier_completed",
+          "type_id": "signal_type.stage1.encounter_lifecycle"
+        }
+      }
+    }
+  ]
+}

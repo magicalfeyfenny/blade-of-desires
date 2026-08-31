@@ -35,15 +35,16 @@ or renaming a field, changing its type, or incompatibly changing its meaning
 requires a schema-version increment. Additive fields and content-value changes
 retain the schema version and advance `content_version`, which versions this
 product contract. Version 1.1.0 added structured policy while retaining all
-1.0.0 fields and types. Version 1.2.0 adds the ordered difficulty identity
-registry without changing any existing field or record shape, so the schema
-remains version 1. Consumers reject an unknown schema version rather than
-guessing a default.
+1.0.0 fields and types. Version 1.2.0 added the ordered difficulty identity
+registry. Version 1.3.0 records the concrete Maynii-Kolar Stage 1 midboss
+resolution for the current Ciela slice. Neither content change alters an
+existing field or record shape, so the schema remains version 1. Consumers
+reject an unknown schema version rather than guessing a default.
 
 `registry_extensions` is a versioned policy object, not a canonical record.
 Its ship, stage, and encounter ID lists are empty in the core contract. A later
 registry-extension record must be explicitly declared in the matching list and
-must advance `content_version` beyond the 1.2.0 core baseline; core IDs cannot
+must advance `content_version` beyond the 1.3.0 core baseline; core IDs cannot
 be redeclared. The progression record is closed, so an added ending or unknown
 root field requires a future schema rule instead of silently extending the
 registry.
@@ -70,7 +71,7 @@ catalog cites it as a compatibility binding, but that value does not also
 version the subordinate catalog's values. A subordinate pattern or stage-value
 change therefore does not silently advance the product version; the catalog
 retains its own schema and explicit product binding. The current product
-contract remains version `1.2.0`.
+contract remains version `1.3.0`.
 
 The focused validator reports `source: field.path: reason`. File validation
 uses the supplied filename and decoded in-memory validation uses the explicit
@@ -106,6 +107,13 @@ remains the authority for its unlock and story conditions.
 The logical output is `640x360`; gameplay uses the centered `270x360` plane
 `[185,455) x [0,360)`. Gameplay is a vertical 2D shmup and the perspective 3D
 world is presentation only.
+
+For the current Ciela Stage 1 slice, Maynii and Kolar are the unchosen
+elemental-fae midboss pair. Each performs one personal attack while the other
+does the same, then they transition into one shared Maynii-Kolar combo attack.
+Defeating that combo resumes the second half of Stage 1. Ciela's personal
+attack and Ciela-inclusive pair attacks remain deferred until Maynii and Kolar
+are implemented as player ships.
 
 Geometry uses a binary 1/1024-logical-pixel grid. In grid units, a point anchor
 is eligible only when `189440 <= x < 465920` and `0 <= y < 368640`. A declared

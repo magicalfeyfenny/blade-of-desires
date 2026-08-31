@@ -116,8 +116,8 @@ function _BladeStageEncounterSpawnPlan(
 }
 
 /// Rechecks mutable Instance-ID capacity immediately before a prepared commit.
-function _BladeStageEncounterRequireCapacity(_runtime, _count) {
-	var _counters = BladeRunIdentityGetCounters(_runtime.identity);
+function _BladeStageEncounterRequireCapacity(_identity, _count) {
+	var _counters = BladeRunIdentityGetCounters(_identity);
 	var _validated_count = _BladeStagePlanInteger(
 		_count, 1, int64("2147483647"), "participant spawn count"
 	);
@@ -125,6 +125,59 @@ function _BladeStageEncounterRequireCapacity(_runtime, _count) {
 	if (_counters.instance > _maximum_allocated - _validated_count) {
 		_BladeStagePlanFail("participant spawn", "exceeds instance ID capacity");
 	}
+}
+
+/// Commits one validated spawn batch through the caller's concrete participant creator.
+function _BladeStageEncounterCommitPrepared(
+	_registry, _ports, _kernel, _validated, _tick, _generation, _spawn_callback
+) {
+	if (typeof(_spawn_callback) != "method") {
+		_BladeStagePlanFail("participant spawn", "requires a concrete spawn callback");
+	}
+	var _validated_generation = _BladeStagePortsGeneration(
+		_generation, "encounter generation"
+	);
+	var _participants = [];
+	for (var _index = 0; _index < array_length(_validated.participants); ++_index) {
+		var _plan = _validated.participants[_index];
+		var _instance_id = BladeKernelAllocateForContent(
+			_kernel, BladeRunIdKind.Instance, _plan.spawn_spec.content_id
+		);
+		_spawn_callback(_plan, _instance_id, _tick);
+		array_push(_participants, {
+			participant_id: _plan.participant.id,
+			participant_kind_id: _plan.participant.kind_id,
+			spawn_order: _plan.participant.spawn_order,
+			instance_id: _instance_id,
+			content_id: _plan.spawn_spec.content_id,
+			x_q10: _plan.x_q10,
+			y_q10: _plan.y_q10,
+			defeat_disposition: _plan.participant.defeat_disposition,
+			state: BladeStageParticipantState.Active,
+			terminal_reason: BladeCombatTerminalReason.None,
+			terminal_simulation_tick: int64(-1),
+			terminal_combat_tick: int64(-1),
+		});
+	}
+	var _record = {
+		encounter_id: _validated.encounter_id,
+		spawn_node_id: _validated.node_id,
+		execution_generation: _validated_generation,
+		lifecycle: BladeStageLifecycle.Active,
+		participants: _participants,
+		completion_simulation_tick: int64(-1),
+		completion_stage_tick: int64(-1),
+	};
+	array_push(_registry.generations, _record);
+	var _encounter = _BladeStagePlanFind(
+		_registry.plan.encounters, _validated.encounter_id
+	);
+	BladeStagePortsEmitEncounterSignal(
+		_ports, _encounter.stage_signals.started.signal_id,
+		_encounter.stage_signals.started.type_id, _encounter.id,
+		"encounter_started", _validated_generation
+	);
+	return _BladeStagePlanClone(_record);
 }
 
 /// Validates one cached whole-batch plan without calling its resolver again.
@@ -223,7 +276,9 @@ function BladeStageEncounterRegistryPrepareSpawn(
 	var _participants = _BladeStageEncounterSpawnPlan(
 		_registry, _encounter, _anchor_point, _resolver, _runtime
 	);
-	_BladeStageEncounterRequireCapacity(_runtime, array_length(_participants));
+	_BladeStageEncounterRequireCapacity(
+		_runtime.identity, array_length(_participants)
+	);
 	return {
 		__blade_stage_encounter_spawn_plan_version: 1,
 		node_id: _BladeStagePlanStableId(
@@ -257,7 +312,7 @@ function BladeStageEncounterRegistryPreflightPreparedSpawn(
 		_BladeStagePlanFail("participant spawn", "cannot overlap one owned encounter");
 	}
 	_BladeStageEncounterRequireCapacity(
-		_runtime, array_length(_validated.participants)
+		_runtime.identity, array_length(_validated.participants)
 	);
 	return _validated;
 }
@@ -270,56 +325,20 @@ function BladeStageEncounterRegistrySpawnPrepared(
 	var _validated = BladeStageEncounterRegistryPreflightPreparedSpawn(
 		_registry, _kernel, _runtime, _prepared
 	);
-	var _validated_generation = _BladeStagePortsGeneration(
-		_generation, "encounter generation"
+	var _spawn_context = { runtime: _runtime };
+	return _BladeStageEncounterCommitPrepared(
+		_registry, _ports, _kernel, _validated, _tick, _generation,
+		method(_spawn_context, function(_plan, _instance_id, _spawn_tick) {
+			BladeCombatRuntimeRegisterActor(
+				self.runtime, _instance_id, _plan.spawn_spec.content_id,
+				_plan.spawn_spec.faction, _plan.spawn_spec.health,
+				_plan.spawn_spec.box,
+				_plan.spawn_spec.invulnerable_until_combat_tick,
+				_plan.spawn_spec.reward_on_defeat, _plan.spawn_spec.child_spec,
+				_spawn_tick.simulation_tick, _spawn_tick.combat_tick
+			);
+		})
 	);
-	var _participants = [];
-	for (var _index = 0; _index < array_length(_validated.participants); ++_index) {
-		var _plan = _validated.participants[_index];
-		var _instance_id = BladeKernelAllocateForContent(
-			_kernel, BladeRunIdKind.Instance, _plan.spawn_spec.content_id
-		);
-		BladeCombatRuntimeRegisterActor(
-			_runtime, _instance_id, _plan.spawn_spec.content_id,
-			_plan.spawn_spec.faction, _plan.spawn_spec.health, _plan.spawn_spec.box,
-			_plan.spawn_spec.invulnerable_until_combat_tick,
-			_plan.spawn_spec.reward_on_defeat, _plan.spawn_spec.child_spec,
-			_tick.simulation_tick, _tick.combat_tick
-		);
-		array_push(_participants, {
-			participant_id: _plan.participant.id,
-			participant_kind_id: _plan.participant.kind_id,
-			spawn_order: _plan.participant.spawn_order,
-			instance_id: _instance_id,
-			content_id: _plan.spawn_spec.content_id,
-			x_q10: _plan.x_q10,
-			y_q10: _plan.y_q10,
-			defeat_disposition: _plan.participant.defeat_disposition,
-			state: BladeStageParticipantState.Active,
-			terminal_reason: BladeCombatTerminalReason.None,
-			terminal_simulation_tick: int64(-1),
-			terminal_combat_tick: int64(-1),
-		});
-	}
-	var _record = {
-		encounter_id: _validated.encounter_id,
-		spawn_node_id: _validated.node_id,
-		execution_generation: _validated_generation,
-		lifecycle: BladeStageLifecycle.Active,
-		participants: _participants,
-		completion_simulation_tick: int64(-1),
-		completion_stage_tick: int64(-1),
-	};
-	array_push(_registry.generations, _record);
-	var _encounter = _BladeStagePlanFind(
-		_registry.plan.encounters, _validated.encounter_id
-	);
-	BladeStagePortsEmitEncounterSignal(
-		_ports, _encounter.stage_signals.started.signal_id,
-		_encounter.stage_signals.started.type_id, _encounter.id,
-		"encounter_started", _validated_generation
-	);
-	return _BladeStagePlanClone(_record);
 }
 
 /// @func BladeStageEncounterRegistrySpawn(registry, ports, kernel, combat_runtime, encounter_id, anchor_point, resolver, tick, node_id, generation)
@@ -368,22 +387,8 @@ function _BladeStageEncounterApplyTerminal(_registry, _terminal) {
 	return _owned.generation;
 }
 
-/// Observes each newly committed combat terminal once and emits exact completed signals.
-function BladeStageEncounterRegistryObserve(
-	_registry, _ports, _runtime, _tick
-) {
-	_BladeStageEncounterRegistryRequire(_registry);
-	_BladeStagePortsRequire(_ports);
-	var _combat = BladeCombatRuntimeSnapshot(_runtime);
-	var _count = int64(array_length(_combat.terminal_records));
-	if (_count < _registry.terminal_cursor) {
-		_BladeStagePlanFail("combat terminal cursor", "cannot move backwards");
-	}
-	for (var _index = real(_registry.terminal_cursor);
-		_index < array_length(_combat.terminal_records); ++_index) {
-		_BladeStageEncounterApplyTerminal(_registry, _combat.terminal_records[_index]);
-	}
-	_registry.terminal_cursor = _count;
+/// Completes each all-defeated generation once after its terminal reports are applied.
+function _BladeStageEncounterCompleteReady(_registry, _ports, _tick) {
 	var _completed = [];
 	for (var _index = 0; _index < array_length(_registry.generations); ++_index) {
 		var _generation = _registry.generations[_index];
@@ -404,6 +409,45 @@ function BladeStageEncounterRegistryObserve(
 		}
 	}
 	return _completed;
+}
+
+/// Observes each newly committed combat terminal once and emits exact completed signals.
+function BladeStageEncounterRegistryObserve(
+	_registry, _ports, _runtime, _tick
+) {
+	_BladeStageEncounterRegistryRequire(_registry);
+	_BladeStagePortsRequire(_ports);
+	var _combat = BladeCombatRuntimeSnapshot(_runtime);
+	var _count = int64(array_length(_combat.terminal_records));
+	if (_count < _registry.terminal_cursor) {
+		_BladeStagePlanFail("combat terminal cursor", "cannot move backwards");
+	}
+	for (var _index = real(_registry.terminal_cursor);
+		_index < array_length(_combat.terminal_records); ++_index) {
+		_BladeStageEncounterApplyTerminal(_registry, _combat.terminal_records[_index]);
+	}
+	_registry.terminal_cursor = _count;
+	return _BladeStageEncounterCompleteReady(_registry, _ports, _tick);
+}
+
+/// Marks every still-active participant cleaned during an administrative boundary.
+function _BladeStageEncounterAbortActive(_registry, _reason, _tick) {
+	for (var _generation_index = 0;
+		_generation_index < array_length(_registry.generations); ++_generation_index) {
+		var _generation = _registry.generations[_generation_index];
+		if (_generation.lifecycle != BladeStageLifecycle.Active) continue;
+		_generation.lifecycle = BladeStageLifecycle.Aborted;
+		for (var _participant_index = 0;
+			_participant_index < array_length(_generation.participants); ++_participant_index) {
+			var _participant = _generation.participants[_participant_index];
+			if (_participant.state == BladeStageParticipantState.Active) {
+				_participant.state = BladeStageParticipantState.Cleaned;
+				_participant.terminal_reason = _reason;
+				_participant.terminal_simulation_tick = _tick.simulation_tick;
+				_participant.terminal_combat_tick = _tick.combat_tick;
+			}
+		}
+	}
 }
 
 /// Reconciles committed terminals, then aborts without emitting encounter completion.
@@ -430,22 +474,7 @@ function BladeStageEncounterRegistryAbort(_registry, _runtime, _reason, _tick) {
 		);
 	}
 	_registry.terminal_cursor = _count;
-	for (var _generation_index = 0;
-		_generation_index < array_length(_registry.generations); ++_generation_index) {
-		var _generation = _registry.generations[_generation_index];
-		if (_generation.lifecycle != BladeStageLifecycle.Active) continue;
-		_generation.lifecycle = BladeStageLifecycle.Aborted;
-		for (var _participant_index = 0;
-			_participant_index < array_length(_generation.participants); ++_participant_index) {
-			var _participant = _generation.participants[_participant_index];
-			if (_participant.state == BladeStageParticipantState.Active) {
-				_participant.state = BladeStageParticipantState.Cleaned;
-				_participant.terminal_reason = _reason;
-				_participant.terminal_simulation_tick = _tick.simulation_tick;
-				_participant.terminal_combat_tick = _tick.combat_tick;
-			}
-		}
-	}
+	_BladeStageEncounterAbortActive(_registry, _reason, _tick);
 }
 
 /// Returns a detached encounter registry view without mutable combat ownership.

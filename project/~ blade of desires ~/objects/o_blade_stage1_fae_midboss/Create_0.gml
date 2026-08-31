@@ -1,0 +1,22 @@
+/// Initialize one visible fae member before Stage content assigns identity and anchors.
+content_id = "";
+participant_id = "";
+stage_instance_id = "";
+stage_encounter_id = "";
+stage_managed = true;
+defeat_queued = false;
+target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
+targetable = false;
+fae_role = BladeStage1FaeRole.Maynii;
+max_health = BLADE_STAGE1_MIDBOSS_PERSONAL_HP;
+hit_points = max_health;
+hit_radius = 18;
+hit_flash = 0;
+anchor_x = x;
+anchor_y = 90;
+personal_defeated = false;
+combo_active = false;
+phase_transition_ticks = BLADE_STAGE1_MIDBOSS_ENTRY_TELL_TICKS;
+entry_complete = false;
+attack_ticks = 0;
+motion_phase = 0;

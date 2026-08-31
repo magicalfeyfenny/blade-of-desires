@@ -10,7 +10,7 @@
   "name":"o_blade_first_beat_enemy",
   "overriddenProperties":[],
   "parent":{"name":"Blade","path":"folders/Blade.yy",},
-  "parentObjectId":null,
+  "parentObjectId":{"name":"o_blade_enemy_target","path":"objects/o_blade_enemy_target/o_blade_enemy_target.yy",},
   "persistent":false,
   "physicsAngularDamping":0.1,
   "physicsDensity":0.5,

@@ -13,7 +13,7 @@ function _BladeCombatRuntimeTestsKnownContent(_content_id) {
 /// Creates one combat-enabled run over #6's authoritative plane fixture.
 function _BladeCombatRuntimeTestsCreate() {
 	return BladeRunCoordinatorCreate(
-		"sha1:d9a345101d9fa9971924bb2b9138a39dd5fd7c0b",
+		"sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
 		method({}, _BladeCombatRuntimeTestsKnownContent),
 		"ship.maynii", "difficulty.normal",
 		BladeRunMode.Normal, 305419896, 8,

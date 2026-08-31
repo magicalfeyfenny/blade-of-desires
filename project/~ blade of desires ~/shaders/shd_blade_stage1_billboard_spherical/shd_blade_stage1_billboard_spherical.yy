@@ -1,0 +1,9 @@
+{
+  "$GMShader":"",
+  "%Name":"shd_blade_stage1_billboard_spherical",
+  "name":"shd_blade_stage1_billboard_spherical",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMShader",
+  "resourceVersion":"2.0",
+  "type":1,
+}

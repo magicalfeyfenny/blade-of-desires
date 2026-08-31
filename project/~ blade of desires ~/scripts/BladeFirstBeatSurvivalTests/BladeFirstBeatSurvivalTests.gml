@@ -6,7 +6,7 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         BladeKernelTestAssertEqual(_economy.score, 0, "score starts empty");
         BladeKernelTestAssertEqual(
             _economy.lives, BLADE_SURVIVAL_STARTING_LIVES,
-            "three starting lives"
+            "two starting lives"
         );
         BladeKernelTestAssertEqual(
             _economy.bombs, BLADE_SURVIVAL_STARTING_BOMBS,
@@ -28,10 +28,10 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             _economy, BLADE_SURVIVAL_LIFE_THRESHOLD_3
         );
         BladeKernelTestAssertEqual(_first.life_awards, 3, "jump crosses three");
-        BladeKernelTestAssertEqual(_economy.lives, 6, "three extends add once");
+        BladeKernelTestAssertEqual(_economy.lives, 5, "three extends add once");
         var _again = BladeSurvivalApplyScore(_economy, 1);
         BladeKernelTestAssertEqual(_again.life_awards, 0, "claimed extends stay claimed");
-        BladeKernelTestAssertEqual(_economy.lives, 6, "repeat adds no lives");
+        BladeKernelTestAssertEqual(_economy.lives, 5, "repeat adds no lives");
     });
 
     BladeKernelTestRunCase(_state, "point pickups score and raise the next point value", function() {
@@ -188,6 +188,19 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             BladeSurvivalPlayerPhase.Active,
             "respawn protection keeps control active"
         );
+
+        _controller.invulnerable_ticks = 0;
+        _controller.economy.active_hyper_tier = 3;
+        _controller.economy.hyper_ticks = 1;
+        BladeKernelTestAssertTrue(
+            BladeSurvivalBeginPlayerHit(_controller),
+            "active Hyper does not reject a hit"
+        );
+        BladeKernelTestAssertEqual(
+            _controller.player_phase,
+            BladeSurvivalPlayerPhase.HitResponse,
+            "Hyper leaves the player vulnerable"
+        );
     });
 
     BladeKernelTestRunCase(_state, "all three Hyper tiers change concrete offense", function() {
@@ -216,6 +229,14 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
                 _score.score, 10 * (_tier + 1),
                 "tier strengthens real scoring"
             );
+            BladeKernelTestAssertTrue(
+                BladeSurvivalHyperHostileBulletSpeed(2, _tier) > 2,
+                "tier raises hostile bullet speed"
+            );
+            BladeKernelTestAssertTrue(
+                BladeSurvivalHyperHostileFireInterval(60, _tier) < 60,
+                "tier shortens hostile fire interval"
+            );
         }
     });
 
@@ -229,8 +250,8 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             BladeSurvivalPowerActionForX(_economy, true),
-            BladeSurvivalPowerAction.Hyper,
-            "hit response also selects ready Hyper"
+            BladeSurvivalPowerAction.EmergencyBomb,
+            "hit response exposes only the stocked Bomb"
         );
         var _hyper = BladeSurvivalTryActivateHyper(_economy);
         BladeKernelTestAssertTrue(_hyper.activated, "ready Hyper activates");
@@ -301,7 +322,7 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         _economy.shot_strength = 3;
         var _death = BladeSurvivalCommitDeath(_economy);
         BladeKernelTestAssertFalse(_death.game_over, "first death can respawn");
-        BladeKernelTestAssertEqual(_economy.lives, 2, "one life is removed");
+        BladeKernelTestAssertEqual(_economy.lives, 1, "one life is removed");
         BladeKernelTestAssertEqual(_economy.score, 500, "death halves score");
         BladeKernelTestAssertEqual(_economy.bombs, 3, "death resets bombs to three");
         BladeKernelTestAssertEqual(_economy.hyper_meter, 0, "stocked Hyper resets");
@@ -385,6 +406,65 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         with (_controller) instance_destroy();
     });
 
+    BladeFirstBeatTestRunCase(_state, "active Hyper accelerates ordinary enemy fire", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        var _player = instance_create_layer(
+            320, 314, "Instances", o_ciela_first_beat_player
+        );
+        var _enemy = instance_create_layer(
+            320, 72, "Instances", o_blade_first_beat_enemy
+        );
+        _enemy.y = _enemy.target_y;
+        _enemy.tell_ticks = 0;
+        _enemy.fire_cooldown = 10;
+        _controller.economy.active_hyper_tier = 2;
+        _controller.economy.hyper_ticks = 100;
+        with (_enemy) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertEqual(
+            _enemy.fire_cooldown, 8.5,
+            "tier two advances the cooldown by one and a half ticks"
+        );
+        _enemy.fire_cooldown = 0;
+        with (_enemy) event_perform(ev_step, ev_step_normal);
+        var _bullet = instance_find(o_blade_first_beat_enemy_bullet, 0);
+        BladeKernelTestAssertTrue(_bullet != noone, "Hyper enemy emits a bullet");
+        BladeKernelTestAssertTrue(
+            point_distance(0, 0, _bullet.velocity_x, _bullet.velocity_y)
+                > _enemy.bullet_speed,
+            "Hyper enemy bullet travels faster than its authored base speed"
+        );
+        with (_enemy) instance_destroy();
+        with (_player) instance_destroy();
+        with (_controller) instance_destroy();
+    });
+
+    BladeFirstBeatTestRunCase(_state, "Hyper clears on expiry but not continuously", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        _controller.economy.active_hyper_tier = 1;
+        _controller.economy.hyper_ticks = 2;
+        var _during = instance_create_layer(
+            320, 200, "Instances", o_blade_first_beat_enemy_bullet
+        );
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            instance_exists(_during),
+            "active Hyper does not continuously erase bullets"
+        );
+        var _ending = instance_create_layer(
+            340, 200, "Instances", o_blade_first_beat_enemy_bullet
+        );
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertFalse(
+            instance_exists(_during) || instance_exists(_ending),
+            "Hyper expiry performs its one ending clear"
+        );
+        with (_controller) instance_destroy();
+    });
+
     BladeFirstBeatTestRunCase(_state, "carrier rewards collect naturally and finish the beat", function() {
         var _controller = instance_create_layer(
             0, 0, "Instances", o_blade_first_beat_controller
@@ -457,7 +537,7 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         _controller.player_phase = BladeSurvivalPlayerPhase.HitResponse;
         _controller.hit_response_ticks = 1;
         with (_controller) event_perform(ev_step, ev_step_normal);
-        BladeKernelTestAssertEqual(_controller.economy.lives, 2, "life commits once");
+        BladeKernelTestAssertEqual(_controller.economy.lives, 1, "life commits once");
         BladeKernelTestAssertEqual(_controller.economy.bombs, 3, "bombs reset exactly");
         BladeKernelTestAssertEqual(_controller.economy.hyper_meter, 0, "Hyper resets exactly");
         BladeKernelTestAssertEqual(
@@ -509,6 +589,9 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             0, 0, "Instances", o_blade_first_beat_controller
         );
         instance_create_layer(320, 100, "Instances", o_blade_first_beat_enemy);
+        instance_create_layer(
+            360, 100, "Instances", o_blade_stage1_fae_midboss
+        );
         instance_create_layer(320, 314, "Instances", o_ciela_first_beat_player);
         instance_create_layer(
             320, 180, "Projectiles", o_blade_first_beat_enemy_bullet
@@ -517,12 +600,15 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             320, 180, "Projectiles", o_ciela_first_beat_shot
         );
         instance_create_layer(320, 180, "Items", o_blade_reward_item);
+        instance_create_layer(
+            320, 180, "Instances", o_blade_stage1_feedback_effect
+        );
         _controller.economy.hyper_meter = 300;
         _controller.economy.bomb_ticks = 20;
         BladeFirstBeatCleanupTransientInstances();
         BladeKernelTestAssertEqual(
-            instance_number(o_blade_first_beat_enemy), 0,
-            "retry removes enemies"
+            instance_number(o_blade_enemy_target), 0,
+            "retry removes ordinary enemies and fae midbosses"
         );
         BladeKernelTestAssertEqual(
             instance_number(o_blade_first_beat_enemy_bullet), 0,
@@ -535,6 +621,10 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         BladeKernelTestAssertEqual(
             instance_number(o_blade_reward_item), 0,
             "retry removes unclaimed rewards"
+        );
+        BladeKernelTestAssertEqual(
+            instance_number(o_blade_stage1_feedback_effect), 0,
+            "retry removes unfinished Stage 1 feedback effects"
         );
         BladeKernelTestAssertEqual(
             instance_number(o_ciela_first_beat_player), 0,

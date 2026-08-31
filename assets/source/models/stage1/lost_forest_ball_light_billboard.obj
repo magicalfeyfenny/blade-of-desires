@@ -1,0 +1,25 @@
+# Blade of Desires Stage 1 LostForestBallLightBillboard
+# Origin: local XY unit quad centered at (0,0,0); +X is visual right, +Y is visual up, Z=0, runtime UV v=0 is the visual top, and OBJ/Blender V is conventionally flipped
+mtllib lost_forest_ball_light_billboard.mtl
+o LostForestBallLightBillboard
+v -0.500000 -0.500000 0.000000
+v 0.500000 -0.500000 0.000000
+v 0.500000 0.500000 0.000000
+v -0.500000 -0.500000 0.000000
+v 0.500000 0.500000 0.000000
+v -0.500000 0.500000 0.000000
+vt 0.000000 0.000000
+vt 1.000000 0.000000
+vt 1.000000 1.000000
+vt 0.000000 0.000000
+vt 1.000000 1.000000
+vt 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+vn 0.000000 0.000000 1.000000
+usemtl LostForestBallLightBillboardMaterial
+f 1/1/1 2/2/2 3/3/3
+f 4/4/4 5/5/5 6/6/6

@@ -34,4 +34,7 @@ if (kind == BladeSurvivalItemKind.Bomb) {
     _controller.feedback_text = "POINT +" + string(_point.collected_value);
 }
 _controller.feedback_ticks = 60;
+BladeStage1AudioPlayForController(
+    _controller, BladeStage1AudioSfx.Pickup, 0.36
+);
 instance_destroy();

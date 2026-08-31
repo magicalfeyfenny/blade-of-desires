@@ -1,0 +1,1 @@
+BladeStage1ForestAssetsDestroy(id);

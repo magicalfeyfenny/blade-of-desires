@@ -14,6 +14,19 @@ enum BladeFirstBeatEvent {
     Retry = 4
 }
 
+enum BladeFirstBeatTargetKind {
+    Ordinary = 1,
+    Stage1FaeMidboss = 2
+}
+
+enum BladeFirstBeatBulletKind {
+    Ordinary = 1,
+    MayniiLeaf = 2,
+    KolarCrystal = 3,
+    ComboLeaf = 4,
+    ComboCrystal = 5
+}
+
 #macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"
 
 /// Reads one bundled text file completely and always closes its GameMaker handle.
@@ -73,8 +86,119 @@ function BladeFirstBeatCleanupTransientInstances() {
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
     with (o_ciela_first_beat_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
-    with (o_blade_first_beat_enemy) instance_destroy();
+    with (o_blade_enemy_target) instance_destroy();
     with (o_ciela_first_beat_player) instance_destroy();
+    with (o_blade_stage1_feedback_effect) instance_destroy();
+}
+
+/// Returns the nearest currently damageable ordinary or midboss target.
+function BladeFirstBeatNearestTarget(_x, _y) {
+    var _nearest = noone;
+    var _nearest_distance = infinity;
+    var _count = instance_number(o_blade_enemy_target);
+    for (var _index = 0; _index < _count; ++_index) {
+        var _candidate = instance_find(o_blade_enemy_target, _index);
+        if (_candidate == noone
+            || !variable_instance_exists(_candidate, "targetable")
+            || !_candidate.targetable) continue;
+        var _distance = point_distance(_x, _y, _candidate.x, _candidate.y);
+        if (_distance < _nearest_distance) {
+            _nearest = _candidate;
+            _nearest_distance = _distance;
+        }
+    }
+    return _nearest;
+}
+
+/// Clears bullets owned by one exact stage participant without touching its partner.
+function BladeFirstBeatClearOwnedBullets(_stage_instance_id) {
+    var _owner = _stage_instance_id;
+    with (o_blade_first_beat_enemy_bullet) {
+        if (owner_stage_instance_id == _owner) instance_destroy();
+    }
+}
+
+/// Queues one concrete object defeat for the next deterministic Stage tick.
+function BladeFirstBeatQueueStageDefeat(_controller, _target) {
+    if (!_target.stage_managed || _target.defeat_queued) return false;
+    if (!variable_instance_exists(_controller, "stage_defeat_queue")) {
+        throw("BladeFirstCombatBeat: managed defeat has no Stage queue");
+    }
+    _target.defeat_queued = true;
+    array_push(_controller.stage_defeat_queue, _target.stage_instance_id);
+    return true;
+}
+
+/// Creates the concrete point and optional bomb drops declared by one defeated target.
+function BladeFirstBeatSpawnTargetRewards(_controller, _target) {
+    var _drops = BladeSurvivalResolveEnemyExit(
+        _controller.economy,
+        BladeSurvivalEnemyExitReason.Defeated,
+        BladeSurvivalEnemyIsBombCarrier(_target.archetype_id)
+    );
+    for (var _drop_index = 0;
+        _drop_index < _drops.point_item_count; ++_drop_index) {
+        var _point = instance_create_layer(
+            _target.x + (_drop_index - 2) * 9,
+            _target.y,
+            "Items",
+            o_blade_reward_item
+        );
+        _point.kind = BladeSurvivalItemKind.Point;
+        _point.velocity_x = (_drop_index - 2) * 0.24;
+        _point.velocity_y = 0.7 + _drop_index * 0.08;
+    }
+    for (var _bomb_index = 0;
+        _bomb_index < _drops.bomb_item_count; ++_bomb_index) {
+        var _bomb_offset = (
+            _bomb_index - (_drops.bomb_item_count - 1) * 0.5
+        );
+        var _bomb_item = instance_create_layer(
+            _target.x + _bomb_offset * 16,
+            _target.y - 10,
+            "Items",
+            o_blade_reward_item
+        );
+        _bomb_item.kind = BladeSurvivalItemKind.Bomb;
+        _bomb_item.velocity_x = _bomb_offset * 0.18;
+        _bomb_item.velocity_y = 0.45 + _bomb_index * 0.06;
+    }
+    return _drops;
+}
+
+/// Resolves one ordinary enemy defeat through either Stage ownership or the legacy beat.
+function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
+    var _is_carrier = BladeSurvivalEnemyIsBombCarrier(_target.archetype_id);
+    BladeStage1FeedbackSpawn(
+        _target.x,
+        _target.y,
+        BLADE_STAGE1_EFFECT_ENEMY,
+        _is_carrier
+            ? make_color_rgb(255, 221, 96)
+            : make_color_rgb(100, 242, 174),
+        _is_carrier ? 1.25 : 1
+    );
+    BladeStage1AudioPlayForController(
+        _controller, BladeStage1AudioSfx.EnemyDefeat, _is_carrier ? 0.78 : 0.52
+    );
+    BladeFirstBeatSpawnTargetRewards(_controller, _target);
+    if (_target.stage_managed) {
+        BladeFirstBeatQueueStageDefeat(_controller, _target);
+        BladeFirstBeatClearOwnedBullets(_target.stage_instance_id);
+        _controller.feedback_text = _is_carrier
+            ? "BOMB CARRIER DOWN\nROUTE CONTINUES"
+            : "ENEMY DOWN";
+        _controller.feedback_ticks = _is_carrier ? 120 : 45;
+    } else {
+        _controller.state = BladeFirstBeatTransition(
+            _controller.state, BladeFirstBeatEvent.EnemyDefeated
+        );
+        _controller.feedback_text = "CARRIER DOWN\nCOLLECT REWARDS";
+        _controller.feedback_ticks = 120;
+        _controller.reward_wait_ticks = 30;
+        with (o_blade_first_beat_enemy_bullet) instance_destroy();
+    }
+    with (_target) instance_destroy();
 }
 
 /// Applies one visible room event without allowing a finished beat to change outcome.

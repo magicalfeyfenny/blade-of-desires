@@ -1,0 +1,121 @@
+/// Own Stage 1's separate model and billboard buffers plus their textures.
+world_format = BladeStage1ForestWorldVertexFormatCreate();
+terrain_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_terrain.vbuff", world_format
+);
+tree_a_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_tree_a.vbuff", world_format
+);
+tree_b_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_tree_b.vbuff", world_format
+);
+world_tree_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_world_tree.vbuff", world_format
+);
+skybox_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_skybox.vbuff", world_format
+);
+grass_billboard_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_grass_billboard.vbuff", world_format
+);
+vines_billboard_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_vines_billboard.vbuff", world_format
+);
+bush_billboard_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_bush_billboard.vbuff", world_format
+);
+fae_billboard_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_fae_billboard.vbuff", world_format
+);
+ball_light_billboard_buffer = BladeStage1ForestBufferLoad(
+    "models/stage1/lost_forest_ball_light_billboard.vbuff", world_format
+);
+
+material_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_materials.png"
+);
+skybox_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_skybox.png"
+);
+fae_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_fae.png"
+);
+grass_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_grass.png"
+);
+vines_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_vines.png"
+);
+bush_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_bush.png"
+);
+ball_light_sprite = BladeStage1ForestTextureLoad(
+    "textures/stage1/lost_forest_ball_light.png"
+);
+
+maynii_sprite = BladeStage1ForestTextureLoad("sprites/stage1/maynii_boss.png");
+kolar_sprite = BladeStage1ForestTextureLoad("sprites/stage1/kolar_boss.png");
+ciela_sprite = BladeStage1ForestTextureLoad("sprites/stage1/ciela_player.png");
+ciela_wave_sprite = BladeStage1ForestTextureLoad("sprites/stage1/ciela_wave.png");
+maynii_leaf_sprite = BladeStage1ForestTextureLoad("sprites/stage1/maynii_leaf.png");
+kolar_crystal_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/kolar_crystal.png"
+);
+
+tree_placements = BladeStage1ForestTreePlacementsCreate();
+foliage_placements = BladeStage1ForestFoliagePlacementsCreate();
+fae_placements = BladeStage1ForestFaePlacementsCreate();
+fae_trail_placements = BladeStage1ForestFaeTrailPlacementsCreate(
+    fae_placements
+);
+ball_light_placements = BladeStage1ForestBallLightPlacementsCreate();
+point_lights = BladeStage1ForestPointLightsCreate(
+    fae_placements, ball_light_placements
+);
+nearest_light_arrays = { positions: [], colors: [] };
+
+world_uniforms = BladeStage1ForestWorldUniformsCreate();
+cylindrical_uniforms = BladeStage1ForestBillboardUniformsCreate(
+    shd_blade_stage1_billboard_cylindrical, true, true
+);
+spherical_uniforms = BladeStage1ForestBillboardUniformsCreate(
+    shd_blade_stage1_billboard_spherical, false, false
+);
+
+assets_ready = terrain_buffer >= 0
+    && tree_a_buffer >= 0
+    && tree_b_buffer >= 0
+    && world_tree_buffer >= 0
+    && skybox_buffer >= 0
+    && grass_billboard_buffer >= 0
+    && vines_billboard_buffer >= 0
+    && bush_billboard_buffer >= 0
+    && fae_billboard_buffer >= 0
+    && ball_light_billboard_buffer >= 0
+    && sprite_exists(material_sprite)
+    && sprite_exists(skybox_sprite)
+    && sprite_exists(fae_sprite)
+    && sprite_exists(grass_sprite)
+    && sprite_exists(vines_sprite)
+    && sprite_exists(bush_sprite)
+    && sprite_exists(ball_light_sprite)
+    && sprite_exists(maynii_sprite)
+    && sprite_exists(kolar_sprite)
+    && sprite_exists(ciela_sprite)
+    && sprite_exists(ciela_wave_sprite)
+    && sprite_exists(maynii_leaf_sprite)
+    && sprite_exists(kolar_crystal_sprite);
+
+route_progress = 0;
+route_progress_limit = 218;
+route_progress_cap = BLADE_STAGE1_FOREST_FIRST_HALF_CAP;
+route_scroll_speed = 0.09;
+route_scroll_enabled = true;
+presentation_time = 0;
+camera_x = 0;
+camera_y = -18;
+camera_z = -8;
+look_x = 0;
+look_y = 6;
+look_z = -1.8;
+depth = 1500;
