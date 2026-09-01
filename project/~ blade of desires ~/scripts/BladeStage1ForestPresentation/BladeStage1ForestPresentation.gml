@@ -600,7 +600,10 @@ function BladeStage1ForestAssetsDestroy(_renderer) {
         "material_sprite", "skybox_sprite", "fae_sprite",
         "grass_sprite", "vines_sprite", "bush_sprite", "ball_light_sprite",
         "maynii_sprite", "kolar_sprite", "ciela_sprite",
-        "ciela_wave_sprite", "maynii_leaf_sprite", "kolar_crystal_sprite",
+        "ciela_boss_sprite", "maynii_player_sprite", "maynii_option_sprite",
+        "maynii_tracking_shot_sprite", "maynii_forward_shot_sprite",
+        "ciela_wave_sprite", "ciela_current_sprite", "ciela_kolar_combo_sprite",
+        "maynii_leaf_sprite", "kolar_crystal_sprite",
         "asahi_sprite", "asahi_sunfire_sprite", "asahi_hud_frame_sprite",
     ];
     for (var _sprite_index = 0;

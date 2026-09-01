@@ -14,8 +14,8 @@ IN_MEMORY_SOURCE = "<in-memory>"
 ID_PATTERN_TEXT = r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$"
 ID_PATTERN = re.compile(ID_PATTERN_TEXT)
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
-CORE_CONTENT_VERSION = (1, 3, 0)
-CORE_CONTENT_VERSION_TEXT = "1.3.0"
+CORE_CONTENT_VERSION = (1, 4, 0)
+CORE_CONTENT_VERSION_TEXT = "1.4.0"
 COMMON_RECORD_FIELDS = {"schema_version", "id", "display_name"}
 REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "content_version",
@@ -26,6 +26,7 @@ REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "product_requirements",
     "difficulties",
     "ships",
+    "stage1_playable_routes",
     "stages",
     "encounters",
 }
@@ -124,6 +125,37 @@ KOLAR_IMPLEMENTATION_BOUNDARY = {
         "distance_bands",
         "final_balance",
     ],
+}
+STAGE1_SCHEDULE_ID = "stage_schedule.stage1.selected_ship_lost_forest"
+STAGE1_PLAYABLE_ROUTES = {
+    "ship.ciela": {
+        "id": "playable_route.stage1.ciela",
+        "display_name": "Ciela - Lost Forest",
+        "fairy_identity": "river fairy",
+        "selector_sprite": "sprites/stage1/ciela_player.png",
+        "player_kind_id": "player_kind.stage1.ciela",
+        "loadout_id": "loadout.stage1.ciela_spread",
+        "midboss_ship_ids": ["ship.maynii", "ship.kolar"],
+        "standard_pattern_ids": [
+            "pattern.stage1.standard.maynii_leaf_fan",
+            "pattern.stage1.standard.kolar_crystal_fan",
+        ],
+        "combo_pattern_id": "pattern.stage1.combo.maynii_kolar_root_ridgeline",
+    },
+    "ship.maynii": {
+        "id": "playable_route.stage1.maynii",
+        "display_name": "Maynii - Lost Forest",
+        "fairy_identity": "leaf fairy",
+        "selector_sprite": "sprites/stage1/maynii_player.png",
+        "player_kind_id": "player_kind.stage1.maynii",
+        "loadout_id": "loadout.stage1.maynii_tracking_forward",
+        "midboss_ship_ids": ["ship.ciela", "ship.kolar"],
+        "standard_pattern_ids": [
+            "pattern.stage1.standard.ciela_river_current",
+            "pattern.stage1.standard.kolar_crystal_fan",
+        ],
+        "combo_pattern_id": "pattern.stage1.combo.ciela_kolar_river_ridgeline",
+    },
 }
 
 
@@ -435,6 +467,106 @@ def validate_ships(
         error(errors, source, f"{path}.resolution", "must match the canonical implementation boundary summary")
 
 
+def validate_stage1_playable_routes(
+    value: Any,
+    ships: dict[str, tuple[str, dict[str, Any]]],
+    source: str,
+    errors: list[str],
+    seen_ids: set[str],
+) -> None:
+    """Bind each currently runnable ship to one complete Stage 1 route."""
+    root_path = "product_contract.stage1_playable_routes"
+    if not isinstance(value, list):
+        error(errors, source, root_path, "must be a list")
+        return
+
+    fields = COMMON_RECORD_FIELDS | {
+        "ship_id",
+        "fairy_identity",
+        "selector_sprite",
+        "player_kind_id",
+        "loadout_id",
+        "stage_schedule_id",
+        "midboss_ship_ids",
+        "standard_pattern_ids",
+        "combo_pattern_id",
+    }
+    indexed: dict[str, tuple[str, dict[str, Any]]] = {}
+    for index, route in enumerate(value):
+        path = f"stage1_playable_routes[{index}]"
+        route_id = validate_record(route, source, path, errors, seen_ids)
+        if not isinstance(route, dict):
+            continue
+        validate_keys(route, fields, fields, source, path, errors)
+        ship_id = route.get("ship_id")
+        if not isinstance(ship_id, str) or not ID_PATTERN.fullmatch(ship_id):
+            error(errors, source, f"{path}.ship_id", "must be a lowercase dotted stable ID")
+            continue
+        if ship_id not in ships:
+            error(errors, source, f"{path}.ship_id", "must reference a declared ship")
+        if ship_id in indexed:
+            error(errors, source, f"{path}.ship_id", f"duplicates the route for {ship_id}")
+            continue
+        indexed[ship_id] = (path, route)
+
+        if route_id is not None and route_id != f"playable_route.stage1.{ship_id.removeprefix('ship.')}":
+            error(errors, source, f"{path}.id", "must match its selected ship")
+        if not nonempty_text(route.get("fairy_identity")):
+            error(errors, source, f"{path}.fairy_identity", "must be a nonempty string")
+        selector_sprite = route.get("selector_sprite")
+        if not isinstance(selector_sprite, str) or not selector_sprite.startswith("sprites/stage1/") or not selector_sprite.endswith(".png"):
+            error(errors, source, f"{path}.selector_sprite", "must name a Stage 1 runtime PNG")
+        for field in ("player_kind_id", "loadout_id", "stage_schedule_id", "combo_pattern_id"):
+            reference = route.get(field)
+            if not isinstance(reference, str) or not ID_PATTERN.fullmatch(reference):
+                error(errors, source, f"{path}.{field}", "must be a lowercase dotted stable ID")
+
+        midbosses = route.get("midboss_ship_ids")
+        patterns = route.get("standard_pattern_ids")
+        if not isinstance(midbosses, list) or len(midbosses) != 2:
+            error(errors, source, f"{path}.midboss_ship_ids", "must contain exactly two ships")
+            midbosses = []
+        if not isinstance(patterns, list) or len(patterns) != 2:
+            error(errors, source, f"{path}.standard_pattern_ids", "must contain exactly two patterns")
+            patterns = []
+        for midboss_index, midboss_id in enumerate(midbosses):
+            item_path = f"{path}.midboss_ship_ids[{midboss_index}]"
+            if not isinstance(midboss_id, str) or not ID_PATTERN.fullmatch(midboss_id):
+                error(errors, source, item_path, "must be a lowercase dotted stable ID")
+            elif midboss_id not in ships:
+                error(errors, source, item_path, "must reference a declared ship")
+            elif midboss_id == ship_id:
+                error(errors, source, item_path, "must not repeat the selected ship")
+            elif midboss_id in midbosses[:midboss_index]:
+                error(errors, source, item_path, f"duplicates {midboss_id}")
+        for pattern_index, pattern_id in enumerate(patterns):
+            if not isinstance(pattern_id, str) or not ID_PATTERN.fullmatch(pattern_id):
+                error(
+                    errors,
+                    source,
+                    f"{path}.standard_pattern_ids[{pattern_index}]",
+                    "must be a lowercase dotted stable ID",
+                )
+
+    expected_ship_ids = set(STAGE1_PLAYABLE_ROUTES)
+    for ship_id in sorted(expected_ship_ids.difference(indexed)):
+        error(errors, source, root_path, f"requires the complete route for {ship_id}")
+    for ship_id in sorted(set(indexed).difference(expected_ship_ids)):
+        path, _ = indexed[ship_id]
+        error(errors, source, f"{path}.ship_id", f"{ship_id} is not currently runnable")
+
+    for ship_id, expected in STAGE1_PLAYABLE_ROUTES.items():
+        if ship_id not in indexed:
+            continue
+        path, route = indexed[ship_id]
+        expected_values = dict(expected)
+        expected_values["ship_id"] = ship_id
+        expected_values["stage_schedule_id"] = STAGE1_SCHEDULE_ID
+        for field, expected_value in expected_values.items():
+            if route.get(field) != expected_value:
+                error(errors, source, f"{path}.{field}", f"must be {expected_value}")
+
+
 def validate_stages_and_encounters(
     stages: dict[str, tuple[str, dict[str, Any]]],
     encounters: dict[str, tuple[str, dict[str, Any]]],
@@ -556,6 +688,9 @@ def validate_contract(contract: Any, source: str = IN_MEMORY_SOURCE) -> list[str
     validate_registry(stages, set(CORE_STAGE_ORDERS), extensions["stages"], "stages", source, errors)
     validate_registry(encounters, set(CORE_ENCOUNTERS), extensions["encounters"], "encounters", source, errors)
     validate_ships(ships, source, errors)
+    validate_stage1_playable_routes(
+        contract.get("stage1_playable_routes"), ships, source, errors, seen_ids
+    )
     validate_stages_and_encounters(stages, encounters, source, errors)
     validate_difficulties(contract.get("difficulties"), source, errors, seen_ids)
     return errors

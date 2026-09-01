@@ -3,6 +3,8 @@ if (_controller == noone || !BladeSurvivalGameplayAdvances(_controller)) exit;
 
 x += velocity_x;
 y += velocity_y;
-if (!BladeCombatPlaneContainsPixelPoint(_controller.gameplay_plane, x, y)) {
+if (!BladeFirstBeatHostileBulletInsideWindow(
+    x, y, room_width, room_height
+)) {
     instance_destroy();
 }

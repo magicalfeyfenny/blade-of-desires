@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "contract.blade",
   "display_name": "Blade Product Contract",
-  "content_version": "1.3.0",
+  "content_version": "1.4.0",
   "id_grammar": {
     "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
     "collision_policy": "globally_unique_and_never_reused"
@@ -138,6 +138,48 @@
       "resolution": "The role and ranged-damage floor are binding; exact implementation and tuning remain delegated to Issue #23."
     }
   ],
+  "stage1_playable_routes": [
+    {
+      "schema_version": 1,
+      "id": "playable_route.stage1.ciela",
+      "display_name": "Ciela - Lost Forest",
+      "ship_id": "ship.ciela",
+      "fairy_identity": "river fairy",
+      "selector_sprite": "sprites/stage1/ciela_player.png",
+      "player_kind_id": "player_kind.stage1.ciela",
+      "loadout_id": "loadout.stage1.ciela_spread",
+      "stage_schedule_id": "stage_schedule.stage1.selected_ship_lost_forest",
+      "midboss_ship_ids": [
+        "ship.maynii",
+        "ship.kolar"
+      ],
+      "standard_pattern_ids": [
+        "pattern.stage1.standard.maynii_leaf_fan",
+        "pattern.stage1.standard.kolar_crystal_fan"
+      ],
+      "combo_pattern_id": "pattern.stage1.combo.maynii_kolar_root_ridgeline"
+    },
+    {
+      "schema_version": 1,
+      "id": "playable_route.stage1.maynii",
+      "display_name": "Maynii - Lost Forest",
+      "ship_id": "ship.maynii",
+      "fairy_identity": "leaf fairy",
+      "selector_sprite": "sprites/stage1/maynii_player.png",
+      "player_kind_id": "player_kind.stage1.maynii",
+      "loadout_id": "loadout.stage1.maynii_tracking_forward",
+      "stage_schedule_id": "stage_schedule.stage1.selected_ship_lost_forest",
+      "midboss_ship_ids": [
+        "ship.ciela",
+        "ship.kolar"
+      ],
+      "standard_pattern_ids": [
+        "pattern.stage1.standard.ciela_river_current",
+        "pattern.stage1.standard.kolar_crystal_fan"
+      ],
+      "combo_pattern_id": "pattern.stage1.combo.ciela_kolar_river_ridgeline"
+    }
+  ],
   "stages": [
     {
       "schema_version": 1,
@@ -223,7 +265,7 @@
       "display_name": "Unchosen elemental fae duo",
       "stage_id": "stage.stage1.lost_forest_of_aurei",
       "kind": "midboss",
-      "resolution": "The two elemental fae not selected by the player participate together. In the current Ciela slice, Maynii and Kolar each use one solo attack simultaneously, then perform one shared Maynii-Kolar combo attack. Defeating the combo resumes the second half of Stage 1. Ciela's solo and Ciela-inclusive combos remain deferred until Maynii and Kolar become playable."
+      "resolution": "The two elemental fae not selected by the player participate together. Ciela selects Maynii and Kolar with their shared root-and-ridgeline combo. Maynii selects Ciela and Kolar with their shared river-and-ridgeline combo. Each pair resolves independent standard attacks before one shared combo life; defeating the combo resumes the second half of Stage 1."
     },
     {
       "schema_version": 1,

@@ -10,7 +10,7 @@
   "name":"o_ciela_first_beat_player",
   "overriddenProperties":[],
   "parent":{"name":"Blade","path":"folders/Blade.yy",},
-  "parentObjectId":null,
+  "parentObjectId":{"name":"o_blade_stage1_player","path":"objects/o_blade_stage1_player/o_blade_stage1_player.yy",},
   "persistent":false,
   "physicsAngularDamping":0.1,
   "physicsDensity":0.5,

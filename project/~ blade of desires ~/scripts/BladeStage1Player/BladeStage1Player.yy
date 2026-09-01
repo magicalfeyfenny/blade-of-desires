@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeStage1Player",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeStage1Player",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

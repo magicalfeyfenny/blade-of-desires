@@ -1,6 +1,8 @@
-/// Ciela uses direct input, a focus-tightened spread, and simple circle bounds.
-focused = false;
-fire_cooldown = 0;
-hit_radius = 3;
-body_radius = 6;
-graze_radius = 14;
+/// Bind Ciela's identity after the shared player lifecycle is initialized.
+event_inherited();
+BladeStage1PlayerConfigure(
+    id,
+    "ship.ciela",
+    "player_kind.stage1.ciela",
+    "loadout.stage1.ciela_spread"
+);

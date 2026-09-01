@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeStage1SelectedRouteTests",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeStage1SelectedRouteTests",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/Blade/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

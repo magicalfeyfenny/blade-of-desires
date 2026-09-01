@@ -101,7 +101,7 @@ function BladeEventSessionTestsRun(_state) {
     BladeKernelTestRunCase(_state, "session header binds compatibility fields", function() {
         // Check header fields, golden hash, and the detached diagnostic view together.
         var _header = new BladeSessionHeader(
-            "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
             305419896
         );
         BladeKernelTestAssertEqual(_header.get_format_version(), 1, "format version");
@@ -123,7 +123,7 @@ function BladeEventSessionTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             _header.hash(),
-            "eae589779a90a700f1bcfc73cdc9d3ad83b6dcaa",
+            "b56627c5423b17cbf493de292c086a71cf99b1c3",
             "header golden hash"
         );
 

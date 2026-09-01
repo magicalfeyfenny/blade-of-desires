@@ -642,7 +642,7 @@ function BladePauseRegistryTestsRun(_state) {
     BladeKernelTestRunCase(_state, "pause resolver freezes simulation while presentation advances", function() {
         // Drive three kernel updates through overlapping pause masks and count resolved work.
         var _kernel = BladeDeterministicKernelCreate(
-            "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
             305419896,
             method({}, _BladePauseTestsRejectContent),
             8

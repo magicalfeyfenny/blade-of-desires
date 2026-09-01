@@ -16,6 +16,13 @@ if (_renderer != noone) {
         case BladeFirstBeatBulletKind.ComboCrystal:
             _attack_sprite = _renderer.kolar_crystal_sprite;
             break;
+        case BladeFirstBeatBulletKind.CielaCurrent:
+            _attack_sprite = _renderer.ciela_current_sprite;
+            break;
+        case BladeFirstBeatBulletKind.ComboRiver:
+        case BladeFirstBeatBulletKind.ComboRiverCrystal:
+            _attack_sprite = _renderer.ciela_kolar_combo_sprite;
+            break;
         case BladeFirstBeatBulletKind.AsahiFlame:
         case BladeFirstBeatBulletKind.AsahiCrown:
             _attack_sprite = _renderer.asahi_sunfire_sprite;
@@ -24,7 +31,11 @@ if (_renderer != noone) {
     if (sprite_exists(_attack_sprite)) {
         var _attack_scale = bullet_kind == BladeFirstBeatBulletKind.AsahiCrown
             ? 0.15
-            : (bullet_kind == BladeFirstBeatBulletKind.AsahiFlame ? 0.19 : 0.82);
+            : (bullet_kind == BladeFirstBeatBulletKind.AsahiFlame
+                ? 0.19
+                : (bullet_kind == BladeFirstBeatBulletKind.CielaCurrent
+                    ? 0.72
+                    : 0.82));
         draw_sprite_ext(
             _attack_sprite,
             0,

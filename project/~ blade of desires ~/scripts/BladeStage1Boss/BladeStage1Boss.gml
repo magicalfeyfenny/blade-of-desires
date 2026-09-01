@@ -59,7 +59,7 @@ function BladeStage1BossClearOwnedBullets(_boss) {
 function BladeStage1BossBeginWarning(_controller) {
     if (!instance_exists(_controller)) return false;
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
-    with (o_ciela_first_beat_shot) instance_destroy();
+    with (o_blade_player_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
     with (o_blade_first_beat_enemy) instance_destroy();
     with (o_blade_stage1_fae_midboss) instance_destroy();
@@ -91,7 +91,7 @@ function BladeStage1BossActivatePhase(_boss, _phase) {
 function BladeStage1BossRegister(_controller, _boss) {
     if (!instance_exists(_controller) || !instance_exists(_boss)) return false;
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
-    with (o_ciela_first_beat_shot) instance_destroy();
+    with (o_blade_player_shot) instance_destroy();
     _controller.boss_warning_active = false;
     _controller.boss_instance = _boss;
     _controller.boss_resolution = BladeStage1BossResolution.None;
@@ -353,7 +353,7 @@ function BladeStage1BossStep(_boss) {
             _boss.y,
             _boss.hit_radius
         )) return;
-    var _player = instance_find(o_ciela_first_beat_player, 0);
+    var _player = BladeStage1PlayerInstance(_controller);
     if (_player == noone) return;
     var _hyper_tier = _controller.economy.active_hyper_tier;
     var _fired = _boss.boss_phase == 1
@@ -508,7 +508,7 @@ function BladeStage1BossFinalizeStageClear(_controller) {
         total: _total,
     };
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
-    with (o_ciela_first_beat_shot) instance_destroy();
+    with (o_blade_player_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
     with (o_blade_stage1_asahi) instance_destroy();
     _controller.boss_instance = noone;
