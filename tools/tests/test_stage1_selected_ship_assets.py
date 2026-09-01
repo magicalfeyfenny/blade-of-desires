@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import json
+from io import BytesIO
 from pathlib import Path
+import re
 import struct
 import unittest
 from xml.etree import ElementTree
@@ -23,11 +25,25 @@ ASSETS = {
     "ciela_kolar_combo": (32, 24),
 }
 GENERATED_CHARACTER_ASSETS = {"maynii_player", "ciela_boss"}
+LFS_POINTER = re.compile(
+    rb"version https://git-lfs\.github\.com/spec/v1\n"
+    rb"oid sha256:([0-9a-f]{64})\n"
+    rb"size ([1-9][0-9]*)\n"
+)
 
 
-def png_dimensions(path: Path) -> tuple[int, int]:
-    """Read one PNG IHDR without adding a non-standard test dependency."""
+def materialized_asset(path: Path) -> bytes | None:
+    """Return bytes locally while accepting one exact hosted LFS pointer."""
     data = path.read_bytes()
+    if data.startswith(b"version https://git-lfs.github.com/spec/v1\n"):
+        if LFS_POINTER.fullmatch(data) is None:
+            raise AssertionError(f"{path} has a malformed Git LFS pointer")
+        return None
+    return data
+
+
+def png_dimensions(path: Path, data: bytes) -> tuple[int, int]:
+    """Read one PNG IHDR without adding a non-standard test dependency."""
     if data[:8] != b"\x89PNG\r\n\x1a\n" or data[12:16] != b"IHDR":
         raise AssertionError(f"{path} is not a PNG with an IHDR")
     return struct.unpack(">II", data[16:24])
@@ -59,14 +75,22 @@ class Stage1SelectedShipAssetTests(unittest.TestCase):
                 self.assertIn(source, self.sources)
                 self.assertIn(runtime, self.runtime)
                 self.assertTrue((ROOT / source).is_file())
-                self.assertEqual(png_dimensions(ROOT / runtime), dimensions)
+                runtime_path = ROOT / runtime
+                runtime_data = materialized_asset(runtime_path)
+                if runtime_data is not None:
+                    self.assertEqual(
+                        png_dimensions(runtime_path, runtime_data), dimensions
+                    )
 
     def test_krita_sources_name_runtime_authority_and_hidden_references(self):
         """Retain an editable pixel layer and mark generated character references."""
         for stem in ASSETS:
             with self.subTest(stem=stem):
                 path = ROOT / f"assets/source/sprites/stage1/{stem}.kra"
-                with ZipFile(path) as archive:
+                source_data = materialized_asset(path)
+                if source_data is None:
+                    continue
+                with ZipFile(BytesIO(source_data)) as archive:
                     root = ElementTree.fromstring(archive.read("maindoc.xml"))
                 layers = root.findall(".//{*}layer")
                 visible_authority = [
