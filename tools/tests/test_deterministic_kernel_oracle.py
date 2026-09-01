@@ -104,10 +104,10 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         """Bind the fixture to exact contract bytes and verify its content IDs."""
         contract_path = ROOT / "content" / "product_contract.json"
         contract_bytes = contract_path.read_bytes()
-        self.assertEqual(len(contract_bytes), 11_165)
+        self.assertEqual(len(contract_bytes), 12_695)
         self.assertEqual(
             hashlib.sha1(contract_bytes).hexdigest(),
-            "288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "1c7a96f800d7ac228659dd0759706ed6833bb92c",
         )
 
         contract = json.loads(contract_bytes)
@@ -206,7 +206,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
             "H1",
             1,
             "blade.simulation.v2",
-            "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
             PRNG_VERSION,
             60,
             seed,
@@ -305,7 +305,7 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         )
         self.assertEqual(
             hashlib.sha1(gameplay.encode()).hexdigest(),
-            "460ffdb123fdc4a5ccc11f704b1861c72ccbe17f",
+            "872ae1445ba38d484de420cc7dec387ad79dd7c6",
         )
 
 

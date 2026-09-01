@@ -25,6 +25,14 @@ class ProductContractValidatorTests(unittest.TestCase):
     def ship(self, contract, stable_id):
         return next(ship for ship in contract["ships"] if ship["id"] == stable_id)
 
+    def stage1_route(self, contract, ship_id):
+        """Return one runnable Stage 1 route by selected ship identity."""
+        return next(
+            route
+            for route in contract["stage1_playable_routes"]
+            if route["ship_id"] == ship_id
+        )
+
     def stage(self, contract, stable_id):
         return next(stage for stage in contract["stages"] if stage["id"] == stable_id)
 
@@ -42,12 +50,12 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
 
     def test_repository_contract_is_valid_and_versioned(self):
-        """The checked-in additive contract remains schema 1 at content 1.3.0."""
+        """The checked-in additive contract remains schema 1 at content 1.4.0."""
         contract = self.load_contract()
 
         self.assertEqual(validate_file(CONTRACT_PATH), [])
         self.assertEqual(contract["schema_version"], 1)
-        self.assertEqual(contract["content_version"], "1.3.0")
+        self.assertEqual(contract["content_version"], "1.4.0")
         self.assertEqual(contract["registry_extensions"]["schema_version"], 1)
 
     def test_diagnostics_bind_file_or_in_memory_source(self):
@@ -83,7 +91,7 @@ class ProductContractValidatorTests(unittest.TestCase):
 
         contract = self.load_contract()
         contract["content_version"] = "1.1.0"
-        self.assert_error(contract, "product_contract.content_version", "must be at least 1.3.0")
+        self.assert_error(contract, "product_contract.content_version", "must be at least 1.4.0")
 
         contract = self.load_contract()
         contract["ships"][0]["id"] = "Ship Maynii"
@@ -156,9 +164,9 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "product_contract.content_version",
-            "must advance beyond 1.3.0 when registry extensions are declared",
+            "must advance beyond 1.4.0 when registry extensions are declared",
         )
-        contract["content_version"] = "1.3.1"
+        contract["content_version"] = "1.4.1"
         self.assertEqual(self.errors(contract), [])
 
         contract["ships"][3]["combat_role"] = None
@@ -568,13 +576,83 @@ class ProductContractValidatorTests(unittest.TestCase):
             f"requires core ID {removed_id}",
         )
 
-    def test_stage1_seam_declares_the_current_ciela_duo_and_continuation(self):
+    def test_stage1_routes_bind_only_ciela_and_maynii_to_complete_pairs(self):
+        contract = self.load_contract()
+        routes = contract["stage1_playable_routes"]
+        self.assertEqual(
+            [route["ship_id"] for route in routes],
+            ["ship.ciela", "ship.maynii"],
+        )
+        self.assertEqual(
+            self.stage1_route(contract, "ship.ciela")["midboss_ship_ids"],
+            ["ship.maynii", "ship.kolar"],
+        )
+        maynii_route = self.stage1_route(contract, "ship.maynii")
+        self.assertEqual(
+            maynii_route["midboss_ship_ids"],
+            ["ship.ciela", "ship.kolar"],
+        )
+        self.assertIn("ciela_river_current", maynii_route["standard_pattern_ids"][0])
+        self.assertIn("ciela_kolar", maynii_route["combo_pattern_id"])
+        self.assertFalse(any(route["ship_id"] == "ship.kolar" for route in routes))
+
+    def test_stage1_routes_reject_missing_duplicate_self_and_incomplete_content(self):
+        contract = self.load_contract()
+        contract["stage1_playable_routes"] = [
+            route
+            for route in contract["stage1_playable_routes"]
+            if route["ship_id"] != "ship.maynii"
+        ]
+        self.assert_error(
+            contract,
+            "product_contract.stage1_playable_routes",
+            "requires the complete route for ship.maynii",
+        )
+
+        contract = self.load_contract()
+        duplicate = copy.deepcopy(self.stage1_route(contract, "ship.ciela"))
+        duplicate["id"] = "playable_route.stage1.duplicate"
+        contract["stage1_playable_routes"].append(duplicate)
+        self.assert_error(
+            contract,
+            "stage1_playable_routes[2].ship_id",
+            "duplicates the route for ship.ciela",
+        )
+
+        contract = self.load_contract()
+        route = self.stage1_route(contract, "ship.maynii")
+        route["midboss_ship_ids"][0] = "ship.maynii"
+        self.assert_error(
+            contract,
+            "stage1_playable_routes[1].midboss_ship_ids[0]",
+            "must not repeat the selected ship",
+        )
+
+        mutations = {
+            "player_kind_id": "",
+            "loadout_id": "",
+            "standard_pattern_ids": ["pattern.stage1.standard.ciela_river_current"],
+            "combo_pattern_id": "",
+        }
+        for field, value in mutations.items():
+            with self.subTest(field=field):
+                contract = self.load_contract()
+                self.stage1_route(contract, "ship.maynii")[field] = value
+                self.assertTrue(
+                    any(
+                        f"stage1_playable_routes[1].{field}:" in item
+                        for item in self.errors(contract)
+                    )
+                )
+
+    def test_stage1_seam_declares_both_pairs_and_continuation(self):
         contract = self.load_contract()
         encounter = self.encounter(contract, "encounter.stage1.unchosen_elemental_fae")
 
         self.assertIn("Maynii and Kolar", encounter["resolution"])
-        self.assertIn("solo attack simultaneously", encounter["resolution"])
-        self.assertIn("shared Maynii-Kolar combo attack", encounter["resolution"])
+        self.assertIn("Ciela and Kolar", encounter["resolution"])
+        self.assertIn("independent standard attacks", encounter["resolution"])
+        self.assertIn("one shared combo life", encounter["resolution"])
         self.assertIn("resumes the second half of Stage 1", encounter["resolution"])
 
 

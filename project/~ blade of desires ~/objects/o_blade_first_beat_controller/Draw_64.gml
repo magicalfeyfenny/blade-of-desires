@@ -53,7 +53,10 @@ if (economy.active_hyper_tier > 0) {
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
     + "\nPower  X\nHyper boosts danger");
 
-draw_text(469, 12, "CIELA\nSTAGE 1");
+var _selected_ship_name = selected_ship_id == ""
+    ? "CIELA"
+    : BladeStage1RouteShipName(selected_ship_id);
+draw_text(469, 12, _selected_ship_name + "\nSTAGE 1");
 draw_text(469, 62, route_label);
 if (stage_route_enabled
     && BladeStage1BossDrawHud(id, 469, 92, 155)) {

@@ -1,5 +1,5 @@
 var _controller = instance_find(o_blade_first_beat_controller, 0);
-var _player = instance_find(o_ciela_first_beat_player, 0);
+var _player = BladeStage1PlayerInstance(_controller);
 if (_controller == noone || _player == noone
     || !BladeSurvivalGameplayAdvances(_controller)) exit;
 

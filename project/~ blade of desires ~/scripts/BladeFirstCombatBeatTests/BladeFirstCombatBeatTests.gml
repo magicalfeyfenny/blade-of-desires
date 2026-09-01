@@ -101,6 +101,168 @@ function BladeFirstCombatBeatTestsRun(_state) {
         );
     });
 
+    BladeFirstBeatTestRunCase(
+        _state,
+        "player shots ignore side exits and clean up only on vertical exits",
+        function() {
+            var _controller = instance_create_layer(
+                0, 0, "Instances", o_blade_first_beat_controller
+            );
+            var _bounds = BladeCombatPlanePixelBounds(
+                _controller.gameplay_plane
+            );
+
+            var _ciela_side = instance_create_layer(
+                _bounds.left - 40,
+                180,
+                "Projectiles",
+                o_ciela_first_beat_shot
+            );
+            _ciela_side.velocity_x = -4;
+            _ciela_side.velocity_y = -1;
+            with (_ciela_side) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertTrue(
+                instance_exists(_ciela_side),
+                "Ciela shot survives beyond the left gameplay edge"
+            );
+
+            var _maynii_side = instance_create_layer(
+                _bounds.right_exclusive + 40,
+                180,
+                "Projectiles",
+                o_maynii_first_beat_shot
+            );
+            _maynii_side.tracking = false;
+            _maynii_side.velocity_x = 4;
+            _maynii_side.velocity_y = -1;
+            with (_maynii_side) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertTrue(
+                instance_exists(_maynii_side),
+                "Maynii shot survives beyond the right gameplay edge"
+            );
+
+            var _top_exit = instance_create_layer(
+                _bounds.left - 40,
+                _bounds.top + 0.5,
+                "Projectiles",
+                o_ciela_first_beat_shot
+            );
+            _top_exit.velocity_x = -4;
+            _top_exit.velocity_y = -1;
+            with (_top_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_top_exit),
+                "top exit still ends a player shot"
+            );
+
+            var _bottom_exit = instance_create_layer(
+                _bounds.right_exclusive + 40,
+                _bounds.bottom_exclusive - 0.5,
+                "Projectiles",
+                o_maynii_first_beat_shot
+            );
+            _bottom_exit.tracking = false;
+            _bottom_exit.velocity_x = 4;
+            _bottom_exit.velocity_y = 1;
+            with (_bottom_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_bottom_exit),
+                "bottom exit still ends a player shot"
+            );
+        }
+    );
+
+    BladeFirstBeatTestRunCase(
+        _state,
+        "hostile bullets cross side gutters and clean up at window edges",
+        function() {
+            var _controller = instance_create_layer(
+                0, 0, "Instances", o_blade_first_beat_controller
+            );
+            var _bounds = BladeCombatPlanePixelBounds(
+                _controller.gameplay_plane
+            );
+
+            var _left_gutter = instance_create_layer(
+                _bounds.left - 40,
+                180,
+                "Projectiles",
+                o_blade_first_beat_enemy_bullet
+            );
+            _left_gutter.velocity_x = -1;
+            _left_gutter.velocity_y = 0;
+            with (_left_gutter) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertTrue(
+                instance_exists(_left_gutter),
+                "hostile bullet survives in the left UI gutter"
+            );
+
+            var _right_gutter = instance_create_layer(
+                _bounds.right_exclusive + 40,
+                180,
+                "Projectiles",
+                o_blade_first_beat_enemy_bullet
+            );
+            _right_gutter.velocity_x = 1;
+            _right_gutter.velocity_y = 0;
+            with (_right_gutter) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertTrue(
+                instance_exists(_right_gutter),
+                "hostile bullet survives in the right UI gutter"
+            );
+
+            var _left_exit = instance_create_layer(
+                0.5, 180, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _left_exit.velocity_x = -1;
+            _left_exit.velocity_y = 0;
+            with (_left_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_left_exit),
+                "hostile bullet ends beyond the left window edge"
+            );
+
+            var _right_exit = instance_create_layer(
+                room_width - 0.5,
+                180,
+                "Projectiles",
+                o_blade_first_beat_enemy_bullet
+            );
+            _right_exit.velocity_x = 1;
+            _right_exit.velocity_y = 0;
+            with (_right_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_right_exit),
+                "hostile bullet ends beyond the right window edge"
+            );
+
+            var _top_exit = instance_create_layer(
+                320, 0.5, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _top_exit.velocity_x = 0;
+            _top_exit.velocity_y = -1;
+            with (_top_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_top_exit),
+                "hostile bullet ends beyond the top window edge"
+            );
+
+            var _bottom_exit = instance_create_layer(
+                320,
+                room_height - 0.5,
+                "Projectiles",
+                o_blade_first_beat_enemy_bullet
+            );
+            _bottom_exit.velocity_x = 0;
+            _bottom_exit.velocity_y = 1;
+            with (_bottom_exit) event_perform(ev_step, ev_step_normal);
+            BladeKernelTestAssertFalse(
+                instance_exists(_bottom_exit),
+                "hostile bullet ends beyond the bottom window edge"
+            );
+        }
+    );
+
     BladeKernelTestRunCase(_state, "enemy fire uses its current full hurtbox", function() {
         var _plane = BladeFirstBeatLoadGameplayPlane();
         BladeKernelTestAssertTrue(

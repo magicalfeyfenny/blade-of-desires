@@ -228,7 +228,7 @@ function _BladeKernelFixtureRun(
     _prompt_variant = false
 ) {
     var _kernel = BladeDeterministicKernelCreate(
-        "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+        "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
         _seed,
         method({}, _BladeKernelFixtureKnownContent),
         8
@@ -269,7 +269,7 @@ function BladeKernelIntegrationTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             _first.hash,
-            "460ffdb123fdc4a5ccc11f704b1861c72ccbe17f",
+            "872ae1445ba38d484de420cc7dec387ad79dd7c6",
             "independent gameplay golden hash"
         );
 
@@ -347,7 +347,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     BladeKernelTestRunCase(_state, "kernel reset reproduces IDs events and hash", function() {
         // Drive, reset, and drive one kernel again to compare its reproducible outputs.
         var _kernel = BladeDeterministicKernelCreate(
-            "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
             305419896,
             method({}, _BladeKernelFixtureKnownContent),
             8
@@ -363,7 +363,7 @@ function BladeKernelIntegrationTestsRun(_state) {
     BladeKernelTestRunCase(_state, "kernel rejects unknown content before ID allocation", function() {
         // Attempt an unknown content allocation and verify the instance counter stays zero.
         var _kernel = BladeDeterministicKernelCreate(
-            "sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+            "sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
             1,
             method({}, _BladeKernelFixtureKnownContent),
             8

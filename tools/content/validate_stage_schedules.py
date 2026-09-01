@@ -53,6 +53,20 @@ IN_MEMORY_SOURCE = "<in-memory>"
 INPUTS_SOURCE = "<inputs>"
 DEFAULT_STAGE_PATH = Path("content/stages")
 Q10_SCALE = 1_024
+STAGE1_CATALOG_ID = "stage_catalog.stage1_lost_forest"
+STAGE1_DUO_ENCOUNTER_ID = "encounter_schedule.stage1.selected_fae_duo"
+STAGE1_DUO_SLOTS = (
+    (
+        "participant.stage1.fae_slot_a",
+        "participant_kind.stage1.fae_slot_a",
+        0,
+    ),
+    (
+        "participant.stage1.fae_slot_b",
+        "participant_kind.stage1.fae_slot_b",
+        1,
+    ),
+)
 
 
 def _validate_record_list(
@@ -225,6 +239,99 @@ def _product_plane(product_contract: dict[str, Any]) -> tuple[int, int, int, int
     )
 
 
+def _validate_stage1_playable_route_context(
+    product_contract: dict[str, Any],
+    product_contract_source: str,
+    catalogs: list[dict[str, Any]],
+    errors: list[str],
+) -> None:
+    """Bind runnable Stage 1 routes to one exact schedule and generic fae duo."""
+    routes = product_contract["stage1_playable_routes"]
+    route_schedule_ids = {route["stage_schedule_id"] for route in routes}
+    stage1_catalog = next(
+        (catalog for catalog in catalogs if catalog["id"] == STAGE1_CATALOG_ID),
+        None,
+    )
+    if stage1_catalog is None:
+        for catalog in catalogs:
+            owns_route_content = any(
+                stage["id"] in route_schedule_ids for stage in catalog["stages"]
+            ) or any(
+                encounter["id"] == STAGE1_DUO_ENCOUNTER_ID
+                for encounter in catalog["encounters"]
+            )
+            if owns_route_content:
+                _add_error(
+                    errors,
+                    catalog["source"],
+                    "catalog.id",
+                    f"must be {STAGE1_CATALOG_ID} when defining playable Stage 1 routes",
+                )
+        return
+
+    catalog_source = stage1_catalog["source"]
+    stage1_stages = {stage["id"]: stage for stage in stage1_catalog["stages"]}
+    stage1_encounters = {
+        encounter["id"]: encounter for encounter in stage1_catalog["encounters"]
+    }
+    schedule_routes: dict[str, int] = {}
+    for index, route in enumerate(routes):
+        schedule_routes.setdefault(route["stage_schedule_id"], index)
+    for schedule_id, first_route_index in schedule_routes.items():
+        schedule = stage1_stages.get(schedule_id)
+        path = (
+            "product_contract.stage1_playable_routes"
+            f"[{first_route_index}].stage_schedule_id"
+        )
+        if schedule is None:
+            _add_error(
+                errors,
+                product_contract_source,
+                path,
+                f"does not resolve in {STAGE1_CATALOG_ID}",
+            )
+            continue
+        duo_nodes = sorted(
+            (
+                node
+                for node in schedule["nodes"]
+                if node["encounter_id"] == STAGE1_DUO_ENCOUNTER_ID
+            ),
+            key=lambda node: node["content_order"],
+        )
+        node_kinds = [node["kind"] for node in duo_nodes]
+        if node_kinds != ["spawn_encounter", "wait_encounter_completion"]:
+            _add_error(
+                errors,
+                schedule["source"],
+                f"{schedule['path']}.nodes",
+                f"must spawn then wait for {STAGE1_DUO_ENCOUNTER_ID} exactly once",
+            )
+
+    encounter = stage1_encounters.get(STAGE1_DUO_ENCOUNTER_ID)
+    if encounter is None:
+        _add_error(
+            errors,
+            catalog_source,
+            "catalog.encounters",
+            f"requires {STAGE1_DUO_ENCOUNTER_ID}",
+        )
+        return
+    actual_slots = [
+        (participant["id"], participant["kind_id"], participant["spawn_order"])
+        for participant in sorted(
+            encounter["participants"], key=lambda participant: participant["spawn_order"]
+        )
+    ]
+    if actual_slots != list(STAGE1_DUO_SLOTS):
+        _add_error(
+            errors,
+            encounter["source"],
+            f"{encounter['path']}.participants",
+            "must define exactly the ordered fae slots A and B",
+        )
+
+
 def validate_and_normalize_catalogs(
     documents: Sequence[tuple[str, Any]],
     product_contract: Any | None = None,
@@ -285,6 +392,12 @@ def validate_and_normalize_catalogs(
             stages,
             encounters,
             plane,
+            errors,
+        )
+        _validate_stage1_playable_route_context(
+            product_contract,
+            product_contract_source,
+            catalogs,
             errors,
         )
     if errors:

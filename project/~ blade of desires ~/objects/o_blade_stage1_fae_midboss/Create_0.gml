@@ -8,6 +8,7 @@ defeat_queued = false;
 target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
 targetable = false;
 fae_role = BladeStage1FaeRole.Maynii;
+standard_pattern_id = "";
 max_health = BLADE_STAGE1_MIDBOSS_PERSONAL_HP;
 hit_points = max_health;
 hit_radius = 18;

@@ -19,7 +19,7 @@ function _BladeRunCoordinatorTestCreate(
 	_run_seed = 305419896
 ) {
 	return BladeRunCoordinatorCreate(
-		"sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885",
+		"sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c",
 		method({}, _BladeRunCoordinatorTestKnownContent),
 		_ship_id,
 		_difficulty_id,

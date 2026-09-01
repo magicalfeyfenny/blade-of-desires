@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeShipSelection",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeShipSelection",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

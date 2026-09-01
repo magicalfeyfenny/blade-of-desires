@@ -32,7 +32,7 @@ if (_controller.bomb_clears_this_frame
     _controller.gameplay_plane, x, y, hit_radius
 )) exit;
 
-var _player = instance_find(o_ciela_first_beat_player, 0);
+var _player = BladeStage1PlayerInstance(_controller);
 if (_player == noone) exit;
 var _aim = point_direction(x, y, _player.x, _player.y);
 for (var _index = 0; _index < array_length(bullet_offsets); ++_index) {

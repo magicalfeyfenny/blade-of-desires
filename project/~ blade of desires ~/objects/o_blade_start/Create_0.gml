@@ -39,5 +39,6 @@ if (_run_tests) {
         && variable_struct_exists(global.__gmtl_internal, "suites")) {
         global.__gmtl_internal.suites.list = [];
     }
-    room_goto(r_stage1_first_beat);
+    global.blade_selected_run = undefined;
+    room_goto(r_blade_character_select);
 }

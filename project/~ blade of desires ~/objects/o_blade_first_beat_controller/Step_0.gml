@@ -53,14 +53,15 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
         if (hit_response_ticks == 0) {
             var _death = BladeSurvivalCommitDeath(economy);
             with (o_blade_first_beat_enemy_bullet) instance_destroy();
-            with (o_ciela_first_beat_shot) instance_destroy();
-            var _player = instance_find(o_ciela_first_beat_player, 0);
+            with (o_blade_player_shot) instance_destroy();
+            var _player = BladeStage1PlayerInstance(id);
             if (_player != noone) {
+                var _feedback = BladeStage1PlayerFeedback(_player);
                 BladeStage1FeedbackSpawn(
                     _player.x,
                     _player.y,
-                    BLADE_STAGE1_EFFECT_CIELA,
-                    make_color_rgb(98, 232, 255),
+                    _feedback.kind,
+                    _feedback.color,
                     1.25
                 );
                 BladeStage1AudioPlayForController(

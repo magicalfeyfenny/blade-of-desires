@@ -33,7 +33,7 @@ class PatternDescriptorSchemaNormalizationTests(PatternDescriptorTestCase):
         )
         self.assertEqual(
             direct_plan["product_contract"],
-            {"id": "contract.blade", "content_version": "1.3.0"},
+            {"id": "contract.blade", "content_version": "1.4.0"},
         )
         normalized_catalog = direct_plan["catalogs"][0]
         self.assertEqual(normalized_catalog["id"], "pattern_catalog.neutral_fixture")

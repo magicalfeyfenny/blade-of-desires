@@ -147,7 +147,7 @@ function _BladeStageTestsFixture(
 	if (_spawn_first) _normalized = _BladeStageTestsSpawnFirstPlan(_normalized);
 	var _fingerprint = BladeStageNormalizedPlanFingerprint(_normalized);
 	var _kernel = BladeDeterministicKernelCreate(
-		"sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885", 305419896,
+		"sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c", 305419896,
 		method({}, _BladeStageTestsKnownContent), 8
 	);
 	var _event_owner_id = BladeKernelAllocate(
@@ -185,7 +185,7 @@ function _BladeStageTestsPlayableFixture(
 	var _normalized = BladeStageCatalogNormalize(_raw, _plane);
 	var _fingerprint = BladeStageNormalizedPlanFingerprint(_normalized);
 	var _kernel = BladeDeterministicKernelCreate(
-		"sha1:288e8d1b7d90b5ce04b881bfa631ee3a497ef885", 305419896,
+		"sha1:1c7a96f800d7ac228659dd0759706ed6833bb92c", 305419896,
 		method({}, _BladeStageTestsKnownContent), 8
 	);
 	var _resolver_state = { calls: 0, fail_on_call: _fail_on_call };

@@ -1,7 +1,6 @@
 /// Bind authored Stage 1 content to the ordinary objects that make it playable.
 
 #macro BLADE_STAGE1_ROUTE_CATALOG_PATH "content/stages/stage1_lost_forest_v1.json"
-#macro BLADE_STAGE1_ROUTE_STAGE_ID "stage_schedule.stage1.ciela_lost_forest"
 #macro BLADE_STAGE1_ROUTE_SEED 14041991
 #macro BLADE_STAGE1_SCOUT_CONTENT_ID "enemy.stage1.scout"
 
@@ -19,16 +18,17 @@ function BladeStage1RouteIncludedPath(_relative_path) {
     throw("BladeStage1Route: bundled file does not exist: " + _relative_path);
 }
 
-/// Recognizes only the five concrete content identities spawned by this route.
+/// Recognizes only the concrete content identities spawned by either selected route.
 function BladeStage1RouteKnownContent(_content_id) {
     return _content_id == BLADE_STAGE1_SCOUT_CONTENT_ID
         || _content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID
+        || _content_id == "ship.ciela"
         || _content_id == "ship.maynii"
         || _content_id == "ship.kolar"
         || _content_id == BLADE_STAGE1_ASAHI_CONTENT_ID;
 }
 
-/// Maps each authored participant kind directly to its playable content identity.
+/// Maps generic fae slots through the selected run's canonical unchosen pair.
 function BladeStage1RouteResolveParticipant(
     _kind_id, _participant_id, _x_q10, _y_q10
 ) {
@@ -37,14 +37,24 @@ function BladeStage1RouteResolveParticipant(
             return { content_id: BLADE_STAGE1_SCOUT_CONTENT_ID };
         case "participant_kind.stage1.bomb_carrier":
             return { content_id: BLADE_SURVIVAL_BOMB_CARRIER_ID };
-        case "participant_kind.stage1.fae_maynii":
-            return { content_id: "ship.maynii" };
-        case "participant_kind.stage1.fae_kolar":
-            return { content_id: "ship.kolar" };
+        case "participant_kind.stage1.fae_slot_a":
+            return { content_id: self.selected_run.midboss_ship_ids[0] };
+        case "participant_kind.stage1.fae_slot_b":
+            return { content_id: self.selected_run.midboss_ship_ids[1] };
         case "participant_kind.stage1.asahi":
             return { content_id: BLADE_STAGE1_ASAHI_CONTENT_ID };
     }
     throw("BladeStage1Route: unknown participant kind " + _kind_id);
+}
+
+// Converts the three canonical ship identities to concise route labels.
+function BladeStage1RouteShipName(_ship_id) {
+    switch (_ship_id) {
+        case "ship.ciela": return "CIELA";
+        case "ship.maynii": return "MAYNII";
+        case "ship.kolar": return "KOLAR";
+    }
+    throw("BladeStage1Route: unknown ship identity " + string(_ship_id));
 }
 
 /// Copies deterministic Stage ownership fields onto one real target object.
@@ -94,7 +104,7 @@ function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
     return _enemy;
 }
 
-/// Creates one Maynii or Kolar body and registers it with the compact duo director.
+/// Creates one unchosen fae body and binds its role and standard-pattern identity.
 function BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y) {
     var _member = instance_create_layer(
         _x, -34,
@@ -103,11 +113,23 @@ function BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y) {
     BladeStage1RouteAssignOwnership(_member, _spawn);
     _member.anchor_x = _x;
     _member.anchor_y = _target_y;
-    var _role = _spawn.content_id == "ship.maynii"
-        ? BladeStage1FaeRole.Maynii
-        : BladeStage1FaeRole.Kolar;
-    BladeStage1MidbossRegister(_controller, _member, _role);
-    _controller.route_label = "MAYNII + KOLAR";
+    var _role;
+    switch (_spawn.content_id) {
+        case "ship.ciela": _role = BladeStage1FaeRole.Ciela; break;
+        case "ship.maynii": _role = BladeStage1FaeRole.Maynii; break;
+        case "ship.kolar": _role = BladeStage1FaeRole.Kolar; break;
+        default:
+            throw("BladeStage1Route: unsupported fae " + _spawn.content_id);
+    }
+    var _pattern_id = _controller.selected_run.standard_pattern_ids[
+        _spawn.spawn_order
+    ];
+    BladeStage1MidbossRegister(_controller, _member, _role, _pattern_id);
+    _controller.route_label = BladeStage1RouteShipName(
+        _controller.selected_run.midboss_ship_ids[0]
+    ) + " + " + BladeStage1RouteShipName(
+        _controller.selected_run.midboss_ship_ids[1]
+    );
     return _member;
 }
 
@@ -132,7 +154,8 @@ function BladeStage1RouteSpawnParticipant(_spawn) {
     var _target_y = real(_spawn.y_q10) / 1024;
     if (_spawn.content_id == BLADE_STAGE1_ASAHI_CONTENT_ID) {
         BladeStage1RouteSpawnAsahi(_controller, _spawn, _x, _target_y);
-    } else if (_spawn.content_id == "ship.maynii"
+    } else if (_spawn.content_id == "ship.ciela"
+        || _spawn.content_id == "ship.maynii"
         || _spawn.content_id == "ship.kolar") {
         BladeStage1RouteSpawnMidboss(_controller, _spawn, _x, _target_y);
     } else {
@@ -143,13 +166,18 @@ function BladeStage1RouteSpawnParticipant(_spawn) {
 
 /// Initializes deterministic schedule ownership without constructing the old combat runtime.
 function BladeStage1RouteInitialize(_controller) {
+    if (is_undefined(_controller.selected_run)) {
+        throw("BladeStage1Route: selected run must be configured before Stage 1");
+    }
     _controller.stage_route_enabled = true;
     _controller.stage_defeat_queue = [];
     _controller.stage_last_defeat_results = [];
     _controller.stage_cue_cursor = 0;
     _controller.route_cue_id = "";
     _controller.route_label = "FOREST  FIRST HALF";
-    _controller.midboss_state = BladeStage1MidbossStateCreate();
+    _controller.midboss_state = BladeStage1MidbossStateCreate(
+        _controller.selected_run
+    );
 
     var _product_path = BladeStage1RouteIncludedPath(
         BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH
@@ -166,8 +194,11 @@ function BladeStage1RouteInitialize(_controller) {
     );
     _controller.stage_executor = BladeStageContentCreateExecutor(
         _catalog_path,
-        BLADE_STAGE1_ROUTE_STAGE_ID,
-        method({}, BladeStage1RouteResolveParticipant),
+        _controller.selected_run.stage_schedule_id,
+        method(
+            { selected_run: _controller.selected_run },
+            BladeStage1RouteResolveParticipant
+        ),
         _controller.gameplay_plane,
         _product_path,
         _fingerprint
@@ -291,7 +322,7 @@ function BladeStage1RouteAdvance(_controller) {
         _controller.state = BladeFirstBeatState.Won;
         _controller.route_label = "STAGE 1 CLEAR";
         with (o_blade_first_beat_enemy_bullet) instance_destroy();
-        with (o_ciela_first_beat_shot) instance_destroy();
+        with (o_blade_player_shot) instance_destroy();
     }
     return _result;
 }

@@ -1,5 +1,15 @@
 /// Focused playable-route tests for Stage 1, its midboss, and Asahi finale.
 
+// Binds one test controller through the same product-contract route as production.
+function _BladeStage1RouteTestsSelect(_controller, _ship_id) {
+    var _catalog = BladeShipSelectionLoad();
+    _controller.selected_run = BladeShipSelectionCreateRun(
+        _catalog, _ship_id
+    );
+    _controller.selected_ship_id = _ship_id;
+    return _controller.selected_run;
+}
+
 /// Queues every newly spawned ordinary target and records authored carrier count.
 function _BladeStage1RouteTestsQueueOrdinary(_controller, _record) {
     var _count = instance_number(o_blade_first_beat_enemy);
@@ -221,6 +231,7 @@ function BladeStage1RouteTestsRun(_state) {
             var _controller = instance_create_layer(
                 0, 0, "Instances", o_blade_first_beat_controller
             );
+            _BladeStage1RouteTestsSelect(_controller, "ship.ciela");
             BladeStage1RouteInitialize(_controller);
             BladeKernelTestAssertTrue(
                 _controller.stage_route_enabled,

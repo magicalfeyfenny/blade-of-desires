@@ -9,6 +9,8 @@ function BladeKernelTestsRun() {
     BladeSimulationClockTestsRun(_state);
     BladeClockInputTestsRun(_state);
     BladeInputBindingTestsRun(_state);
+    BladeShipSelectionTestsRun(_state);
+    BladeMayniiLoadoutTestsRun(_state);
     BladeConfigTestsRun(_state);
     BladePauseRegistryTestsRun(_state);
     BladeRandomIdentityTestsRun(_state);
@@ -23,6 +25,7 @@ function BladeKernelTestsRun() {
     BladeFirstCombatBeatTestsRun(_state);
     BladeFirstBeatSurvivalTestsRun(_state);
     BladeStage1RouteTestsRun(_state);
+    BladeStage1SelectedRouteTestsRun(_state);
     BladeStage1BossTestsRun(_state);
     BladeStagePlanTestsRun(_state);
     BladeStageRuntimeTestsRun(_state);

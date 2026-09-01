@@ -24,10 +24,13 @@ enum BladeFirstBeatBulletKind {
     Ordinary = 1,
     MayniiLeaf = 2,
     KolarCrystal = 3,
-    ComboLeaf = 4,
-    ComboCrystal = 5,
-    AsahiFlame = 6,
-    AsahiCrown = 7
+    CielaCurrent = 4,
+    ComboLeaf = 5,
+    ComboCrystal = 6,
+    ComboRiver = 7,
+    ComboRiverCrystal = 8,
+    AsahiFlame = 9,
+    AsahiCrown = 10
 }
 
 #macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"
@@ -87,12 +90,37 @@ function BladeFirstBeatLoadGameplayPlane(
 /// Removes every attempt-local actor, projectile, and reward before retry restarts.
 function BladeFirstBeatCleanupTransientInstances() {
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
-    with (o_ciela_first_beat_shot) instance_destroy();
+    with (o_blade_player_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
     with (o_blade_enemy_target) instance_destroy();
     with (o_blade_stage1_asahi) instance_destroy();
-    with (o_ciela_first_beat_player) instance_destroy();
+    with (o_blade_stage1_player) instance_destroy();
     with (o_blade_stage1_feedback_effect) instance_destroy();
+}
+
+/// Keeps player shots alive through horizontal curves and ends only vertical exits.
+function BladeFirstBeatPlayerShotInsideVerticalPlane(_plane, _y) {
+    if (!is_numeric(_y) || is_nan(_y) || is_infinity(_y)) {
+        throw("BladeFirstCombatBeat: player shot y must be finite");
+    }
+    var _bounds = BladeCombatPlanePixelBounds(_plane);
+    return _y >= _bounds.top && _y < _bounds.bottom_exclusive;
+}
+
+/// Keeps hostile bullets in the UI gutters and ends them at the window edge.
+function BladeFirstBeatHostileBulletInsideWindow(
+    _x, _y, _window_width, _window_height
+) {
+    if (!is_numeric(_x) || is_nan(_x) || is_infinity(_x)
+        || !is_numeric(_y) || is_nan(_y) || is_infinity(_y)) {
+        throw("BladeFirstCombatBeat: hostile bullet position must be finite");
+    }
+    if (!is_numeric(_window_width) || _window_width <= 0
+        || !is_numeric(_window_height) || _window_height <= 0) {
+        throw("BladeFirstCombatBeat: hostile bullet window must be positive");
+    }
+    return _x >= 0 && _x < _window_width
+        && _y >= 0 && _y < _window_height;
 }
 
 /// Returns the nearest currently damageable ordinary or midboss target.
@@ -112,6 +140,31 @@ function BladeFirstBeatNearestTarget(_x, _y) {
         }
     }
     return _nearest;
+}
+
+/// @func BladeFirstBeatApplyPlayerShot(controller, target, damage)
+/// Applies one concrete player projectile through the target's owned lifecycle.
+function BladeFirstBeatApplyPlayerShot(_controller, _target, _damage) {
+    if (_target.target_kind == BladeFirstBeatTargetKind.Stage1FaeMidboss) {
+        var _midboss = BladeStage1MidbossApplyDamage(
+            _controller, _target, _damage
+        );
+        BladeSurvivalAwardEnemyHit(_controller.economy, _midboss.applied);
+        return _midboss;
+    }
+    if (_target.target_kind == BladeFirstBeatTargetKind.Stage1Asahi) {
+        var _boss = BladeStage1BossApplyDamage(_controller, _target, _damage);
+        BladeSurvivalAwardEnemyHit(_controller.economy, _boss.applied);
+        return _boss;
+    }
+    var _ordinary = BladeFirstBeatDamageResult(_target.hit_points, _damage);
+    _target.hit_points = _ordinary.remaining;
+    _target.hit_flash = 4;
+    BladeSurvivalAwardEnemyHit(_controller.economy, _ordinary.applied);
+    if (_ordinary.defeated) {
+        BladeFirstBeatDefeatOrdinaryTarget(_controller, _target);
+    }
+    return _ordinary;
 }
 
 /// Clears bullets owned by one exact stage participant without touching its partner.

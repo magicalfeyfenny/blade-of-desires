@@ -4,7 +4,7 @@
   "display_name": "Stage 1 Lost Forest playable route",
   "product_contract": {
     "id": "contract.blade",
-    "content_version": "1.3.0"
+    "content_version": "1.4.0"
   },
   "named_anchors": [
     {
@@ -18,8 +18,8 @@
   "participant_kind_ids": [
     "participant_kind.stage1.scout",
     "participant_kind.stage1.bomb_carrier",
-    "participant_kind.stage1.fae_maynii",
-    "participant_kind.stage1.fae_kolar",
+    "participant_kind.stage1.fae_slot_a",
+    "participant_kind.stage1.fae_slot_b",
     "participant_kind.stage1.asahi"
   ],
   "task_type_ids": [],
@@ -94,21 +94,21 @@
     {
       "schema_version": 1,
       "id": "signal.stage1.fae_duo_started",
-      "display_name": "Maynii and Kolar started",
+      "display_name": "Selected unchosen fae duo started",
       "type_id": "signal_type.stage1.encounter_lifecycle",
       "source": {
         "kind": "encounter_started",
-        "source_id": "encounter_schedule.stage1.maynii_kolar_duo"
+        "source_id": "encounter_schedule.stage1.selected_fae_duo"
       }
     },
     {
       "schema_version": 1,
       "id": "signal.stage1.fae_duo_completed",
-      "display_name": "Maynii and Kolar completed",
+      "display_name": "Selected unchosen fae duo completed",
       "type_id": "signal_type.stage1.encounter_lifecycle",
       "source": {
         "kind": "encounter_completed",
-        "source_id": "encounter_schedule.stage1.maynii_kolar_duo"
+        "source_id": "encounter_schedule.stage1.selected_fae_duo"
       }
     },
     {
@@ -202,7 +202,7 @@
     {
       "schema_version": 1,
       "id": "cue.stage1.midboss_stop",
-      "display_name": "Stop for Maynii and Kolar",
+      "display_name": "Stop for the unchosen fae duo",
       "type_id": "cue_type.stage1.route"
     },
     {
@@ -239,8 +239,8 @@
   "stages": [
     {
       "schema_version": 1,
-      "id": "stage_schedule.stage1.ciela_lost_forest",
-      "display_name": "Ciela traverses the Lost Forest",
+      "id": "stage_schedule.stage1.selected_ship_lost_forest",
+      "display_name": "Selected fairy traverses the Lost Forest",
       "entry_node_id": "stage_node.stage1.begin_travel",
       "terminal_node_id": "stage_node.stage1.complete_stage_clear",
       "nodes": [
@@ -364,7 +364,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.stop_for_midboss",
-          "display_name": "Stop the route for Maynii and Kolar",
+          "display_name": "Stop the route for the unchosen fae duo",
           "content_order": 11,
           "kind": "emit_presentation_cue",
           "cue": {
@@ -385,10 +385,10 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.spawn_fae_duo",
-          "display_name": "Spawn Maynii and Kolar together",
+          "display_name": "Spawn the selection-aware fae duo",
           "content_order": 13,
           "kind": "spawn_encounter",
-          "encounter_id": "encounter_schedule.stage1.maynii_kolar_duo",
+          "encounter_id": "encounter_schedule.stage1.selected_fae_duo",
           "anchor_id": "anchor.stage1.combat_center",
           "local_offset_q10": {
             "x": 0,
@@ -402,7 +402,7 @@
           "display_name": "Clear both solos and the shared combo",
           "content_order": 14,
           "kind": "wait_encounter_completion",
-          "encounter_id": "encounter_schedule.stage1.maynii_kolar_duo",
+          "encounter_id": "encounter_schedule.stage1.selected_fae_duo",
           "next_node_id": "stage_node.stage1.resume_forest"
         },
         {
@@ -771,23 +771,23 @@
     },
     {
       "schema_version": 1,
-      "id": "encounter_schedule.stage1.maynii_kolar_duo",
-      "display_name": "Maynii and Kolar midboss duo",
+      "id": "encounter_schedule.stage1.selected_fae_duo",
+      "display_name": "Selection-aware unchosen fae duo",
       "participants": [
         {
           "schema_version": 1,
-          "id": "participant.stage1.fae_maynii",
-          "display_name": "Maynii, Forest Fae",
-          "kind_id": "participant_kind.stage1.fae_maynii",
+          "id": "participant.stage1.fae_slot_a",
+          "display_name": "Unchosen fae slot A",
+          "kind_id": "participant_kind.stage1.fae_slot_a",
           "spawn_order": 0,
           "local_offset_q10": {"x": -49152, "y": 0},
           "defeat_disposition": "remove"
         },
         {
           "schema_version": 1,
-          "id": "participant.stage1.fae_kolar",
-          "display_name": "Kolar, Mountain Fae",
-          "kind_id": "participant_kind.stage1.fae_kolar",
+          "id": "participant.stage1.fae_slot_b",
+          "display_name": "Unchosen fae slot B",
+          "kind_id": "participant_kind.stage1.fae_slot_b",
           "spawn_order": 1,
           "local_offset_q10": {"x": 49152, "y": 0},
           "defeat_disposition": "remove"
@@ -796,8 +796,8 @@
       "completion_predicate": {
         "kind": "all_participants_defeated",
         "participant_ids": [
-          "participant.stage1.fae_maynii",
-          "participant.stage1.fae_kolar"
+          "participant.stage1.fae_slot_a",
+          "participant.stage1.fae_slot_b"
         ]
       },
       "cleanup_policy": {"on_completion": "cleanup.stage_end"},

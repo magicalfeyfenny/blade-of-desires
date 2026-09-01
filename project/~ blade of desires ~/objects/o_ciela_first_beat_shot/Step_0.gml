@@ -8,7 +8,9 @@ if (!BladeSurvivalGameplayAdvances(_controller)) exit;
 
 x += velocity_x;
 y += velocity_y;
-if (!BladeCombatPlaneContainsPixelPoint(_controller.gameplay_plane, x, y)) {
+if (!BladeFirstBeatPlayerShotInsideVerticalPlane(
+    _controller.gameplay_plane, y
+)) {
     instance_destroy();
     exit;
 }
@@ -18,27 +20,5 @@ if (_target == noone || !BladeFirstBeatCirclesOverlap(
     x, y, radius, _target.x, _target.y, _target.hit_radius
 )) exit;
 
-if (_target.target_kind == BladeFirstBeatTargetKind.Stage1FaeMidboss) {
-    var _midboss_result = BladeStage1MidbossApplyDamage(
-        _controller, _target, damage
-    );
-    BladeSurvivalAwardEnemyHit(
-        _controller.economy, _midboss_result.applied
-    );
-} else if (_target.target_kind == BladeFirstBeatTargetKind.Stage1Asahi) {
-    var _boss_result = BladeStage1BossApplyDamage(
-        _controller, _target, damage
-    );
-    BladeSurvivalAwardEnemyHit(
-        _controller.economy, _boss_result.applied
-    );
-} else {
-    var _result = BladeFirstBeatDamageResult(_target.hit_points, damage);
-    _target.hit_points = _result.remaining;
-    _target.hit_flash = 4;
-    BladeSurvivalAwardEnemyHit(_controller.economy, _result.applied);
-    if (_result.defeated) {
-        BladeFirstBeatDefeatOrdinaryTarget(_controller, _target);
-    }
-}
+BladeFirstBeatApplyPlayerShot(_controller, _target, damage);
 instance_destroy();
