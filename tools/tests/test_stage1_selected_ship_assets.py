@@ -23,6 +23,11 @@ ASSETS = {
     "ciela_boss": (64, 64),
     "ciela_current": (24, 24),
     "ciela_kolar_combo": (32, 24),
+    "kolar_player": (48, 48),
+    "kolar_option": (16, 16),
+    "kolar_close_channel": (24, 16),
+    "kolar_ranged_shot": (12, 18),
+    "ciela_maynii_combo": (32, 24),
 }
 GENERATED_CHARACTER_ASSETS = {"maynii_player", "ciela_boss"}
 LFS_POINTER = re.compile(

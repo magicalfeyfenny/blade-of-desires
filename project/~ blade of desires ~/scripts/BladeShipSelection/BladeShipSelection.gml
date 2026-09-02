@@ -118,6 +118,11 @@ function _BladeShipSelectionRuntimeCapabilities() {
             player_kind_id: "player_kind.stage1.maynii",
             loadout_id: "loadout.stage1.maynii_tracking_forward",
         },
+        {
+            ship_id: "ship.kolar",
+            player_kind_id: "player_kind.stage1.kolar",
+            loadout_id: "loadout.stage1.kolar_close_range",
+        },
     ];
 }
 
@@ -439,6 +444,7 @@ function BladeShipSelectionPlayerObject(_player_kind_id) {
     switch (_player_kind_id) {
         case "player_kind.stage1.ciela": return o_ciela_first_beat_player;
         case "player_kind.stage1.maynii": return o_maynii_first_beat_player;
+        case "player_kind.stage1.kolar": return o_kolar_first_beat_player;
     }
     _BladeShipSelectionFail(
         "player_kind_id", "has no packaged player: " + string(_player_kind_id)

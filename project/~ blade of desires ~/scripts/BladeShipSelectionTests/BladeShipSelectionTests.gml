@@ -1,6 +1,6 @@
 /// @description Deterministic tests for selection, confirmation, and run identity.
 
-// Supplies the smallest complete contract fixture, including an unavailable registry ship.
+// Supplies the smallest complete contract fixture for all three runnable ships.
 function _BladeShipSelectionTestContract() {
     return {
         ships: [
@@ -55,23 +55,43 @@ function _BladeShipSelectionTestContract() {
                 ],
                 combo_pattern_id: "pattern.stage1.combo.ciela_kolar_river_ridgeline",
             },
+            {
+                schema_version: 1,
+                id: "playable_route.stage1.kolar",
+                display_name: "Kolar - Lost Forest",
+                ship_id: "ship.kolar",
+                fairy_identity: "mountain fairy",
+                selector_sprite: "sprites/stage1/kolar_player.png",
+                player_kind_id: "player_kind.stage1.kolar",
+                loadout_id: "loadout.stage1.kolar_close_range",
+                stage_schedule_id: "stage_schedule.stage1.selected_ship_lost_forest",
+                midboss_ship_ids: ["ship.ciela", "ship.maynii"],
+                standard_pattern_ids: [
+                    "pattern.stage1.standard.ciela_river_current",
+                    "pattern.stage1.standard.maynii_leaf_fan",
+                ],
+                combo_pattern_id: "pattern.stage1.combo.ciela_maynii_river_roots",
+            },
         ],
     };
 }
 
-// Proves route presence, not the three-ship registry, controls the two visible choices.
+// Proves only complete routes become visible choices.
 function _BladeShipSelectionTestCatalogChoices() {
     var _catalog = BladeShipSelectionCatalogFromContract(
         _BladeShipSelectionTestContract()
     );
     BladeKernelTestAssertEqual(
-        array_length(_catalog.entries), 2, "selector exposes two runnable routes"
+        array_length(_catalog.entries), 3, "selector exposes three runnable routes"
     );
     BladeKernelTestAssertEqual(
         _catalog.entries[0].ship_id, "ship.ciela", "Ciela is the first choice"
     );
     BladeKernelTestAssertEqual(
         _catalog.entries[1].ship_id, "ship.maynii", "Maynii is the second choice"
+    );
+    BladeKernelTestAssertEqual(
+        _catalog.entries[2].ship_id, "ship.kolar", "Kolar is the third choice"
     );
     BladeKernelTestAssertEqual(
         _catalog.entries[0].fairy_identity,
@@ -83,12 +103,10 @@ function _BladeShipSelectionTestCatalogChoices() {
         "leaf fairy",
         "Maynii fairy identity"
     );
-    BladeKernelTestAssertThrows(
-        method({ catalog: _catalog }, function() {
-            BladeShipSelectionRouteForShip(self.catalog, "ship.kolar");
-        }),
-        "is not runnable: ship.kolar",
-        "registry-only Kolar remains unavailable"
+    BladeKernelTestAssertEqual(
+        _catalog.entries[2].fairy_identity,
+        "mountain fairy",
+        "Kolar fairy identity"
     );
 }
 
@@ -100,20 +118,20 @@ function _BladeShipSelectionTestConfirmOnce() {
     var _state = BladeShipSelectionStateCreate(_catalog);
     BladeKernelTestAssertEqual(
         BladeShipSelectionMove(_state, _catalog, -1),
-        1,
-        "up wraps to Maynii"
+        2,
+        "up wraps to Kolar"
     );
     BladeKernelTestAssertEqual(
         BladeShipSelectionMove(_state, _catalog, 1),
         0,
         "down wraps to Ciela"
     );
-    BladeShipSelectionMove(_state, _catalog, 1);
+    BladeShipSelectionMove(_state, _catalog, -1);
     var _first = BladeShipSelectionConfirm(_state, _catalog);
     var _repeated = BladeShipSelectionConfirm(_state, _catalog);
     BladeKernelTestAssertTrue(_first.accepted, "first confirmation is accepted");
     BladeKernelTestAssertEqual(
-        _first.run.ship_id, "ship.maynii", "confirmation preserves selection"
+        _first.run.ship_id, "ship.kolar", "confirmation preserves selection"
     );
     BladeKernelTestAssertFalse(
         _repeated.accepted, "held or repeated confirmation is ignored"
@@ -123,7 +141,7 @@ function _BladeShipSelectionTestConfirmOnce() {
     );
     BladeKernelTestAssertEqual(
         BladeShipSelectionMove(_state, _catalog, 1),
-        1,
+        2,
         "navigation is locked after confirmation"
     );
 }
@@ -189,30 +207,12 @@ function _BladeShipSelectionTestRejections() {
     BladeKernelTestAssertThrows(
         method({}, function() {
             var _contract = _BladeShipSelectionTestContract();
-            var _kolar = {
-                schema_version: 1,
-                id: "playable_route.stage1.kolar",
-                display_name: "Kolar - Lost Forest",
-                ship_id: "ship.kolar",
-                fairy_identity: "mountain fairy",
-                selector_sprite: "sprites/stage1/kolar_player.png",
-                player_kind_id: "player_kind.stage1.kolar",
-                loadout_id: "loadout.stage1.kolar_close_range",
-                stage_schedule_id:
-                    "stage_schedule.stage1.selected_ship_lost_forest",
-                midboss_ship_ids: ["ship.ciela", "ship.maynii"],
-                standard_pattern_ids: [
-                    "pattern.stage1.standard.ciela_river_current",
-                    "pattern.stage1.standard.maynii_leaf_fan",
-                ],
-                combo_pattern_id:
-                    "pattern.stage1.combo.ciela_maynii_river_roots",
-            };
-            array_push(_contract.stage1_playable_routes, _kolar);
+            _contract.stage1_playable_routes[2].loadout_id
+                = "loadout.stage1.missing";
             BladeShipSelectionCatalogFromContract(_contract);
         }),
-        "has no packaged player for ship.kolar",
-        "aspirational Kolar route"
+        "does not match the packaged player capability for ship.kolar",
+        "malformed Kolar route"
     );
     BladeKernelTestAssertThrows(
         method({}, function() {

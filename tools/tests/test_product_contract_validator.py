@@ -50,12 +50,12 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
 
     def test_repository_contract_is_valid_and_versioned(self):
-        """The checked-in additive contract remains schema 1 at content 1.4.0."""
+        """The checked-in additive contract remains schema 1 at content 1.5.0."""
         contract = self.load_contract()
 
         self.assertEqual(validate_file(CONTRACT_PATH), [])
         self.assertEqual(contract["schema_version"], 1)
-        self.assertEqual(contract["content_version"], "1.4.0")
+        self.assertEqual(contract["content_version"], "1.5.0")
         self.assertEqual(contract["registry_extensions"]["schema_version"], 1)
 
     def test_diagnostics_bind_file_or_in_memory_source(self):
@@ -91,7 +91,7 @@ class ProductContractValidatorTests(unittest.TestCase):
 
         contract = self.load_contract()
         contract["content_version"] = "1.1.0"
-        self.assert_error(contract, "product_contract.content_version", "must be at least 1.4.0")
+        self.assert_error(contract, "product_contract.content_version", "must be at least 1.5.0")
 
         contract = self.load_contract()
         contract["ships"][0]["id"] = "Ship Maynii"
@@ -164,9 +164,9 @@ class ProductContractValidatorTests(unittest.TestCase):
         self.assert_error(
             contract,
             "product_contract.content_version",
-            "must advance beyond 1.4.0 when registry extensions are declared",
+            "must advance beyond 1.5.0 when registry extensions are declared",
         )
-        contract["content_version"] = "1.4.1"
+        contract["content_version"] = "1.5.1"
         self.assertEqual(self.errors(contract), [])
 
         contract["ships"][3]["combat_role"] = None
@@ -514,7 +514,7 @@ class ProductContractValidatorTests(unittest.TestCase):
             "must match the canonical implementation boundary summary",
         )
 
-    def test_keeps_kolar_implementation_deferred_to_issue_23(self):
+    def test_binds_kolar_implementation_to_issue_112_with_balance_only_deferred(self):
         for field in ("weapon", "melee", "emitters", "cadence", "damage", "loadout"):
             with self.subTest(field=field):
                 contract = self.load_contract()
@@ -526,13 +526,13 @@ class ProductContractValidatorTests(unittest.TestCase):
                 )
 
         contract = self.load_contract()
-        self.ship(contract, "ship.kolar")["implementation_boundary"]["delegated_issue"] = 24
+        self.ship(contract, "ship.kolar")["implementation_boundary"]["delegated_issue"] = 23
         self.assertTrue(
-            any("ships[2].implementation_boundary.delegated_issue: must be 23" in item for item in self.errors(contract))
+            any("ships[2].implementation_boundary.delegated_issue: must be 112" in item for item in self.errors(contract))
         )
 
         contract = self.load_contract()
-        self.ship(contract, "ship.kolar")["implementation_boundary"]["unresolved"].remove("final_balance")
+        self.ship(contract, "ship.kolar")["implementation_boundary"]["unresolved"].append("weapon_form")
         self.assertTrue(
             any("ships[2].implementation_boundary.unresolved: must be" in item for item in self.errors(contract))
         )
@@ -576,12 +576,12 @@ class ProductContractValidatorTests(unittest.TestCase):
             f"requires core ID {removed_id}",
         )
 
-    def test_stage1_routes_bind_only_ciela_and_maynii_to_complete_pairs(self):
+    def test_stage1_routes_bind_all_three_ships_to_complete_pairs(self):
         contract = self.load_contract()
         routes = contract["stage1_playable_routes"]
         self.assertEqual(
             [route["ship_id"] for route in routes],
-            ["ship.ciela", "ship.maynii"],
+            ["ship.ciela", "ship.maynii", "ship.kolar"],
         )
         self.assertEqual(
             self.stage1_route(contract, "ship.ciela")["midboss_ship_ids"],
@@ -594,7 +594,22 @@ class ProductContractValidatorTests(unittest.TestCase):
         )
         self.assertIn("ciela_river_current", maynii_route["standard_pattern_ids"][0])
         self.assertIn("ciela_kolar", maynii_route["combo_pattern_id"])
-        self.assertFalse(any(route["ship_id"] == "ship.kolar" for route in routes))
+        kolar_route = self.stage1_route(contract, "ship.kolar")
+        self.assertEqual(
+            kolar_route["midboss_ship_ids"],
+            ["ship.ciela", "ship.maynii"],
+        )
+        self.assertEqual(
+            kolar_route["standard_pattern_ids"],
+            [
+                "pattern.stage1.standard.ciela_river_current",
+                "pattern.stage1.standard.maynii_leaf_fan",
+            ],
+        )
+        self.assertEqual(
+            kolar_route["combo_pattern_id"],
+            "pattern.stage1.combo.ciela_maynii_river_roots",
+        )
 
     def test_stage1_routes_reject_missing_duplicate_self_and_incomplete_content(self):
         contract = self.load_contract()
@@ -615,7 +630,7 @@ class ProductContractValidatorTests(unittest.TestCase):
         contract["stage1_playable_routes"].append(duplicate)
         self.assert_error(
             contract,
-            "stage1_playable_routes[2].ship_id",
+            "stage1_playable_routes[3].ship_id",
             "duplicates the route for ship.ciela",
         )
 
@@ -651,6 +666,8 @@ class ProductContractValidatorTests(unittest.TestCase):
 
         self.assertIn("Maynii and Kolar", encounter["resolution"])
         self.assertIn("Ciela and Kolar", encounter["resolution"])
+        self.assertIn("Ciela and Maynii", encounter["resolution"])
+        self.assertIn("river-and-roots", encounter["resolution"])
         self.assertIn("independent standard attacks", encounter["resolution"])
         self.assertIn("one shared combo life", encounter["resolution"])
         self.assertIn("resumes the second half of Stage 1", encounter["resolution"])

@@ -325,12 +325,12 @@ function BladeRunStageTestsRun(_state) {
 		);
 		BladeKernelTestAssertEqual(
 			_first.stage_hash,
-			"fcec9aa0dbe59a4ba3a648a423a7989597e34c82",
+			"a4f24d558bec932fa9dbce4a1eb7700c0ff483ae",
 			"public neutral stage matches its verified final hash"
 		);
 		BladeKernelTestAssertEqual(
 			_first.final_hash,
-			"0c1cc013b6eaac9194c58e3ce6a90ada64d551af",
+			"4cece68042687ddda3eb5c6ae9f4a1878bc64d35",
 			"public neutral coordinator matches its verified final hash"
 		);
 

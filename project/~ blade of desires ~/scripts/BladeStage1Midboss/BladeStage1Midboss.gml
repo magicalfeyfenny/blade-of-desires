@@ -79,6 +79,10 @@ function BladeStage1MidbossComboLabel(_combo_pattern_id) {
         == "pattern.stage1.combo.ciela_kolar_river_ridgeline") {
         return "RIVER + RIDGELINE";
     }
+    if (_combo_pattern_id
+        == "pattern.stage1.combo.ciela_maynii_river_roots") {
+        return "RIVER + ROOTS";
+    }
     throw(
         "BladeStage1Midboss: unknown combo pattern "
         + string(_combo_pattern_id)
@@ -411,6 +415,51 @@ function BladeStage1MidbossKolarRiverCombo(
     return true;
 }
 
+/// Sends Ciela's river-root half as a wider, pulsed channel unlike prior duos.
+function BladeStage1MidbossCielaMayniiRiverRoots(_member, _hyper_tier = 0) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(76, _hyper_tier);
+    if (_member.attack_ticks mod _interval != 0) return false;
+    var _wave = (_member.attack_ticks div _interval) mod 4;
+    var _angles = [210, 228, 246, 294, 312, 330, 348];
+    for (var _index = 0; _index < array_length(_angles); ++_index) {
+        var _bend = ((_wave + _index) mod 3 - 1) * 4;
+        BladeStage1MidbossBulletSpawn(
+            _member,
+            _angles[_index] + _bend,
+            1.72 + (_index mod 3) * 0.16,
+            BladeFirstBeatBulletKind.ComboRiverRoots,
+            make_color_rgb(48, 188, 224),
+            make_color_rgb(178, 255, 196),
+            _hyper_tier
+        );
+    }
+    return true;
+}
+
+/// Answers the river channel with a delayed three-leaf root weave.
+function BladeStage1MidbossMayniiRiverRoots(
+    _member, _player, _hyper_tier = 0
+) {
+    var _interval = BladeSurvivalHyperHostileFireInterval(76, _hyper_tier);
+    var _answer_tick = max(1, _interval div 2);
+    if (_member.attack_ticks mod _interval != _answer_tick) return false;
+    var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
+    var _offsets = [-24, 0, 24];
+    for (var _index = 0; _index < array_length(_offsets); ++_index) {
+        var _root_turn = (_index - 1) * 11;
+        BladeStage1MidbossBulletSpawn(
+            _member,
+            _aim + _offsets[_index] + _root_turn,
+            2.42 + (_index mod 2) * 0.2,
+            BladeFirstBeatBulletKind.ComboLeafRoots,
+            make_color_rgb(74, 212, 108),
+            make_color_rgb(224, 255, 142),
+            _hyper_tier
+        );
+    }
+    return true;
+}
+
 /// Advances one fae only while its full hurtbox is inside the canonical plane.
 function BladeStage1MidbossStep(_member) {
     var _controller = instance_find(o_blade_first_beat_controller, 0);
@@ -461,6 +510,15 @@ function BladeStage1MidbossStep(_member) {
             _fired = _member.fae_role == BladeStage1FaeRole.Ciela
                 ? BladeStage1MidbossCielaCombo(_member, _hyper_tier)
                 : BladeStage1MidbossKolarRiverCombo(
+                    _member, _player, _hyper_tier
+                );
+        } else if (_combo_pattern_id
+            == "pattern.stage1.combo.ciela_maynii_river_roots") {
+            _fired = _member.fae_role == BladeStage1FaeRole.Ciela
+                ? BladeStage1MidbossCielaMayniiRiverRoots(
+                    _member, _hyper_tier
+                )
+                : BladeStage1MidbossMayniiRiverRoots(
                     _member, _player, _hyper_tier
                 );
         } else {
@@ -594,7 +652,10 @@ function BladeStage1MidbossDrawHud(_controller, _x, _y, _width) {
         draw_set_color(_state.combo_pattern_id
             == "pattern.stage1.combo.ciela_kolar_river_ridgeline"
             ? make_color_rgb(84, 184, 220)
-            : make_color_rgb(178, 126, 229));
+            : (_state.combo_pattern_id
+                == "pattern.stage1.combo.ciela_maynii_river_roots"
+                ? make_color_rgb(98, 218, 164)
+                : make_color_rgb(178, 126, 229)));
         draw_rectangle(
             _x, _y + 18,
             _x + _width * _member.hit_points / max(1, _member.max_health),

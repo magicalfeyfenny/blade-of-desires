@@ -603,6 +603,9 @@ function BladeStage1ForestAssetsDestroy(_renderer) {
         "ciela_boss_sprite", "maynii_player_sprite", "maynii_option_sprite",
         "maynii_tracking_shot_sprite", "maynii_forward_shot_sprite",
         "ciela_wave_sprite", "ciela_current_sprite", "ciela_kolar_combo_sprite",
+        "kolar_player_sprite", "kolar_option_sprite",
+        "kolar_close_shot_sprite", "kolar_ranged_shot_sprite",
+        "ciela_maynii_combo_sprite",
         "maynii_leaf_sprite", "kolar_crystal_sprite",
         "asahi_sprite", "asahi_sunfire_sprite", "asahi_hud_frame_sprite",
     ];

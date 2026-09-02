@@ -1,4 +1,4 @@
-/// Focused coverage for the Maynii player and Ciela-Kolar route variant.
+/// Focused coverage for selected players and every Stage 1 route variant.
 
 // Places one entered fae directly into its independently targetable attack.
 function _BladeStage1SelectedRouteTestsActivate(_member) {
@@ -189,6 +189,88 @@ function _BladeStage1SelectedRouteTestsMayniiPlayer(_state) {
             BladeKernelTestAssertEqual(
                 _validated.ship_id, "ship.maynii",
                 "attempt cleanup cannot erase persistent run identity"
+            );
+        }
+    );
+}
+
+// Proves Kolar owns both explicit channels through the shared player lifecycle.
+function _BladeStage1SelectedRouteTestsKolarPlayer(_state) {
+    BladeFirstBeatTestRunCase(
+        _state,
+        "Kolar uses the shared player lifecycle with close and ranged fire",
+        function() {
+            var _controller = instance_create_layer(
+                0, 0, "Instances", o_blade_first_beat_controller
+            );
+            var _run = _BladeStage1RouteTestsSelect(
+                _controller, "ship.kolar"
+            );
+            var _player = instance_create_layer(
+                320, 300, "Instances", o_kolar_first_beat_player
+            );
+            _controller.player_instance = _player;
+            BladeKernelTestAssertEqual(
+                BladeShipSelectionPlayerObject(_run.player_kind_id),
+                o_kolar_first_beat_player,
+                "validated Kolar player kind maps to the packaged child object"
+            );
+            BladeKernelTestAssertEqual(
+                _player.ship_id, "ship.kolar",
+                "Kolar child binds stable ship identity"
+            );
+
+            _player.focused = false;
+            _BladeStage1PlayerFireKolar(_player, _controller);
+            BladeKernelTestAssertEqual(
+                instance_number(o_kolar_first_beat_shot), 3,
+                "unfocused Kolar creates one close and two ranged shots"
+            );
+            var _unfocused_close = 0;
+            var _unfocused_ranged = 0;
+            for (var _unfocused_index = 0;
+                _unfocused_index < instance_number(o_kolar_first_beat_shot);
+                ++_unfocused_index) {
+                var _unfocused = instance_find(
+                    o_kolar_first_beat_shot, _unfocused_index
+                );
+                if (_unfocused.channel == "close") {
+                    _unfocused_close += 1;
+                    BladeKernelTestAssertEqual(
+                        _unfocused.range_limit, BLADE_KOLAR_CLOSE_BAND,
+                        "close shot owns the logical close band"
+                    );
+                } else {
+                    _unfocused_ranged += 1;
+                }
+                BladeKernelTestAssertEqual(
+                    _unfocused.speed, 0,
+                    "Kolar shot uses explicit manual motion"
+                );
+            }
+            BladeKernelTestAssertEqual(_unfocused_close, 1, "unfocused close count");
+            BladeKernelTestAssertEqual(_unfocused_ranged, 2, "unfocused ranged count");
+            with (o_blade_player_shot) instance_destroy();
+
+            _player.focused = true;
+            _BladeStage1PlayerFireKolar(_player, _controller);
+            var _focused_close = 0;
+            var _focused_ranged = 0;
+            for (var _focused_index = 0;
+                _focused_index < instance_number(o_kolar_first_beat_shot);
+                ++_focused_index) {
+                var _focused = instance_find(
+                    o_kolar_first_beat_shot, _focused_index
+                );
+                if (_focused.channel == "close") _focused_close += 1;
+                else _focused_ranged += 1;
+            }
+            BladeKernelTestAssertEqual(_focused_close, 2, "focused close count");
+            BladeKernelTestAssertEqual(_focused_ranged, 1, "focused ranged count");
+            BladeFirstBeatCleanupTransientInstances();
+            BladeKernelTestAssertEqual(
+                instance_number(o_blade_stage1_player), 0,
+                "cleanup removes the selected Kolar child"
             );
         }
     );
@@ -462,6 +544,119 @@ function _BladeStage1SelectedRouteTestsCielaKolar(_state) {
     );
 }
 
+// Exercises Kolar's Ciela-Maynii standards, unique combo, and continuation.
+function _BladeStage1SelectedRouteTestsKolarCielaMaynii(_state) {
+    BladeFirstBeatTestRunCase(
+        _state,
+        "Kolar route resolves Ciela and Maynii with one river-roots combo",
+        function() {
+            var _controller = instance_create_layer(
+                0, 0, "Instances", o_blade_first_beat_controller
+            );
+            var _run = _BladeStage1RouteTestsSelect(
+                _controller, "ship.kolar"
+            );
+            BladeStage1RouteInitialize(_controller);
+            var _record = { ordinary_count: 0, carrier_count: 0 };
+            BladeKernelTestAssertTrue(
+                _BladeStage1RouteTestsReachDuo(_controller, _record),
+                "Kolar route reaches its authored unchosen pair"
+            );
+            var _state_before = _controller.midboss_state;
+            var _ciela = _state_before.members[0];
+            var _maynii = _state_before.members[1];
+            BladeKernelTestAssertArrayEqual(
+                _run.midboss_ship_ids, ["ship.ciela", "ship.maynii"],
+                "Kolar route excludes the selected player from the pair"
+            );
+            BladeKernelTestAssertEqual(
+                _state_before.combo_pattern_id,
+                "pattern.stage1.combo.ciela_maynii_river_roots",
+                "Kolar route owns the unique river-roots combo identity"
+            );
+            var _player = instance_create_layer(
+                320, 300, "Instances", o_kolar_first_beat_player
+            );
+            _controller.player_instance = _player;
+            _BladeStage1SelectedRouteTestsActivate(_ciela);
+            _BladeStage1SelectedRouteTestsActivate(_maynii);
+            _ciela.attack_ticks = 57;
+            _maynii.attack_ticks = 53;
+            BladeStage1MidbossStep(_ciela);
+            BladeStage1MidbossStep(_maynii);
+            BladeKernelTestAssertEqual(
+                _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.CielaCurrent
+                ),
+                6,
+                "Kolar route retains Ciela's river-current standard"
+            );
+            BladeKernelTestAssertEqual(
+                _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.MayniiLeaf
+                ),
+                4,
+                "Kolar route retains Maynii's leaf-fan standard"
+            );
+            BladeStage1MidbossApplyDamage(
+                _controller, _ciela, BLADE_STAGE1_MIDBOSS_PERSONAL_HP
+            );
+            BladeStage1MidbossApplyDamage(
+                _controller, _maynii, BLADE_STAGE1_MIDBOSS_PERSONAL_HP
+            );
+            BladeKernelTestAssertTrue(
+                _state_before.combo_active,
+                "both personal defeats start the shared combo once"
+            );
+            for (var _recharge = 0;
+                _recharge < BLADE_STAGE1_MIDBOSS_RECHARGE_TICKS;
+                ++_recharge) {
+                BladeStage1MidbossStep(_ciela);
+                BladeStage1MidbossStep(_maynii);
+            }
+            _ciela.attack_ticks = 75;
+            _maynii.attack_ticks = 37;
+            BladeStage1MidbossStep(_ciela);
+            BladeStage1MidbossStep(_maynii);
+            BladeKernelTestAssertEqual(
+                _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.ComboRiverRoots
+                ),
+                7,
+                "Ciela contributes the distinct river half"
+            );
+            BladeKernelTestAssertEqual(
+                _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.ComboLeafRoots
+                ),
+                3,
+                "Maynii answers with the distinct roots half"
+            );
+            BladeKernelTestAssertEqual(
+                _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.ComboLeaf
+                ) + _BladeStage1RouteTestsBulletCount(
+                    BladeFirstBeatBulletKind.ComboCrystal
+                ),
+                0,
+                "Kolar route cannot replay the prior root-ridgeline combo"
+            );
+            BladeStage1MidbossApplyDamage(
+                _controller, _ciela, BLADE_STAGE1_MIDBOSS_COMBO_HP
+            );
+            BladeKernelTestAssertTrue(
+                _state_before.completed,
+                "river-roots combo completes exactly once"
+            );
+            BladeStage1RouteAdvance(_controller);
+            BladeKernelTestAssertEqual(
+                _controller.route_cue_id, "cue.stage1.forest_resume",
+                "Kolar combo resumes the second route half"
+            );
+        }
+    );
+}
+
 // Covers explicit abort, non-defeat cleanup, retry identity, and deterministic hashes.
 function _BladeStage1SelectedRouteTestsBoundaryAndHashes(_state) {
     BladeFirstBeatTestRunCase(
@@ -559,7 +754,9 @@ function _BladeStage1SelectedRouteTestsBoundaryAndHashes(_state) {
 /// Registers selected-player, alternate-route, retry, and hash coverage.
 function BladeStage1SelectedRouteTestsRun(_state) {
     _BladeStage1SelectedRouteTestsMayniiPlayer(_state);
+    _BladeStage1SelectedRouteTestsKolarPlayer(_state);
     _BladeStage1SelectedRouteTestsCielaKolar(_state);
+    _BladeStage1SelectedRouteTestsKolarCielaMaynii(_state);
     _BladeStage1SelectedRouteTestsBoundaryAndHashes(_state);
     return _state;
 }

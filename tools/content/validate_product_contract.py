@@ -14,8 +14,8 @@ IN_MEMORY_SOURCE = "<in-memory>"
 ID_PATTERN_TEXT = r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$"
 ID_PATTERN = re.compile(ID_PATTERN_TEXT)
 VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
-CORE_CONTENT_VERSION = (1, 4, 0)
-CORE_CONTENT_VERSION_TEXT = "1.4.0"
+CORE_CONTENT_VERSION = (1, 5, 0)
+CORE_CONTENT_VERSION_TEXT = "1.5.0"
 COMMON_RECORD_FIELDS = {"schema_version", "id", "display_name"}
 REQUIRED_ROOT_FIELDS = COMMON_RECORD_FIELDS | {
     "content_version",
@@ -64,8 +64,9 @@ CORE_SHIP_IDENTITIES = {
     "ship.kolar": "Close-range specialist whose primary payoff comes from fighting near targets while retaining dependable, meaningful ranged damage.",
 }
 KOLAR_RESOLUTION = (
-    "The role and ranged-damage floor are binding; exact implementation and "
-    "tuning remain delegated to Issue #23."
+    "Issue #112 resolves Kolar's deterministic close-range channel and "
+    "meaningful ranged fire for the current Stage 1 slice; final three-ship "
+    "balance remains later tuning."
 )
 CORE_STAGE_ORDERS = {stage_id: index for index, stage_id in enumerate(MAIN_STAGE_IDS, 1)}
 CORE_STAGE_ORDERS[EXTRA_STAGE_ID] = "extra"
@@ -114,17 +115,8 @@ KOLAR_RANGE_POLICY = {
     ],
 }
 KOLAR_IMPLEMENTATION_BOUNDARY = {
-    "delegated_issue": 23,
-    "unresolved": [
-        "weapon_form",
-        "melee_choice",
-        "emitters",
-        "option_formation",
-        "cadence",
-        "damage_values",
-        "distance_bands",
-        "final_balance",
-    ],
+    "delegated_issue": 112,
+    "unresolved": ["final_balance"],
 }
 STAGE1_SCHEDULE_ID = "stage_schedule.stage1.selected_ship_lost_forest"
 STAGE1_PLAYABLE_ROUTES = {
@@ -155,6 +147,20 @@ STAGE1_PLAYABLE_ROUTES = {
             "pattern.stage1.standard.kolar_crystal_fan",
         ],
         "combo_pattern_id": "pattern.stage1.combo.ciela_kolar_river_ridgeline",
+    },
+    "ship.kolar": {
+        "id": "playable_route.stage1.kolar",
+        "display_name": "Kolar - Lost Forest",
+        "fairy_identity": "mountain fairy",
+        "selector_sprite": "sprites/stage1/kolar_player.png",
+        "player_kind_id": "player_kind.stage1.kolar",
+        "loadout_id": "loadout.stage1.kolar_close_range",
+        "midboss_ship_ids": ["ship.ciela", "ship.maynii"],
+        "standard_pattern_ids": [
+            "pattern.stage1.standard.ciela_river_current",
+            "pattern.stage1.standard.maynii_leaf_fan",
+        ],
+        "combo_pattern_id": "pattern.stage1.combo.ciela_maynii_river_roots",
     },
 }
 

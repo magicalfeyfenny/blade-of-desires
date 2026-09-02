@@ -39,14 +39,16 @@ product contract. Version 1.1.0 added structured policy while retaining all
 registry. Version 1.3.0 records the concrete Maynii-Kolar Stage 1 midboss
 resolution for the Ciela slice. Version 1.4.0 adds complete playable-route
 records for Ciela and Maynii, including player/loadout identities and exact
-unchosen-fae standard/combo mappings. None of these content changes alters an
+unchosen-fae standard/combo mappings. Version 1.5.0 adds Kolar's complete
+playable route, deterministic close/ranged loadout binding, and the
+Ciela-Maynii River + Roots combo. None of these content changes alters an
 existing record's shape, so the schema remains version 1. Consumers reject an
 unknown schema version rather than guessing a default.
 
 `registry_extensions` is a versioned policy object, not a canonical record.
 Its ship, stage, and encounter ID lists are empty in the core contract. A later
 registry-extension record must be explicitly declared in the matching list and
-must advance `content_version` beyond the 1.4.0 core baseline; core IDs cannot
+must advance `content_version` beyond the 1.5.0 core baseline; core IDs cannot
 be redeclared. The progression record is closed, so an added ending or unknown
 root field requires a future schema rule instead of silently extending the
 registry.
@@ -73,7 +75,7 @@ catalog cites it as a compatibility binding, but that value does not also
 version the subordinate catalog's values. A subordinate pattern or stage-value
 change therefore does not silently advance the product version; the catalog
 retains its own schema and explicit product binding. The current product
-contract remains version `1.4.0`.
+contract remains version `1.5.0`.
 
 The focused validator reports `source: field.path: reason`. File validation
 uses the supplied filename and decoded in-memory validation uses the explicit
@@ -110,10 +112,12 @@ The logical output is `640x360`; gameplay uses the centered `270x360` plane
 `[185,455) x [0,360)`. Gameplay is a vertical 2D shmup and the perspective 3D
 world is presentation only.
 
-Normal Stage 1 has exactly two complete playable routes. Selecting Ciela binds
-the Maynii-Kolar pair, their two standard patterns, and the Root + Ridgeline
-combo. Selecting Maynii binds the Ciela-Kolar pair, Ciela's River Current and
-Kolar's existing standard, and the River + Ridgeline combo. Both routes use
+Normal Stage 1 has exactly three complete playable routes. Selecting Ciela
+binds the Maynii-Kolar pair, their two standard patterns, and the Root +
+Ridgeline combo. Selecting Maynii binds the Ciela-Kolar pair, Ciela's River
+Current and Kolar's existing standard, and the River + Ridgeline combo.
+Selecting Kolar binds the Ciela-Maynii pair, their River Current and Leaf Fan
+standards, and the unique River + Roots combo. Every route uses
 `stage_schedule.stage1.selected_ship_lost_forest`; its generic fae slots map
 through the selected run rather than display names. The selected ship is never
 also a midboss, and a ship registry entry without a complete route is not
@@ -122,8 +126,8 @@ selectable.
 Each unchosen fae performs one independently resolved personal attack. After
 both personal lives clear, the same two bodies reform behind a two-second
 recharge with one synchronized shared combo life. Defeating the combo resumes
-the second half of Stage 1. Playable Kolar and the Ciela-Maynii pair remain
-deferred to the linked Kolar issue.
+the second half of Stage 1. The Kolar route supplies the Ciela-Maynii variant
+without changing the established routes.
 
 Geometry uses a binary 1/1024-logical-pixel grid. In grid units, a point anchor
 is eligible only when `189440 <= x < 465920` and `0 <= y < 368640`. A declared
@@ -137,10 +141,11 @@ does not grant authority.
 
 Maynii is the forward-and-tracking all-arounder and Ciela is the spread
 specialist. Kolar is the close-range specialist: close-range combat is her
-primary strength, and dependable, meaningful ranged damage is mandatory.
-Collision-only, melee-only, zero-range, and negligible-ranged interpretations
-are forbidden. Issue #23 owns her exact weapon form, melee choice, emitters,
-option formation, cadence, damage values, distance bands, and final balance.
+primary strength, and dependable, meaningful ranged damage is mandatory. Her
+current Stage 1 implementation uses explicit focus-dependent options, a
+58-pixel logical close band, and useful forward ranged fire in both focus
+states. Collision-only, melee-only, zero-range, and negligible-ranged
+interpretations are forbidden. Final three-ship balance remains later tuning.
 
 The registry also binds the six-stage route, its extra stage, named GDD
 encounters, reciprocal stage links, ending selection, and the any-difficulty

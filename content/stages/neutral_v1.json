@@ -4,7 +4,7 @@
   "display_name": "Neutral stage and encounter schedule fixtures",
   "product_contract": {
     "id": "contract.blade",
-    "content_version": "1.4.0"
+    "content_version": "1.5.0"
   },
   "named_anchors": [
     {
