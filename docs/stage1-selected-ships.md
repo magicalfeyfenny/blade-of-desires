@@ -1,30 +1,48 @@
 # Stage 1 selected ships
 
-This document owns the preliminary selected-ship values and live-playtest
-handoff for Issue #111. The values are intentionally playable through the
+This document records the selected-ship values and live-playtest handoff for
+Issues #111 and #112. The values are intentionally playable through the
 complete Stage 1 slice; final three-ship balance remains later tuning work.
 
 ## Launch and run identity
 
 An ordinary launch opens the 640×360 character selector before gameplay. It
 shows exactly the complete routes declared by `stage1_playable_routes` in the
-product contract: Ciela and Maynii. Move and confirm use the current config
+product contract: Ciela, Maynii, and Kolar. Move and confirm use the current config
 service's semantic keyboard bindings. One accepted confirmation creates a
 Normal-difficulty run record and the Stage 1 room revalidates that record
 against packaged content before it creates exactly one player.
 
 The selected record remains in `global.blade_selected_run` for room transition,
 death/respawn, and `R` retry. Missing or altered route fields stop the run with
-a visible content error; the runtime never substitutes Ciela. Kolar's ship
-registry record alone is not a selectable route.
+a visible content error; the runtime never substitutes Ciela.
 
 | Selected ship | Fairy identity | Player loadout | Stage 1 midbosses | Shared combo |
 | --- | --- | --- | --- | --- |
 | `ship.ciela` | river fairy | broad spread; focus tightens | Maynii, Kolar | Root + Ridgeline |
 | `ship.maynii` | leaf fairy | tracking unfocused; forward focused | Ciela, Kolar | River + Ridgeline |
+| `ship.kolar` | mountain fairy | close-range payoff; useful ranged fire in both focus states | Ciela, Maynii | River + Roots |
 
-Kolar remains the mountain fairy and close-range specialist. Playable Kolar
-and the Ciela-Maynii midboss pair are outside Issue #111.
+Kolar's Stage 1 route is delivered by Issue #112. Its selected run uses
+`loadout.stage1.kolar_close_range`, with a 58-pixel logical close band and
+explicitly ranged projectiles that remain useful while unfocused or focused.
+
+## Kolar preliminary values
+
+Kolar's close channel is the strongest focused payoff while her unfocused
+formation keeps two ranged projectiles active. Both channels use manual motion
+and the shared player-shot lifecycle; close shots end at the declared logical
+band and ranged shots remain active until a vertical plane exit.
+
+| Mode | Option centers relative to Kolar | Channel mix | Base damage per shot |
+| --- | --- | --- | --- |
+| Unfocused | `(-18, 3)`, `(0, 0)`, `(18, 3)` | two ranged at speed 7.0; one close at speed 7.4 | ranged 1.90; close 3.00 |
+| Focused | `(-10, -2)`, `(0, -7)`, `(10, -2)` | two close at speed 7.4; one ranged at speed 7.0 | close 3.60; ranged 2.25 |
+
+These are preliminary values for the current slice, not final balance. Proper
+authored Kolar player/attack art is tracked separately in Issue #119; the
+current implementation keeps deterministic pixel placeholders so the route
+remains testable.
 
 ## Maynii preliminary values
 
@@ -75,6 +93,9 @@ it does not replay her player spread. River + Ridgeline combines Ciela's moving
 six-lane river channel with Kolar's four-crystal answer. The existing Ciela
 route retains Maynii's four-leaf standard, Kolar's five-crystal standard, and
 their eight-leaf-plus-five-crystal Root + Ridgeline combo.
+The Kolar route retains Ciela's River Current and Maynii's Leaf Fan standards,
+then adds a seven-bullet river pulse with a delayed three-leaf roots answer
+under River + Roots.
 
 Only eligible personal or shared-life defeat reports can advance the route.
 Administrative abort, reset, cleanup, or room teardown cannot impersonate a
@@ -86,8 +107,9 @@ unrelated hostile patterns.
 Maynii's 48×48 player sprite faces away from the camera and preserves the leaf
 silhouette and palette of her unchanged 64×64 front-facing boss sprite. Ciela's
 unchanged 48×48 player sprite remains rear-facing; her new 64×64 boss sprite is
-front-facing. Options and every new Maynii/Ciela attack family have dedicated
-crisp runtime pixels.
+front-facing. Kolar's current 48×48 rear-facing player, options, close/ranged
+shots, and River + Roots combo use crisp deterministic placeholder pixels while
+the production visual pack is authored under Issue #119.
 
 Each runtime PNG maps to an editable `.kra` in `assets/exports.json` and one
 GameMaker IncludedFile entry. The character KRA files contain a visible

@@ -30,7 +30,9 @@ enum BladeFirstBeatBulletKind {
     ComboRiver = 7,
     ComboRiverCrystal = 8,
     AsahiFlame = 9,
-    AsahiCrown = 10
+    AsahiCrown = 10,
+    ComboRiverRoots = 11,
+    ComboLeafRoots = 12
 }
 
 #macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"

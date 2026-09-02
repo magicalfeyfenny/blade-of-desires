@@ -104,10 +104,10 @@ class DeterministicKernelOracleTests(unittest.TestCase):
         """Bind the fixture to exact contract bytes and verify its content IDs."""
         contract_path = ROOT / "content" / "product_contract.json"
         contract_bytes = contract_path.read_bytes()
-        self.assertEqual(len(contract_bytes), 12_695)
+        self.assertEqual(len(contract_bytes), 13_395)
         self.assertEqual(
             hashlib.sha1(contract_bytes).hexdigest(),
-            "1c7a96f800d7ac228659dd0759706ed6833bb92c",
+            "69eeaebe5225a291a2916e0e3f3c10936f71ef34",
         )
 
         contract = json.loads(contract_bytes)

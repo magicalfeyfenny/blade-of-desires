@@ -23,6 +23,10 @@ if (_renderer != noone) {
         case BladeFirstBeatBulletKind.ComboRiverCrystal:
             _attack_sprite = _renderer.ciela_kolar_combo_sprite;
             break;
+        case BladeFirstBeatBulletKind.ComboRiverRoots:
+        case BladeFirstBeatBulletKind.ComboLeafRoots:
+            _attack_sprite = _renderer.ciela_maynii_combo_sprite;
+            break;
         case BladeFirstBeatBulletKind.AsahiFlame:
         case BladeFirstBeatBulletKind.AsahiCrown:
             _attack_sprite = _renderer.asahi_sunfire_sprite;
@@ -90,6 +94,35 @@ switch (bullet_kind) {
         );
         draw_set_color(inner_color);
         draw_circle(x, y, 2, false);
+        break;
+
+    case BladeFirstBeatBulletKind.ComboRiverRoots:
+        draw_set_color(_shown_outer);
+        draw_circle(x, y, radius + 2, false);
+        draw_set_color(inner_color);
+        draw_line(
+            x - _side_x * (radius + 2), y - _side_y * (radius + 2),
+            x + _side_x * (radius + 2), y + _side_y * (radius + 2)
+        );
+        draw_line(
+            x - _forward_x * (radius + 2), y - _forward_y * (radius + 2),
+            x + _forward_x * (radius + 2), y + _forward_y * (radius + 2)
+        );
+        break;
+
+    case BladeFirstBeatBulletKind.ComboLeafRoots:
+        draw_set_color(_shown_outer);
+        draw_triangle(
+            x + _forward_x * 8, y + _forward_y * 8,
+            x + _side_x * 5, y + _side_y * 5,
+            x - _forward_x * 5, y - _forward_y * 5,
+            false
+        );
+        draw_set_color(inner_color);
+        draw_line(
+            x - _forward_x * 5, y - _forward_y * 5,
+            x + _forward_x * 5, y + _forward_y * 5
+        );
         break;
 
     default:

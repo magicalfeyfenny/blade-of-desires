@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "contract.blade",
   "display_name": "Blade Product Contract",
-  "content_version": "1.4.0",
+  "content_version": "1.5.0",
   "id_grammar": {
     "pattern": "^[a-z][a-z0-9_]*(?:\\.[a-z][a-z0-9_]*)+$",
     "collision_policy": "globally_unique_and_never_reused"
@@ -123,19 +123,12 @@
         ]
       },
       "implementation_boundary": {
-        "delegated_issue": 23,
+        "delegated_issue": 112,
         "unresolved": [
-          "weapon_form",
-          "melee_choice",
-          "emitters",
-          "option_formation",
-          "cadence",
-          "damage_values",
-          "distance_bands",
           "final_balance"
         ]
       },
-      "resolution": "The role and ranged-damage floor are binding; exact implementation and tuning remain delegated to Issue #23."
+      "resolution": "Issue #112 resolves Kolar's deterministic close-range channel and meaningful ranged fire for the current Stage 1 slice; final three-ship balance remains later tuning."
     }
   ],
   "stage1_playable_routes": [
@@ -178,6 +171,26 @@
         "pattern.stage1.standard.kolar_crystal_fan"
       ],
       "combo_pattern_id": "pattern.stage1.combo.ciela_kolar_river_ridgeline"
+    },
+    {
+      "schema_version": 1,
+      "id": "playable_route.stage1.kolar",
+      "display_name": "Kolar - Lost Forest",
+      "ship_id": "ship.kolar",
+      "fairy_identity": "mountain fairy",
+      "selector_sprite": "sprites/stage1/kolar_player.png",
+      "player_kind_id": "player_kind.stage1.kolar",
+      "loadout_id": "loadout.stage1.kolar_close_range",
+      "stage_schedule_id": "stage_schedule.stage1.selected_ship_lost_forest",
+      "midboss_ship_ids": [
+        "ship.ciela",
+        "ship.maynii"
+      ],
+      "standard_pattern_ids": [
+        "pattern.stage1.standard.ciela_river_current",
+        "pattern.stage1.standard.maynii_leaf_fan"
+      ],
+      "combo_pattern_id": "pattern.stage1.combo.ciela_maynii_river_roots"
     }
   ],
   "stages": [
@@ -265,7 +278,7 @@
       "display_name": "Unchosen elemental fae duo",
       "stage_id": "stage.stage1.lost_forest_of_aurei",
       "kind": "midboss",
-      "resolution": "The two elemental fae not selected by the player participate together. Ciela selects Maynii and Kolar with their shared root-and-ridgeline combo. Maynii selects Ciela and Kolar with their shared river-and-ridgeline combo. Each pair resolves independent standard attacks before one shared combo life; defeating the combo resumes the second half of Stage 1."
+      "resolution": "The two elemental fae not selected by the player participate together. Ciela selects Maynii and Kolar with their shared root-and-ridgeline combo. Maynii selects Ciela and Kolar with their shared river-and-ridgeline combo. Kolar selects Ciela and Maynii with their shared river-and-roots combo. Each pair resolves independent standard attacks before one shared combo life; defeating the combo resumes the second half of Stage 1."
     },
     {
       "schema_version": 1,

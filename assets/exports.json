@@ -47,7 +47,12 @@
         "assets/source/sprites/stage1/maynii_forward_shot.kra",
         "assets/source/sprites/stage1/ciela_boss.kra",
         "assets/source/sprites/stage1/ciela_current.kra",
-        "assets/source/sprites/stage1/ciela_kolar_combo.kra"
+        "assets/source/sprites/stage1/ciela_kolar_combo.kra",
+        "assets/source/sprites/stage1/kolar_player.kra",
+        "assets/source/sprites/stage1/kolar_option.kra",
+        "assets/source/sprites/stage1/kolar_close_channel.kra",
+        "assets/source/sprites/stage1/kolar_ranged_shot.kra",
+        "assets/source/sprites/stage1/ciela_maynii_combo.kra"
       ],
       "runtime": [
         "assets/runtime/sprites/stage1/maynii_boss.png",
@@ -65,7 +70,12 @@
         "assets/runtime/sprites/stage1/maynii_forward_shot.png",
         "assets/runtime/sprites/stage1/ciela_boss.png",
         "assets/runtime/sprites/stage1/ciela_current.png",
-        "assets/runtime/sprites/stage1/ciela_kolar_combo.png"
+        "assets/runtime/sprites/stage1/ciela_kolar_combo.png",
+        "assets/runtime/sprites/stage1/kolar_player.png",
+        "assets/runtime/sprites/stage1/kolar_option.png",
+        "assets/runtime/sprites/stage1/kolar_close_channel.png",
+        "assets/runtime/sprites/stage1/kolar_ranged_shot.png",
+        "assets/runtime/sprites/stage1/ciela_maynii_combo.png"
       ]
     },
     {

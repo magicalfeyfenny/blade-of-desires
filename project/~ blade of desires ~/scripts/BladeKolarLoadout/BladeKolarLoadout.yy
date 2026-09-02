@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeKolarLoadout",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeKolarLoadout",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -76,6 +76,21 @@ ciela_current_sprite = BladeStage1ForestTextureLoad(
 ciela_kolar_combo_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/ciela_kolar_combo.png"
 );
+kolar_player_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/kolar_player.png"
+);
+kolar_option_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/kolar_option.png"
+);
+kolar_close_shot_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/kolar_close_channel.png"
+);
+kolar_ranged_shot_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/kolar_ranged_shot.png"
+);
+ciela_maynii_combo_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/ciela_maynii_combo.png"
+);
 maynii_leaf_sprite = BladeStage1ForestTextureLoad("sprites/stage1/maynii_leaf.png");
 kolar_crystal_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/kolar_crystal.png"
@@ -136,6 +151,11 @@ assets_ready = terrain_buffer >= 0
     && sprite_exists(ciela_wave_sprite)
     && sprite_exists(ciela_current_sprite)
     && sprite_exists(ciela_kolar_combo_sprite)
+    && sprite_exists(kolar_player_sprite)
+    && sprite_exists(kolar_option_sprite)
+    && sprite_exists(kolar_close_shot_sprite)
+    && sprite_exists(kolar_ranged_shot_sprite)
+    && sprite_exists(ciela_maynii_combo_sprite)
     && sprite_exists(maynii_leaf_sprite)
     && sprite_exists(kolar_crystal_sprite)
     && sprite_exists(asahi_sprite)

@@ -64,7 +64,38 @@ function _BladeStage1PlayerFireMaynii(_player, _controller) {
     }
 }
 
-// Dispatches only the two complete loadouts represented in the selector contract.
+// Creates Kolar's close channel and useful ranged channel in stable order.
+function _BladeStage1PlayerFireKolar(_player, _controller) {
+    var _volley = BladeKolarVolley(
+        _player.focused, _controller.economy.active_hyper_tier
+    );
+    for (var _index = 0; _index < array_length(_volley); ++_index) {
+        var _spec = _volley[_index];
+        var _shot = instance_create_layer(
+            _player.x + _spec.offset_x,
+            _player.y + _spec.offset_y,
+            "Projectiles",
+            o_kolar_first_beat_shot
+        );
+        _shot.velocity_x = _spec.velocity_x;
+        _shot.velocity_y = _spec.velocity_y;
+        _shot.travel_speed = _spec.speed;
+        _shot.speed = 0;
+        _shot.channel = _spec.channel;
+        _shot.range_limit = _spec.range_limit;
+        _shot.origin_x = _shot.x;
+        _shot.origin_y = _shot.y;
+        _shot.hit_interval = _spec.hit_interval;
+        _shot.damage = _spec.damage
+            * _controller.economy.shot_strength
+            * BladeSurvivalHyperDamageMultiplier(
+                _controller.economy.active_hyper_tier
+            );
+        _shot.hyper_tier = _controller.economy.active_hyper_tier;
+    }
+}
+
+// Dispatches only complete loadouts represented in the selector contract.
 function _BladeStage1PlayerFire(_player, _controller) {
     switch (_player.ship_id) {
         case "ship.ciela":
@@ -72,6 +103,9 @@ function _BladeStage1PlayerFire(_player, _controller) {
             return;
         case "ship.maynii":
             _BladeStage1PlayerFireMaynii(_player, _controller);
+            return;
+        case "ship.kolar":
+            _BladeStage1PlayerFireKolar(_player, _controller);
             return;
     }
     throw("BladeStage1Player: no firing loadout for " + string(_player.ship_id));
@@ -160,6 +194,10 @@ function _BladeStage1PlayerSprite(_player, _renderer) {
         && variable_instance_exists(_renderer, "maynii_player_sprite")) {
         return _renderer.maynii_player_sprite;
     }
+    if (_player.ship_id == "ship.kolar"
+        && variable_instance_exists(_renderer, "kolar_player_sprite")) {
+        return _renderer.kolar_player_sprite;
+    }
     return -1;
 }
 
@@ -189,6 +227,33 @@ function _BladeStage1PlayerDrawMayniiOptions(_player, _renderer, _alpha) {
     }
 }
 
+// Draws Kolar's options from the same focus-dependent formation as her volley.
+function _BladeStage1PlayerDrawKolarOptions(_player, _renderer, _alpha) {
+    var _options = BladeKolarOptionFormation(_player.focused);
+    var _sprite = -1;
+    if (_renderer != noone
+        && variable_instance_exists(_renderer, "kolar_option_sprite")) {
+        _sprite = _renderer.kolar_option_sprite;
+    }
+    for (var _index = 0; _index < array_length(_options); ++_index) {
+        var _option = _options[_index];
+        var _x = _player.x + _option.x;
+        var _y = _player.y + _option.y;
+        if (sprite_exists(_sprite)) {
+            draw_sprite_ext(
+                _sprite, 0, _x, _y, 0.82, 0.82,
+                _player.focused ? 0 : (_index - 1) * 12,
+                c_white, _alpha
+            );
+        } else {
+            draw_set_alpha(_alpha);
+            draw_set_color(make_color_rgb(205, 164, 250));
+            draw_triangle(_x, _y - 5, _x - 5, _y, _x, _y + 5, false);
+            draw_triangle(_x, _y - 5, _x, _y + 5, _x + 5, _y, false);
+        }
+    }
+}
+
 /// @func BladeStage1PlayerDraw(player)
 /// Draws ship art, options, focus geometry, and shared protection feedback.
 function BladeStage1PlayerDraw(_player) {
@@ -211,6 +276,8 @@ function BladeStage1PlayerDraw(_player) {
 
     if (_player.ship_id == "ship.maynii") {
         _BladeStage1PlayerDrawMayniiOptions(_player, _renderer, _ship_alpha);
+    } else if (_player.ship_id == "ship.kolar") {
+        _BladeStage1PlayerDrawKolarOptions(_player, _renderer, _ship_alpha);
     }
     var _sprite = _BladeStage1PlayerSprite(_player, _renderer);
     if (sprite_exists(_sprite)) {
@@ -223,7 +290,9 @@ function BladeStage1PlayerDraw(_player) {
         draw_set_alpha(_ship_alpha);
         draw_set_color(_player.ship_id == "ship.maynii"
             ? make_color_rgb(142, 226, 98)
-            : make_color_rgb(108, 224, 255));
+            : (_player.ship_id == "ship.kolar"
+                ? make_color_rgb(177, 142, 230)
+                : make_color_rgb(108, 224, 255)));
         draw_triangle(
             _player.x, _player.y - 9,
             _player.x - 7, _player.y + 7,
@@ -239,7 +308,9 @@ function BladeStage1PlayerDraw(_player) {
         draw_circle(_player.x, _player.y, _player.hit_radius, false);
         draw_set_color(_player.ship_id == "ship.maynii"
             ? make_color_rgb(162, 238, 108)
-            : make_color_rgb(108, 224, 255));
+            : (_player.ship_id == "ship.kolar"
+                ? make_color_rgb(215, 182, 255)
+                : make_color_rgb(108, 224, 255)));
         draw_circle(_player.x, _player.y, _player.body_radius + 3, true);
     }
     if (_controller != noone && _controller.economy.bomb_ticks > 0) {
@@ -263,6 +334,12 @@ function BladeStage1PlayerFeedback(_player) {
         return {
             kind: BLADE_STAGE1_EFFECT_MAYNII,
             color: make_color_rgb(132, 238, 104),
+        };
+    }
+    if (_player.ship_id == "ship.kolar") {
+        return {
+            kind: BLADE_STAGE1_EFFECT_KOLAR,
+            color: make_color_rgb(211, 170, 255),
         };
     }
     return {
