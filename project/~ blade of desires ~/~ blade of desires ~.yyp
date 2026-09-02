@@ -76,6 +76,8 @@
     {"id":{"name":"BladeFirstCombatBeatTests","path":"scripts/BladeFirstCombatBeatTests/BladeFirstCombatBeatTests.yy",},},
     {"id":{"name":"BladeShipSelection","path":"scripts/BladeShipSelection/BladeShipSelection.yy",},},
     {"id":{"name":"BladeShipSelectionTests","path":"scripts/BladeShipSelectionTests/BladeShipSelectionTests.yy",},},
+    {"id":{"name":"BladeDifficultyRank","path":"scripts/BladeDifficultyRank/BladeDifficultyRank.yy",},},
+    {"id":{"name":"BladeDifficultyRankTests","path":"scripts/BladeDifficultyRankTests/BladeDifficultyRankTests.yy",},},
     {"id":{"name":"BladeStage1Player","path":"scripts/BladeStage1Player/BladeStage1Player.yy",},},
     {"id":{"name":"BladeMayniiLoadout","path":"scripts/BladeMayniiLoadout/BladeMayniiLoadout.yy",},},
     {"id":{"name":"BladeMayniiLoadoutTests","path":"scripts/BladeMayniiLoadoutTests/BladeMayniiLoadoutTests.yy",},},

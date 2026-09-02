@@ -3,6 +3,11 @@
 // Supplies the smallest complete contract fixture for all three runnable ships.
 function _BladeShipSelectionTestContract() {
     return {
+        difficulties: [
+            { schema_version: 1, id: "difficulty.easy", display_name: "Breeze" },
+            { schema_version: 1, id: "difficulty.normal", display_name: "Arcade" },
+            { schema_version: 1, id: "difficulty.hard", display_name: "Storm" },
+        ],
         ships: [
             {
                 id: "ship.ciela",
@@ -85,6 +90,15 @@ function _BladeShipSelectionTestCatalogChoices() {
         array_length(_catalog.entries), 3, "selector exposes three runnable routes"
     );
     BladeKernelTestAssertEqual(
+        array_length(_catalog.difficulty_entries), 3,
+        "selector exposes three playable difficulties"
+    );
+    BladeKernelTestAssertEqual(
+        _catalog.difficulty_entries[1].difficulty_id,
+        "difficulty.normal",
+        "Normal is the default difficulty"
+    );
+    BladeKernelTestAssertEqual(
         _catalog.entries[0].ship_id, "ship.ciela", "Ciela is the first choice"
     );
     BladeKernelTestAssertEqual(
@@ -107,6 +121,35 @@ function _BladeShipSelectionTestCatalogChoices() {
         _catalog.entries[2].fairy_identity,
         "mountain fairy",
         "Kolar fairy identity"
+    );
+}
+
+// Exercises difficulty wraparound, confirmation persistence, and retry identity.
+function _BladeShipSelectionTestDifficultyChoice() {
+    var _catalog = BladeShipSelectionCatalogFromContract(
+        _BladeShipSelectionTestContract()
+    );
+    var _state = BladeShipSelectionStateCreate(_catalog);
+    BladeKernelTestAssertEqual(
+        BladeShipSelectionMoveDifficulty(_state, _catalog, -1),
+        0,
+        "left from Normal selects Easy"
+    );
+    BladeKernelTestAssertEqual(
+        BladeShipSelectionMoveDifficulty(_state, _catalog, -1),
+        2,
+        "difficulty navigation wraps to Hard"
+    );
+    var _run = BladeShipSelectionConfirm(_state, _catalog).run;
+    var _retry = BladeShipSelectionRequireRun(_catalog, _run);
+    BladeKernelTestAssertEqual(
+        _retry.difficulty_id, "difficulty.hard",
+        "selected Hard persists through retry"
+    );
+    BladeKernelTestAssertEqual(
+        BladeShipSelectionMoveDifficulty(_state, _catalog, -1),
+        2,
+        "difficulty navigation locks after confirmation"
     );
 }
 
@@ -174,6 +217,25 @@ function _BladeShipSelectionTestRunPersistence() {
 
 // Covers malformed, incomplete, duplicate, self-opposing, and tampered identities.
 function _BladeShipSelectionTestRejections() {
+    BladeKernelTestAssertThrows(
+        method({}, function() {
+            var _contract = _BladeShipSelectionTestContract();
+            array_delete(_contract.difficulties, 2, 1);
+            BladeShipSelectionCatalogFromContract(_contract);
+        }),
+        "must contain exactly Easy, Normal, and Hard",
+        "missing difficulty is rejected"
+    );
+    BladeKernelTestAssertThrows(
+        method({}, function() {
+            var _contract = _BladeShipSelectionTestContract();
+            _contract.difficulties[0].id
+                = "stage.extra.dreams_of_a_clockwork_angel";
+            BladeShipSelectionCatalogFromContract(_contract);
+        }),
+        "canonical playable difficulty order",
+        "extra stage cannot become a difficulty"
+    );
     BladeKernelTestAssertThrows(
         method({}, function() {
             var _contract = _BladeShipSelectionTestContract();
@@ -256,6 +318,9 @@ function BladeShipSelectionTestsRun(_state) {
     });
     BladeKernelTestRunCase(_state, "ship selector confirms exactly once", function() {
         _BladeShipSelectionTestConfirmOnce();
+    });
+    BladeKernelTestRunCase(_state, "difficulty selector persists through retry", function() {
+        _BladeShipSelectionTestDifficultyChoice();
     });
     BladeKernelTestRunCase(_state, "selected ship persists through transition and retry", function() {
         _BladeShipSelectionTestRunPersistence();

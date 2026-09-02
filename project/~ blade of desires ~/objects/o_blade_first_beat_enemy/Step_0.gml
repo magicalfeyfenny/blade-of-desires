@@ -22,9 +22,13 @@ if (x <= 230 || x >= 410) {
 }
 
 var _hyper_tier = _controller.economy.active_hyper_tier;
+var _difficulty_id = BladeSurvivalEconomyDifficulty(_controller.economy);
+var _rank = BladeSurvivalEconomyRank(_controller.economy);
 fire_cooldown = max(
     0,
-    fire_cooldown - BladeSurvivalHyperHostileFireRate(_hyper_tier)
+    fire_cooldown - BladeDifficultyHostileFireRate(
+        _difficulty_id, _rank, _hyper_tier
+    )
 );
 if (_controller.bomb_clears_this_frame
     || fire_cooldown > 0
@@ -40,8 +44,8 @@ for (var _index = 0; _index < array_length(bullet_offsets); ++_index) {
     var _bullet = instance_create_layer(
         x, y + hit_radius, "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    var _shot_speed = BladeSurvivalHyperHostileBulletSpeed(
-        bullet_speed, _hyper_tier
+    var _shot_speed = BladeDifficultyHostileBulletSpeed(
+        bullet_speed, _difficulty_id, _rank, _hyper_tier
     );
     _bullet.velocity_x = lengthdir_x(_shot_speed, _direction);
     _bullet.velocity_y = lengthdir_y(_shot_speed, _direction);
@@ -50,4 +54,6 @@ for (var _index = 0; _index < array_length(bullet_offsets); ++_index) {
 BladeStage1AudioPlayForController(
     _controller, BladeStage1AudioSfx.EnemyVolley, 0.12
 );
-fire_cooldown = fire_repeat_ticks;
+fire_cooldown = BladeDifficultyHostileFireInterval(
+    fire_repeat_ticks, _difficulty_id, _rank, _hyper_tier
+);

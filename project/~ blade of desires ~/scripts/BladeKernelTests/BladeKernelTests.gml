@@ -10,6 +10,7 @@ function BladeKernelTestsRun() {
     BladeClockInputTestsRun(_state);
     BladeInputBindingTestsRun(_state);
     BladeShipSelectionTestsRun(_state);
+    BladeDifficultyRankTestsRun(_state);
     BladeMayniiLoadoutTestsRun(_state);
     BladeKolarLoadoutTestsRun(_state);
     BladeConfigTestsRun(_state);

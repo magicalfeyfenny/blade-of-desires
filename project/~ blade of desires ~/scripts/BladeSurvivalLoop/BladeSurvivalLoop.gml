@@ -20,7 +20,8 @@ enum BladeSurvivalPowerAction {
     None = 0,
     Hyper = 1,
     Bomb = 2,
-    EmergencyBomb = 3
+    EmergencyBomb = 3,
+    DeathBombHyper = 4
 }
 
 #macro BLADE_SURVIVAL_STARTING_LIVES 2
@@ -60,8 +61,11 @@ function BladeSurvivalEnemyIsBombCarrier(_archetype_id) {
 }
 
 /// Creates the full attempt-local economy used by the room controller and retry.
-function BladeSurvivalEconomyCreate() {
+function BladeSurvivalEconomyCreate(_difficulty_id = BLADE_DIFFICULTY_NORMAL_ID) {
+    _difficulty_id = _BladeDifficultyRankRequireId(_difficulty_id, "economy.difficulty_id");
     return {
+        difficulty_id: _difficulty_id,
+        rank_state: BladeDifficultyRankStateCreate(),
         score: 0,
         point_value: BLADE_SURVIVAL_STARTING_POINT_VALUE,
         lives: BLADE_SURVIVAL_STARTING_LIVES,
@@ -75,6 +79,48 @@ function BladeSurvivalEconomyCreate() {
     };
 }
 
+/// Returns the selected identity carried by this attempt's economy.
+function BladeSurvivalEconomyDifficulty(_economy) {
+    return _BladeDifficultyRankRequireId(_economy.difficulty_id, "economy.difficulty_id");
+}
+
+/// Returns the current attempt-local rank used by authored Stage 1 consumers.
+function BladeSurvivalEconomyRank(_economy) {
+    return BladeDifficultyRankValue(_economy.rank_state);
+}
+
+/// Returns the next point item's actual score value without mutating the economy.
+function BladeSurvivalCurrentPointValue(_economy) {
+    return BladeDifficultyRewardValue(
+        _economy.point_value,
+        BladeSurvivalEconomyDifficulty(_economy),
+        BladeSurvivalEconomyRank(_economy)
+    );
+}
+
+/// Emits attempt economy, effective reward value, and rank for gameplay snapshots.
+function BladeSurvivalEconomyCanonical(_economy) {
+    return BladeCanonicalRecord("BSE1", [
+        BladeSurvivalEconomyDifficulty(_economy),
+        string(_economy.score),
+        string(_economy.point_value),
+        string(BladeSurvivalCurrentPointValue(_economy)),
+        string(_economy.lives),
+        string(_economy.bombs),
+        string(_economy.hyper_meter),
+        string(_economy.active_hyper_tier),
+        string(_economy.hyper_ticks),
+        string(_economy.bomb_ticks),
+        string(_economy.awarded_life_mask),
+        string(_economy.shot_strength),
+        BladeDifficultyRankCanonical(_economy.rank_state),
+    ]);
+}
+
+function BladeSurvivalEconomyHash(_economy) {
+    return BladeCanonicalHashUtf8(BladeSurvivalEconomyCanonical(_economy));
+}
+
 /// Maps stocked meter to the highest Hyper tier currently ready to activate.
 function BladeSurvivalHyperTierForMeter(_meter) {
     if (_meter >= BLADE_SURVIVAL_HYPER_TIER_3) return 3;
@@ -83,12 +129,13 @@ function BladeSurvivalHyperTierForMeter(_meter) {
     return 0;
 }
 
-/// Gives stocked Hyper first claim in normal play; only Bomb can answer a hit.
+/// Gives stocked Hyper first claim in normal play and as a death-bomb response.
 function BladeSurvivalPowerActionForX(_economy, _during_hit_response = false) {
-    if (!_during_hit_response
-        && _economy.active_hyper_tier == 0
+    if (_economy.active_hyper_tier == 0
         && BladeSurvivalHyperTierForMeter(_economy.hyper_meter) > 0) {
-        return BladeSurvivalPowerAction.Hyper;
+        return _during_hit_response
+            ? BladeSurvivalPowerAction.DeathBombHyper
+            : BladeSurvivalPowerAction.Hyper;
     }
     if (_economy.bombs <= 0 || _economy.bomb_ticks > 0) {
         return BladeSurvivalPowerAction.None;
@@ -149,10 +196,16 @@ function BladeSurvivalAddHyper(_economy, _amount) {
 
 /// Awards score once, applies active Hyper, and grants every newly crossed extend once.
 function BladeSurvivalApplyScore(_economy, _base_score) {
+    var _authored_score = max(0, round(_base_score));
+    var _scaled_score = BladeDifficultyRewardValue(
+        _authored_score,
+        BladeSurvivalEconomyDifficulty(_economy),
+        BladeSurvivalEconomyRank(_economy)
+    );
     var _multiplier = BladeSurvivalHyperScoreMultiplier(
         _economy.active_hyper_tier
     );
-    var _awarded = max(0, round(_base_score)) * _multiplier;
+    var _awarded = _scaled_score * _multiplier;
     _economy.score += _awarded;
 
     var _life_awards = 0;
@@ -171,14 +224,14 @@ function BladeSurvivalApplyScore(_economy, _base_score) {
 
 /// Converts one point pickup into score, a larger next item value, and stocked Hyper.
 function BladeSurvivalCollectPointItem(_economy) {
-    var _value = _economy.point_value;
-    var _reward = BladeSurvivalApplyScore(_economy, _value);
+    var _authored_value = _economy.point_value;
+    var _reward = BladeSurvivalApplyScore(_economy, _authored_value);
     _economy.point_value = min(
         BLADE_SURVIVAL_POINT_VALUE_CAP,
         _economy.point_value + BLADE_SURVIVAL_POINT_VALUE_STEP
     );
     BladeSurvivalAddHyper(_economy, 20);
-    _reward.collected_value = _value;
+    _reward.collected_value = _reward.score;
     return _reward;
 }
 

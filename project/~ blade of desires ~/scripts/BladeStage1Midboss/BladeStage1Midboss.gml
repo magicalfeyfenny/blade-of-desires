@@ -104,10 +104,15 @@ function BladeStage1MidbossRegister(
     if (!variable_instance_exists(_controller, "midboss_state")) {
         _controller.midboss_state = BladeStage1MidbossStateCreate();
     }
+    var _difficulty_id = BladeSurvivalEconomyDifficulty(_controller.economy);
+    var _rank = BladeSurvivalEconomyRank(_controller.economy);
     _member.fae_role = _role;
     _member.standard_pattern_id = _standard_pattern_id;
     _member.target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
-    _member.max_health = BLADE_STAGE1_MIDBOSS_PERSONAL_HP;
+    _member.authored_max_health = BLADE_STAGE1_MIDBOSS_PERSONAL_HP;
+    _member.max_health = BladeDifficultyEnemyHealth(
+        _member.authored_max_health, _difficulty_id, _rank
+    );
     _member.hit_points = _member.max_health;
     _member.hit_radius = 18;
     _member.targetable = false;
@@ -157,8 +162,13 @@ function BladeStage1MidbossBeginCombo(_controller) {
         var _member = _state.members[_index];
         _member.combo_active = true;
         _member.targetable = false;
-        _member.max_health = BLADE_STAGE1_MIDBOSS_COMBO_HP;
-        _member.hit_points = BLADE_STAGE1_MIDBOSS_COMBO_HP;
+        _member.authored_max_health = BLADE_STAGE1_MIDBOSS_COMBO_HP;
+        _member.max_health = BladeDifficultyEnemyHealth(
+            _member.authored_max_health,
+            BladeSurvivalEconomyDifficulty(_controller.economy),
+            BladeSurvivalEconomyRank(_controller.economy)
+        );
+        _member.hit_points = _member.max_health;
         _member.hit_radius = 18;
         _member.phase_transition_ticks = BLADE_STAGE1_MIDBOSS_RECHARGE_TICKS;
         _member.attack_ticks = 0;
@@ -169,6 +179,39 @@ function BladeStage1MidbossBeginCombo(_controller) {
     ) + "\nSHARED LIFE";
     _controller.feedback_ticks = BLADE_STAGE1_MIDBOSS_RECHARGE_TICKS;
     return true;
+}
+
+// Reads the attempt tuning without duplicating it into each authored pattern.
+function _BladeStage1MidbossDifficultyId(_member) {
+    var _controller = instance_find(o_blade_first_beat_controller, 0);
+    return _controller == noone
+        ? BLADE_DIFFICULTY_NORMAL_ID
+        : BladeSurvivalEconomyDifficulty(_controller.economy);
+}
+
+function _BladeStage1MidbossRank(_member) {
+    var _controller = instance_find(o_blade_first_beat_controller, 0);
+    return _controller == noone
+        ? BLADE_DIFFICULTY_RANK_MIN
+        : BladeSurvivalEconomyRank(_controller.economy);
+}
+
+function _BladeStage1MidbossFireInterval(_member, _base_ticks, _hyper_tier) {
+    return BladeDifficultyHostileFireInterval(
+        _base_ticks,
+        _BladeStage1MidbossDifficultyId(_member),
+        _BladeStage1MidbossRank(_member),
+        _hyper_tier
+    );
+}
+
+function _BladeStage1MidbossBulletSpeed(_member, _base_speed, _hyper_tier) {
+    return BladeDifficultyHostileBulletSpeed(
+        _base_speed,
+        _BladeStage1MidbossDifficultyId(_member),
+        _BladeStage1MidbossRank(_member),
+        _hyper_tier
+    );
 }
 
 /// Applies damage to a personal life or the shared combo life exactly once.
@@ -262,8 +305,8 @@ function BladeStage1MidbossBulletSpawn(
         _member.x, _member.y + 12,
         "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    var _shot_speed = BladeSurvivalHyperHostileBulletSpeed(
-        _speed, _hyper_tier
+    var _shot_speed = _BladeStage1MidbossBulletSpeed(
+        _member, _speed, _hyper_tier
     );
     _bullet.velocity_x = lengthdir_x(_shot_speed, _direction);
     _bullet.velocity_y = lengthdir_y(_shot_speed, _direction);
@@ -277,7 +320,7 @@ function BladeStage1MidbossBulletSpawn(
 
 /// Fires Maynii's leaf-wing fan while leaving a readable central lane.
 function BladeStage1MidbossMayniiSolo(_member, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(54, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 54, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _offsets = [-42, -24, 24, 42];
@@ -294,7 +337,7 @@ function BladeStage1MidbossMayniiSolo(_member, _player, _hyper_tier = 0) {
 
 /// Fires Ciela's staggered river-current banks with alternating open water.
 function BladeStage1MidbossCielaSolo(_member, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(58, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 58, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _pulse = (_member.attack_ticks div _interval) mod 4;
@@ -317,7 +360,7 @@ function BladeStage1MidbossCielaSolo(_member, _player, _hyper_tier = 0) {
 
 /// Fires Kolar's compact crystal fan from beneath her sparkly mountain cape.
 function BladeStage1MidbossKolarSolo(_member, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(64, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 64, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _offsets = [-30, -15, 0, 15, 30];
@@ -334,7 +377,7 @@ function BladeStage1MidbossKolarSolo(_member, _player, _hyper_tier = 0) {
 
 /// Fires Maynii's half of the combo as a leaf curtain with one moving gap.
 function BladeStage1MidbossMayniiCombo(_member, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(72, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 72, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _lane_count = 9;
     var _open_lane = 1 + ((_member.attack_ticks div _interval) mod 7);
@@ -352,7 +395,7 @@ function BladeStage1MidbossMayniiCombo(_member, _hyper_tier = 0) {
 
 /// Fires Kolar's answering combo fan halfway between Maynii's leaf curtains.
 function BladeStage1MidbossKolarCombo(_member, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(72, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 72, _hyper_tier);
     var _answer_tick = max(1, _interval div 2);
     if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
@@ -370,7 +413,7 @@ function BladeStage1MidbossKolarCombo(_member, _player, _hyper_tier = 0) {
 
 /// Sends Ciela's combo half as offset river bands whose channel moves each wave.
 function BladeStage1MidbossCielaCombo(_member, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(68, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 68, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _wave = (_member.attack_ticks div _interval) mod 5;
     for (var _lane = 0; _lane < 8; ++_lane) {
@@ -394,7 +437,7 @@ function BladeStage1MidbossCielaCombo(_member, _hyper_tier = 0) {
 function BladeStage1MidbossKolarRiverCombo(
     _member, _player, _hyper_tier = 0
 ) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(68, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 68, _hyper_tier);
     var _answer_tick = max(1, _interval div 3);
     if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
@@ -417,7 +460,7 @@ function BladeStage1MidbossKolarRiverCombo(
 
 /// Sends Ciela's river-root half as a wider, pulsed channel unlike prior duos.
 function BladeStage1MidbossCielaMayniiRiverRoots(_member, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(76, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 76, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _wave = (_member.attack_ticks div _interval) mod 4;
     var _angles = [210, 228, 246, 294, 312, 330, 348];
@@ -440,7 +483,7 @@ function BladeStage1MidbossCielaMayniiRiverRoots(_member, _hyper_tier = 0) {
 function BladeStage1MidbossMayniiRiverRoots(
     _member, _player, _hyper_tier = 0
 ) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(76, _hyper_tier);
+    var _interval = _BladeStage1MidbossFireInterval(_member, 76, _hyper_tier);
     var _answer_tick = max(1, _interval div 2);
     if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);

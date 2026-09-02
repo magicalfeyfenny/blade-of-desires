@@ -41,6 +41,39 @@ function BladeStage1BossPhaseDuration(_phase) {
         : BLADE_STAGE1_ASAHI_PHASE_2_TICKS;
 }
 
+// Reads the selected attempt tuning once for all Asahi patterns and phases.
+function _BladeStage1BossDifficultyId(_boss) {
+    var _controller = instance_find(o_blade_first_beat_controller, 0);
+    return _controller == noone
+        ? BLADE_DIFFICULTY_NORMAL_ID
+        : BladeSurvivalEconomyDifficulty(_controller.economy);
+}
+
+function _BladeStage1BossRank(_boss) {
+    var _controller = instance_find(o_blade_first_beat_controller, 0);
+    return _controller == noone
+        ? BLADE_DIFFICULTY_RANK_MIN
+        : BladeSurvivalEconomyRank(_controller.economy);
+}
+
+function _BladeStage1BossFireInterval(_boss, _base_ticks, _hyper_tier) {
+    return BladeDifficultyHostileFireInterval(
+        _base_ticks,
+        _BladeStage1BossDifficultyId(_boss),
+        _BladeStage1BossRank(_boss),
+        _hyper_tier
+    );
+}
+
+function _BladeStage1BossBulletSpeed(_boss, _base_speed, _hyper_tier) {
+    return BladeDifficultyHostileBulletSpeed(
+        _base_speed,
+        _BladeStage1BossDifficultyId(_boss),
+        _BladeStage1BossRank(_boss),
+        _hyper_tier
+    );
+}
+
 /// Removes attacks owned by Asahi without touching any unrelated participant.
 function BladeStage1BossClearOwnedBullets(_boss) {
     if (!instance_exists(_boss)) return 0;
@@ -77,7 +110,12 @@ function BladeStage1BossActivatePhase(_boss, _phase) {
     _boss.boss_phase = _phase;
     _boss.boss_state = BladeStage1BossState.Active;
     _boss.phase_resolved = false;
-    _boss.max_health = BladeStage1BossPhaseHealth(_phase);
+    _boss.authored_max_health = BladeStage1BossPhaseHealth(_phase);
+    _boss.max_health = BladeDifficultyEnemyHealth(
+        _boss.authored_max_health,
+        _BladeStage1BossDifficultyId(_boss),
+        _BladeStage1BossRank(_boss)
+    );
     _boss.hit_points = _boss.max_health;
     _boss.phase_ticks = 0;
     _boss.phase_time_limit = BladeStage1BossPhaseDuration(_phase);
@@ -99,7 +137,12 @@ function BladeStage1BossRegister(_controller, _boss) {
     _boss.boss_phase = 1;
     _boss.boss_state = BladeStage1BossState.Entry;
     _boss.phase_resolved = false;
-    _boss.max_health = BLADE_STAGE1_ASAHI_PHASE_1_HP;
+    _boss.authored_max_health = BLADE_STAGE1_ASAHI_PHASE_1_HP;
+    _boss.max_health = BladeDifficultyEnemyHealth(
+        _boss.authored_max_health,
+        BladeSurvivalEconomyDifficulty(_controller.economy),
+        BladeSurvivalEconomyRank(_controller.economy)
+    );
     _boss.hit_points = _boss.max_health;
     _boss.phase_time_limit = BLADE_STAGE1_ASAHI_PHASE_1_TICKS;
     _boss.phase_ticks = 0;
@@ -116,8 +159,8 @@ function BladeStage1BossBulletSpawn(
         _boss.x, _boss.y + 13,
         "Projectiles", o_blade_first_beat_enemy_bullet
     );
-    var _shot_speed = BladeSurvivalHyperHostileBulletSpeed(
-        _speed, _hyper_tier
+    var _shot_speed = _BladeStage1BossBulletSpeed(
+        _boss, _speed, _hyper_tier
     );
     _bullet.velocity_x = lengthdir_x(_shot_speed, _direction);
     _bullet.velocity_y = lengthdir_y(_shot_speed, _direction);
@@ -131,7 +174,7 @@ function BladeStage1BossBulletSpawn(
 
 /// Fires an aimed seven-flame fan after a visible solar gathering tell.
 function BladeStage1BossSolarWaltz(_boss, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(58, _hyper_tier);
+    var _interval = _BladeStage1BossFireInterval(_boss, 58, _hyper_tier);
     var _tell = min(18, max(6, _interval div 3));
     var _cycle_tick = _boss.attack_ticks mod _interval;
     if (_cycle_tick == _interval - _tell) _boss.attack_tell_ticks = _tell;
@@ -155,7 +198,7 @@ function BladeStage1BossSolarWaltz(_boss, _player, _hyper_tier = 0) {
 
 /// Fires a rotating crown with one moving safe gap and one delayed aimed answer.
 function BladeStage1BossCrownOfDawn(_boss, _player, _hyper_tier = 0) {
-    var _interval = BladeSurvivalHyperHostileFireInterval(72, _hyper_tier);
+    var _interval = _BladeStage1BossFireInterval(_boss, 72, _hyper_tier);
     var _cycle_tick = _boss.attack_ticks mod _interval;
     var _tell = min(20, max(8, _interval div 3));
     if (_cycle_tick == _interval - _tell) _boss.attack_tell_ticks = _tell;
@@ -496,13 +539,21 @@ function BladeStage1BossDrawHud(_controller, _x, _y, _width) {
 /// Awards the stable Stage Clear breakdown exactly once after Asahi resolves.
 function BladeStage1BossFinalizeStageClear(_controller) {
     if (_controller.stage_clear_awarded) return _controller.stage_clear_breakdown;
-    var _life_bonus = max(0, _controller.economy.lives) * 10000;
-    var _bomb_bonus = max(0, _controller.economy.bombs) * 2000;
-    var _total = BLADE_STAGE1_ASAHI_STAGE_BONUS + _life_bonus + _bomb_bonus;
-    _controller.economy.score += _total;
+    var _life_units = max(0, _controller.economy.lives);
+    var _bomb_units = max(0, _controller.economy.bombs);
+    var _base_reward = BladeSurvivalApplyScore(
+        _controller.economy, BLADE_STAGE1_ASAHI_STAGE_BONUS
+    ).score;
+    var _life_bonus = BladeSurvivalApplyScore(
+        _controller.economy, _life_units * 10000
+    ).score;
+    var _bomb_bonus = BladeSurvivalApplyScore(
+        _controller.economy, _bomb_units * 2000
+    ).score;
+    var _total = _base_reward + _life_bonus + _bomb_bonus;
     _controller.stage_clear_awarded = true;
     _controller.stage_clear_breakdown = {
-        base: BLADE_STAGE1_ASAHI_STAGE_BONUS,
+        base: _base_reward,
         lives: _life_bonus,
         bombs: _bomb_bonus,
         total: _total,

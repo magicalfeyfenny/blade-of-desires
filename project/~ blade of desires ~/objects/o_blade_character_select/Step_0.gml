@@ -3,12 +3,20 @@ if (error_text != "" || is_undefined(selector_state)) exit;
 
 var _move_up = variable_struct_get(keyboard_bindings, "input.move_up");
 var _move_down = variable_struct_get(keyboard_bindings, "input.move_down");
+var _move_left = variable_struct_get(keyboard_bindings, "input.move_left");
+var _move_right = variable_struct_get(keyboard_bindings, "input.move_right");
 var _confirm = variable_struct_get(keyboard_bindings, "input.confirm");
 if (keyboard_check_pressed(_move_up)) {
     BladeShipSelectionMove(selector_state, catalog, -1);
 }
 if (keyboard_check_pressed(_move_down)) {
     BladeShipSelectionMove(selector_state, catalog, 1);
+}
+if (keyboard_check_pressed(_move_left)) {
+    BladeShipSelectionMoveDifficulty(selector_state, catalog, -1);
+}
+if (keyboard_check_pressed(_move_right)) {
+    BladeShipSelectionMoveDifficulty(selector_state, catalog, 1);
 }
 if (!keyboard_check_pressed(_confirm)) exit;
 

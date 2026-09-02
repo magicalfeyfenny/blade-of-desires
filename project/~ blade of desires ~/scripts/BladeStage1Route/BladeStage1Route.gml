@@ -76,12 +76,17 @@ function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
         "Instances", o_blade_first_beat_enemy
     );
     BladeStage1RouteAssignOwnership(_enemy, _spawn);
+    var _difficulty_id = BladeSurvivalEconomyDifficulty(_controller.economy);
+    var _rank = BladeSurvivalEconomyRank(_controller.economy);
     _enemy.target_y = _target_y;
     _enemy.fire_cooldown = 0;
     _enemy.targetable = true;
     if (_spawn.content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID) {
         _enemy.archetype_id = BLADE_SURVIVAL_BOMB_CARRIER_ID;
-        _enemy.max_health = 36;
+        _enemy.authored_max_health = 36;
+        _enemy.max_health = BladeDifficultyEnemyHealth(
+            _enemy.authored_max_health, _difficulty_id, _rank
+        );
         _enemy.hit_radius = 14;
         _enemy.tell_ticks = 55;
         _enemy.fire_repeat_ticks = 56;
@@ -90,7 +95,10 @@ function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
         _enemy.travel_speed_x = 0.65;
     } else {
         _enemy.archetype_id = BLADE_STAGE1_SCOUT_CONTENT_ID;
-        _enemy.max_health = 18;
+        _enemy.authored_max_health = 18;
+        _enemy.max_health = BladeDifficultyEnemyHealth(
+            _enemy.authored_max_health, _difficulty_id, _rank
+        );
         _enemy.hit_radius = 11;
         _enemy.tell_ticks = 35 + _spawn.spawn_order * 8;
         _enemy.fire_repeat_ticks = 72 + (_spawn.spawn_order mod 2) * 12;
@@ -234,7 +242,16 @@ function BladeStage1RouteTick(_kernel, _input, _tick) {
     BladeStageExecutorAdvancePlayable(
         _controller.stage_executor, _kernel, _tick
     );
-    return BladeStageExecutorCanonical(_controller.stage_executor);
+    return BladeCanonicalRecord("BRT2", [
+        BladeStageExecutorCanonical(_controller.stage_executor),
+        BladeDifficultyRankCanonical(_controller.economy.rank_state),
+        BladeDifficultyPressureCanonical(
+            BladeSurvivalEconomyDifficulty(_controller.economy),
+            BladeSurvivalEconomyRank(_controller.economy),
+            _controller.economy.active_hyper_tier
+        ),
+        BladeSurvivalEconomyCanonical(_controller.economy),
+    ]);
 }
 
 /// Applies one semantic route cue to presentation and readable player feedback.
