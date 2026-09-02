@@ -24,7 +24,7 @@ draw_set_valign(fa_top);
 draw_set_color(c_white);
 draw_text(12, 12, "LOST FOREST\nSURVIVAL LOOP");
 draw_text(12, 62, "SCORE\n" + string_format(economy.score, 9, 0));
-draw_text(12, 102, "POINT  " + string(economy.point_value));
+draw_text(12, 102, "POINT  " + string(BladeSurvivalCurrentPointValue(economy)));
 draw_text(12, 122, "LIVES  " + string(economy.lives));
 draw_text(12, 142, "BOMBS  " + string(economy.bombs)
     + " / " + string(BLADE_SURVIVAL_BOMB_CAP));
@@ -52,6 +52,8 @@ if (economy.active_hyper_tier > 0) {
 
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
     + "\nPower  X\nHyper boosts danger");
+draw_text(12, 304, string_upper(BladeDifficultyPlayerName(economy.difficulty_id))
+    + "  RANK " + string(BladeSurvivalEconomyRank(economy)) + " / 50");
 
 var _selected_ship_name = selected_ship_id == ""
     ? "CIELA"
@@ -148,7 +150,9 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
     draw_set_color(c_white);
     var _response_action = BladeSurvivalPowerActionForX(economy, true);
     var _response_prompt = "NO DEFENSE READY\nDEATH WILL COMMIT";
-    if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
+    if (_response_action == BladeSurvivalPowerAction.DeathBombHyper) {
+        _response_prompt = "PRESS X: DEATH-BOMB HYPER";
+    } else if (_response_action == BladeSurvivalPowerAction.EmergencyBomb) {
         _response_prompt = "PRESS X: SPEND ALL BOMBS";
     }
     draw_text(320, 156, "HIT RESPONSE  " + string(hit_response_ticks)

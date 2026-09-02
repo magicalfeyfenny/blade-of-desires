@@ -219,18 +219,66 @@ function _BladeShipSelectionRoute(_ships, _route, _index) {
     };
 }
 
+// Converts one identity-only contract difficulty into the detached selector record.
+function _BladeShipSelectionDifficulty(_difficulty, _index) {
+    var _field = "difficulties[" + string(_index) + "]";
+    _BladeShipSelectionExactKeys(
+        _difficulty, ["schema_version", "id", "display_name"], _field
+    );
+    if (_difficulty.schema_version != 1) {
+        _BladeShipSelectionFail(_field + ".schema_version", "must be 1");
+    }
+    var _ids = BladeDifficultyIds();
+    if (_index >= array_length(_ids) || _difficulty.id != _ids[_index]) {
+        _BladeShipSelectionFail(
+            _field + ".id", "must use the canonical playable difficulty order"
+        );
+    }
+    if (_difficulty.display_name != BladeDifficultyContractName(_difficulty.id)) {
+        _BladeShipSelectionFail(
+            _field + ".display_name", "does not match the canonical identity"
+        );
+    }
+    return {
+        difficulty_id: _difficulty.id,
+        display_name: BladeDifficultyPlayerName(_difficulty.id),
+        contract_display_name: _difficulty.display_name,
+    };
+}
+
+// Requires the closed identity registry before any selector state can be created.
+function _BladeShipSelectionDifficultyEntries(_difficulties) {
+    var _ids = BladeDifficultyIds();
+    if (!is_array(_difficulties) || array_length(_difficulties) != array_length(_ids)) {
+        _BladeShipSelectionFail(
+            "difficulties", "must contain exactly Easy, Normal, and Hard"
+        );
+    }
+    var _entries = [];
+    for (var _index = 0; _index < array_length(_difficulties); ++_index) {
+        array_push(_entries, _BladeShipSelectionDifficulty(
+            _difficulties[_index], _index
+        ));
+    }
+    return _entries;
+}
+
 /// @func BladeShipSelectionCatalogFromContract(contract)
 /// Builds the selectable list only from complete Stage 1 route records.
 /// A ship registry entry alone cannot become selectable through this boundary.
 function BladeShipSelectionCatalogFromContract(_contract) {
     if (!is_struct(_contract)
         || !variable_struct_exists(_contract, "ships")
+        || !variable_struct_exists(_contract, "difficulties")
         || !variable_struct_exists(_contract, "stage1_playable_routes")
         || !is_array(_contract.stage1_playable_routes)) {
         _BladeShipSelectionFail(
-            "product contract", "requires ships and stage1_playable_routes"
+            "product contract", "requires difficulties, ships, and stage1_playable_routes"
         );
     }
+    var _difficulty_entries = _BladeShipSelectionDifficultyEntries(
+        _contract.difficulties
+    );
     var _entries = [];
     for (var _index = 0;
         _index < array_length(_contract.stage1_playable_routes); ++_index) {
@@ -266,7 +314,8 @@ function BladeShipSelectionCatalogFromContract(_contract) {
         }
     }
     return {
-        __blade_ship_selection_catalog_version: 1,
+        __blade_ship_selection_catalog_version: 2,
+        difficulty_entries: _difficulty_entries,
         entries: _entries,
     };
 }
@@ -296,10 +345,13 @@ function _BladeShipSelectionRequireCatalog(_catalog) {
         || !variable_struct_exists(
             _catalog, "__blade_ship_selection_catalog_version"
         )
-        || _catalog.__blade_ship_selection_catalog_version != 1
+        || _catalog.__blade_ship_selection_catalog_version != 2
+        || !variable_struct_exists(_catalog, "difficulty_entries")
+        || !is_array(_catalog.difficulty_entries)
+        || array_length(_catalog.difficulty_entries) != 3
         || !variable_struct_exists(_catalog, "entries")
         || !is_array(_catalog.entries)) {
-        _BladeShipSelectionFail("catalog", "must be a version 1 catalog");
+        _BladeShipSelectionFail("catalog", "must be a version 2 catalog");
     }
 }
 
@@ -315,11 +367,14 @@ function BladeShipSelectionRouteForShip(_catalog, _ship_id) {
     _BladeShipSelectionFail("selected ship", "is not runnable: " + string(_ship_id));
 }
 
-// Copies a route into the persistent run record without retaining selector state.
-function _BladeShipSelectionRunFromRoute(_route) {
+// Copies a route and selected difficulty into the persistent run record.
+function _BladeShipSelectionRunFromRoute(
+    _route, _difficulty_id = BLADE_SHIP_SELECTION_DIFFICULTY_ID
+) {
+    _BladeDifficultyRankRequireId(_difficulty_id, "selected run.difficulty_id");
     return {
-        __blade_stage1_selected_run_version: 1,
-        difficulty_id: BLADE_SHIP_SELECTION_DIFFICULTY_ID,
+        __blade_stage1_selected_run_version: 2,
+        difficulty_id: _difficulty_id,
         ship_id: _route.ship_id,
         route_id: _route.route_id,
         player_kind_id: _route.player_kind_id,
@@ -335,11 +390,13 @@ function _BladeShipSelectionRunFromRoute(_route) {
     };
 }
 
-/// @func BladeShipSelectionCreateRun(catalog, ship_id)
-/// Creates the canonical Normal Stage 1 identity for one runnable ship.
-function BladeShipSelectionCreateRun(_catalog, _ship_id) {
+/// @func BladeShipSelectionCreateRun(catalog, ship_id, difficulty_id)
+/// Creates the canonical Stage 1 identity for one runnable ship and difficulty.
+function BladeShipSelectionCreateRun(
+    _catalog, _ship_id, _difficulty_id = BLADE_SHIP_SELECTION_DIFFICULTY_ID
+) {
     return _BladeShipSelectionRunFromRoute(
-        BladeShipSelectionRouteForShip(_catalog, _ship_id)
+        BladeShipSelectionRouteForShip(_catalog, _ship_id), _difficulty_id
     );
 }
 
@@ -348,8 +405,9 @@ function BladeShipSelectionCreateRun(_catalog, _ship_id) {
 function BladeShipSelectionStateCreate(_catalog) {
     _BladeShipSelectionRequireCatalog(_catalog);
     return {
-        __blade_ship_selector_state_version: 1,
+        __blade_ship_selector_state_version: 2,
         selected_index: 0,
+        selected_difficulty_index: 1,
         confirmation_started: false,
     };
 }
@@ -359,11 +417,14 @@ function _BladeShipSelectionRequireState(_state, _catalog) {
     _BladeShipSelectionRequireCatalog(_catalog);
     if (!is_struct(_state)
         || !variable_struct_exists(_state, "__blade_ship_selector_state_version")
-        || _state.__blade_ship_selector_state_version != 1
+        || _state.__blade_ship_selector_state_version != 2
         || !variable_struct_exists(_state, "selected_index")
+        || !variable_struct_exists(_state, "selected_difficulty_index")
         || !variable_struct_exists(_state, "confirmation_started")
         || _state.selected_index < 0
-        || _state.selected_index >= array_length(_catalog.entries)) {
+        || _state.selected_index >= array_length(_catalog.entries)
+        || _state.selected_difficulty_index < 0
+        || _state.selected_difficulty_index >= array_length(_catalog.difficulty_entries)) {
         _BladeShipSelectionFail("selector state", "is invalid");
     }
 }
@@ -379,6 +440,21 @@ function BladeShipSelectionMove(_state, _catalog, _delta) {
     return _state.selected_index;
 }
 
+/// @func BladeShipSelectionMoveDifficulty(state, catalog, delta)
+/// Wraps difficulty navigation and ignores motion after confirmation.
+function BladeShipSelectionMoveDifficulty(_state, _catalog, _delta) {
+    _BladeShipSelectionRequireState(_state, _catalog);
+    if (_state.confirmation_started || _delta == 0) {
+        return _state.selected_difficulty_index;
+    }
+    var _count = array_length(_catalog.difficulty_entries);
+    var _direction = _delta > 0 ? 1 : -1;
+    _state.selected_difficulty_index = (
+        _state.selected_difficulty_index + _direction + _count
+    ) mod _count;
+    return _state.selected_difficulty_index;
+}
+
 /// @func BladeShipSelectionConfirm(state, catalog)
 /// Latches the first confirmation and returns no run for every repeated call.
 function BladeShipSelectionConfirm(_state, _catalog) {
@@ -390,7 +466,8 @@ function BladeShipSelectionConfirm(_state, _catalog) {
     return {
         accepted: true,
         run: _BladeShipSelectionRunFromRoute(
-            _catalog.entries[_state.selected_index]
+            _catalog.entries[_state.selected_index],
+            _catalog.difficulty_entries[_state.selected_difficulty_index].difficulty_id
         ),
     };
 }
@@ -404,12 +481,12 @@ function BladeShipSelectionRequireRun(_catalog, _run) {
         "route_id", "player_kind_id", "loadout_id", "stage_schedule_id",
         "midboss_ship_ids", "standard_pattern_ids", "combo_pattern_id",
     ], "selected run");
-    if (_run.__blade_stage1_selected_run_version != 1
-        || _run.difficulty_id != BLADE_SHIP_SELECTION_DIFFICULTY_ID) {
+    if (_run.__blade_stage1_selected_run_version != 2) {
         _BladeShipSelectionFail("selected run", "has the wrong version or difficulty");
     }
+    _BladeDifficultyRankRequireId(_run.difficulty_id, "selected run.difficulty_id");
     var _canonical = _BladeShipSelectionRunFromRoute(
-        BladeShipSelectionRouteForShip(_catalog, _run.ship_id)
+        BladeShipSelectionRouteForShip(_catalog, _run.ship_id), _run.difficulty_id
     );
     var _scalar_fields = [
         "difficulty_id", "ship_id", "route_id", "player_kind_id", "loadout_id",

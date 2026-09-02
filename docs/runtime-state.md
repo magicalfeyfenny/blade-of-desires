@@ -46,6 +46,20 @@ Current difficulty role IDs are `difficulty.easy`, `difficulty.normal`, and
 text, not state identifiers. Equal construction inputs produce equal initial
 canonical state without consulting wall-clock time or ambient randomness.
 
+Stage 1's selected run is a version-2 identity carrying one of those three
+difficulties. Its `BladeSurvivalEconomy` owns the attempt-local rank state,
+which starts at integer rank `0`, clamps to `0..50`, and is recreated on retry.
+The rank event stream is canonicalized into the Stage kernel snapshot and is
+never written to configuration, career, or replay storage.
+
+The authored rank deltas are fixed and applied once per accepted action: active
+play `+1` every 30 eligible ticks; defensive recovery `-3`; normal Bomb `-6`;
+committed life loss `-10`; normal Hyper `+4`; death-bomb Hyper `-4`; and an
+emergency all-stock Bomb `-8`. Rank does not advance during hit response,
+respawn, pause, result, warning/cutscene, cleanup, or reward collection.
+Difficulty and rank compose once over authored Stage 1 hostile speed/fire and
+point/reward values, while Normal at rank zero retains the prior cadence.
+
 Each fresh attempt owns `own:1` as its run event owner and `ins:1` as its
 player. The player starts active at simulation tick zero. Public snapshots,
 diagnostics, pause records, and simulation callback arguments are detached;

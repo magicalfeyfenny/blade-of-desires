@@ -1,0 +1,10 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeDifficultyRank",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeDifficultyRank",
+  "parent":{"name":"Blade","path":"folders/Blade.yy",},
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -250,8 +250,8 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         );
         BladeKernelTestAssertEqual(
             BladeSurvivalPowerActionForX(_economy, true),
-            BladeSurvivalPowerAction.EmergencyBomb,
-            "hit response exposes only the stocked Bomb"
+            BladeSurvivalPowerAction.DeathBombHyper,
+            "hit response prioritizes stocked death-bomb Hyper"
         );
         var _hyper = BladeSurvivalTryActivateHyper(_economy);
         BladeKernelTestAssertTrue(_hyper.activated, "ready Hyper activates");

@@ -99,8 +99,10 @@ and configuration data uses the role ID; renaming display text never migrates
 or replaces that ID.
 
 These records establish identity only. They intentionally contain no bullet
-speed, density, HP, rank, score, practice, encounter, or other tuning fields;
-Issue #20 owns content-driven difficulty profiles and balance.
+speed, density, HP, rank, score, practice, encounter, or other tuning fields.
+The current Stage 1 authored tuning and attempt-local rank live in the
+`BladeDifficultyRank` runtime module so this identity contract stays closed;
+future content-driven difficulty profiles remain a separate contract change.
 
 There is no `difficulty.extra` identity. Extra remains solely the existing
 `stage.extra.dreams_of_a_clockwork_angel` stage identity; campaign progression

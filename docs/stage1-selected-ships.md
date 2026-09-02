@@ -9,8 +9,8 @@ complete Stage 1 slice; final three-ship balance remains later tuning work.
 An ordinary launch opens the 640×360 character selector before gameplay. It
 shows exactly the complete routes declared by `stage1_playable_routes` in the
 product contract: Ciela, Maynii, and Kolar. Move and confirm use the current config
-service's semantic keyboard bindings. One accepted confirmation creates a
-Normal-difficulty run record and the Stage 1 room revalidates that record
+service's semantic keyboard bindings. Left/right selects Easy, Normal, or Hard;
+one accepted confirmation creates a difficulty-bound run record and the Stage 1 room revalidates that record
 against packaged content before it creates exactly one player.
 
 The selected record remains in `global.blade_selected_run` for room transition,
@@ -22,6 +22,30 @@ a visible content error; the runtime never substitutes Ciela.
 | `ship.ciela` | river fairy | broad spread; focus tightens | Maynii, Kolar | Root + Ridgeline |
 | `ship.maynii` | leaf fairy | tracking unfocused; forward focused | Ciela, Kolar | River + Ridgeline |
 | `ship.kolar` | mountain fairy | close-range payoff; useful ranged fire in both focus states | Ciela, Maynii | River + Roots |
+
+## Difficulty and dynamic rank
+
+The selector exposes the identity-only contract records `difficulty.easy`
+(Breeze), `difficulty.normal` (Arcade), and `difficulty.hard` (Storm). The
+selected identity is retained through room transition, hit/death/respawn, and
+`R` retry; a fresh retry recreates rank at `0` while preserving the selected
+difficulty. The extra stage remains only
+`stage.extra.dreams_of_a_clockwork_angel`, never a fourth difficulty.
+
+Stage 1's authored profiles make the same rank observably easier or harder:
+
+| Difficulty | Hostile speed | Hostile fire | Enemy HP | Point/reward value |
+| --- | ---: | ---: | ---: | ---: |
+| Easy | 85% | 82% | 85% | 90% |
+| Normal | 100% | 100% | 100% | 100% |
+| Hard | 115% | 120% | 115% | 110% |
+
+Attempt rank is an integer from `0` to `50`. Every 30 eligible active-play
+ticks raises it by one; rank 50 composes to +20% hostile speed, +30% hostile
+fire rate, and +50% point/reward value. Normal rank 0 is the compatibility
+baseline. Normal Hyper, normal Bomb, hit-response death-bomb Hyper, committed
+life loss, and emergency recovery each apply their documented one-shot delta;
+the hit-response arbiter accepts only one of those actions per input.
 
 Kolar's Stage 1 route is delivered by Issue #112. Its selected run uses
 `loadout.stage1.kolar_close_range`, with a 58-pixel logical close band and

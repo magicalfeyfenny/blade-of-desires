@@ -13,8 +13,6 @@ for (var _band = 0; _band < 7; ++_band) {
 }
 draw_set_color(make_color_rgb(116, 226, 194));
 draw_text(32, 22, "CHOOSE YOUR FAIRY");
-draw_set_color(make_color_rgb(214, 242, 228));
-draw_text(32, 43, "NORMAL  -  LOST FOREST OF AUREI");
 
 if (error_text != "") {
     draw_set_color(make_color_rgb(255, 104, 126));
@@ -23,6 +21,13 @@ if (error_text != "") {
     draw_text(42, 300, "The run cannot start until this content is repaired.");
     exit;
 }
+
+draw_set_color(make_color_rgb(214, 242, 228));
+var _difficulty = catalog.difficulty_entries[selector_state.selected_difficulty_index];
+draw_text(
+    32, 43,
+    string_upper(_difficulty.display_name) + "  -  LOST FOREST OF AUREI"
+);
 
 var _entry_count = array_length(catalog.entries);
 var _card_gap = 12;
@@ -78,6 +83,7 @@ for (var _index = 0; _index < _entry_count; ++_index) {
 
 draw_set_color(make_color_rgb(238, 226, 170));
 draw_text(34, 316, "MOVE: CONFIGURED UP / DOWN");
+draw_text(34, 334, "DIFFICULTY: CONFIGURED LEFT / RIGHT");
 draw_set_halign(fa_right);
-draw_text(606, 316, "CONFIRM: CONFIGURED CONFIRM");
+draw_text(606, 334, "CONFIRM: CONFIGURED CONFIRM");
 draw_set_halign(fa_left);

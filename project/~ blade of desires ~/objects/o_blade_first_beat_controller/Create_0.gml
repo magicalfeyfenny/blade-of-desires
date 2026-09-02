@@ -11,6 +11,7 @@ selected_run = undefined;
 selected_ship_id = "";
 player_instance = noone;
 economy = BladeSurvivalEconomyCreate();
+rank_clock_tick = 0;
 bomb_clears_this_frame = false;
 player_phase = BladeSurvivalPlayerPhase.Active;
 hit_response_ticks = 0;
@@ -47,6 +48,7 @@ if (room == r_stage1_first_beat) {
         _selection_catalog, global.blade_selected_run
     );
     selected_ship_id = selected_run.ship_id;
+    economy = BladeSurvivalEconomyCreate(selected_run.difficulty_id);
     var _player_object = BladeShipSelectionPlayerObject(
         selected_run.player_kind_id
     );
