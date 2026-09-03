@@ -1,4 +1,4 @@
-"""Verify issue #111's editable, runtime, and GameMaker asset chain."""
+"""Verify the selected-ship editable, runtime, and GameMaker asset chain."""
 
 from __future__ import annotations
 
@@ -23,13 +23,24 @@ ASSETS = {
     "ciela_boss": (64, 64),
     "ciela_current": (24, 24),
     "ciela_kolar_combo": (32, 24),
-    "kolar_player": (48, 48),
-    "kolar_option": (16, 16),
-    "kolar_close_channel": (24, 16),
-    "kolar_ranged_shot": (12, 18),
+    "kolar_player": (288, 48),
+    "kolar_option": (32, 16),
+    "kolar_close_channel": (96, 16),
+    "kolar_ranged_shot": (48, 18),
     "ciela_maynii_combo": (32, 24),
 }
-GENERATED_CHARACTER_ASSETS = {"maynii_player", "ciela_boss"}
+KOLAR_SHEET_FRAME_COUNTS = {
+    "kolar_player": 6,
+    "kolar_option": 2,
+    "kolar_close_channel": 4,
+    "kolar_ranged_shot": 4,
+}
+GENERATED_REFERENCE_ASSETS = {
+    "maynii_player",
+    "ciela_boss",
+    "kolar_player",
+    "ciela_maynii_combo",
+}
 LFS_POINTER = re.compile(
     rb"version https://git-lfs\.github\.com/spec/v1\n"
     rb"oid sha256:([0-9a-f]{64})\n"
@@ -113,7 +124,7 @@ class Stage1SelectedShipAssetTests(unittest.TestCase):
                 ]
                 self.assertEqual(
                     len(hidden_references),
-                    1 if stem in GENERATED_CHARACTER_ASSETS else 0,
+                    1 if stem in GENERATED_REFERENCE_ASSETS else 0,
                 )
 
     def test_every_runtime_png_is_packaged_once_for_gamemaker(self):
@@ -127,6 +138,28 @@ class Stage1SelectedShipAssetTests(unittest.TestCase):
                     f'"filePath":"datafiles/sprites/stage1","name":"{name}"',
                     self.project_text,
                 )
+
+    def test_kolar_sheets_are_loaded_with_their_frame_contract(self):
+        """Keep horizontal sheet dimensions aligned with dynamic loading."""
+        renderer = (
+            ROOT
+            / "project/~ blade of desires ~/objects/"
+            "o_blade_stage1_forest_renderer/Create_0.gml"
+        ).read_text(encoding="utf-8")
+        for stem, frame_count in KOLAR_SHEET_FRAME_COUNTS.items():
+            with self.subTest(stem=stem):
+                self.assertIn(
+                    f'"sprites/stage1/{stem}.png", {frame_count}',
+                    renderer,
+                )
+        selector = (
+            ROOT
+            / "project/~ blade of desires ~/objects/"
+            "o_blade_character_select/Create_0.gml"
+        ).read_text(encoding="utf-8")
+        self.assertIn('"sprites/stage1/kolar_player.png"', selector)
+        self.assertIn("_selector_path, _frame_count", selector)
+        self.assertIn("? 6", selector)
 
     def test_generation_references_are_not_packaged(self):
         """Keep non-authority generation material out of the runtime package."""
