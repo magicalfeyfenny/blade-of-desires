@@ -16,6 +16,13 @@ from pathlib import Path
 from typing import Iterator
 
 ROOT = Path(__file__).resolve().parents[2]
+ASSET_COMPLETION_LEVELS = frozenset(
+    {
+        "deterministic-placeholder",
+        "authored-placeholder",
+        "final",
+    }
+)
 
 if __package__:
     from tools.ci.gmtl_lock import verify_gmtl_lock
@@ -187,8 +194,15 @@ def validate_assets(
             continue
 
         kind = entry.get("kind")
+        completion = entry.get("completion")
         sources = entry.get("sources")
         runtime = entry.get("runtime")
+
+        if completion not in ASSET_COMPLETION_LEVELS:
+            errors.append(
+                f"{manifest_path}: export {index} has invalid completion "
+                f"level {completion}"
+            )
 
         if kind not in pipelines:
             errors.append(
