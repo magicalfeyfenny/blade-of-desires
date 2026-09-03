@@ -8,8 +8,13 @@ if (_renderer != noone) {
 var _direction = point_direction(0, 0, velocity_x, velocity_y);
 if (sprite_exists(_sprite)) {
     var _scale = channel == "close" ? 0.78 : 0.72;
+    // Travel distance gives the sheet a deterministic, speed-independent beat.
+    var _frame_count = sprite_get_number(_sprite);
+    var _frame = _frame_count > 1
+        ? floor(travel_distance / 6) mod _frame_count
+        : 0;
     draw_sprite_ext(
-        _sprite, 0, x, y, _scale, _scale, _direction + 90,
+        _sprite, _frame, x, y, _scale, _scale, _direction + 90,
         hyper_tier > 0 ? make_color_rgb(255, 190, 244) : c_white,
         0.96
     );

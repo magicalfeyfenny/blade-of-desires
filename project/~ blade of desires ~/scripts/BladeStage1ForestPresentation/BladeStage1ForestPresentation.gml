@@ -49,14 +49,16 @@ function BladeStage1ForestBufferLoad(_relative_path, _format) {
     return _vertex_buffer;
 }
 
-/// Loads one full-image runtime sprite and gives 2D consumers a useful origin.
-function BladeStage1ForestTextureLoad(_relative_path) {
+/// Loads a runtime sprite or horizontal sprite sheet with a centered origin.
+function BladeStage1ForestTextureLoad(_relative_path, _frame_count = 1) {
     var _path = BladeStage1ForestIncludedPath(_relative_path);
     if (_path == "") {
         show_debug_message("Missing Stage 1 texture: " + _relative_path);
         return -1;
     }
-    var _sprite = sprite_add(_path, 1, false, false, 0, 0);
+    var _sprite = sprite_add(
+        _path, max(1, _frame_count), false, false, 0, 0
+    );
     if (sprite_exists(_sprite)) {
         sprite_set_offset(
             _sprite,

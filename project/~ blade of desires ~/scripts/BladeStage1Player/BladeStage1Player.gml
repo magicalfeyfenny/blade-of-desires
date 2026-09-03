@@ -201,6 +201,21 @@ function _BladeStage1PlayerSprite(_player, _renderer) {
     return -1;
 }
 
+// Selects Kolar's visual state without changing the shared gameplay phase.
+function _BladeStage1PlayerSpriteFrame(_player, _controller) {
+    if (_player.ship_id != "ship.kolar" || _controller == noone) return 0;
+    if (_controller.state == BladeFirstBeatState.Failed) return 4;
+    if (_controller.player_phase == BladeSurvivalPlayerPhase.HitResponse) {
+        return 3;
+    }
+    if (_controller.player_phase == BladeSurvivalPlayerPhase.Respawning) {
+        return 5;
+    }
+    if (_player.focused) return 2;
+    // The two active frames alternate on simulation ticks for stable timing.
+    return (_controller.rank_clock_tick div 8) mod 2;
+}
+
 // Draws Maynii's explicit leaf options at the same offsets that emit her shots.
 function _BladeStage1PlayerDrawMayniiOptions(_player, _renderer, _alpha) {
     var _options = BladeMayniiOptionFormation(_player.focused);
@@ -241,7 +256,7 @@ function _BladeStage1PlayerDrawKolarOptions(_player, _renderer, _alpha) {
         var _y = _player.y + _option.y;
         if (sprite_exists(_sprite)) {
             draw_sprite_ext(
-                _sprite, 0, _x, _y, 0.82, 0.82,
+                _sprite, _player.focused ? 1 : 0, _x, _y, 0.82, 0.82,
                 _player.focused ? 0 : (_index - 1) * 12,
                 c_white, _alpha
             );
@@ -282,7 +297,8 @@ function BladeStage1PlayerDraw(_player) {
     var _sprite = _BladeStage1PlayerSprite(_player, _renderer);
     if (sprite_exists(_sprite)) {
         draw_sprite_ext(
-            _sprite, 0, _player.x, _player.y, 1, 1, 0,
+            _sprite, _BladeStage1PlayerSpriteFrame(_player, _controller),
+            _player.x, _player.y, 1, 1, 0,
             _hyper_tier > 0 ? make_color_rgb(255, 194, 255) : c_white,
             _ship_alpha
         );

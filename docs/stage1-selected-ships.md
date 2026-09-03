@@ -63,10 +63,9 @@ band and ranged shots remain active until a vertical plane exit.
 | Unfocused | `(-18, 3)`, `(0, 0)`, `(18, 3)` | two ranged at speed 7.0; one close at speed 7.4 | ranged 1.90; close 3.00 |
 | Focused | `(-10, -2)`, `(0, -7)`, `(10, -2)` | two close at speed 7.4; one ranged at speed 7.0 | close 3.60; ranged 2.25 |
 
-These are preliminary values for the current slice, not final balance. Proper
-authored Kolar player/attack art is tracked separately in Issue #119; the
-current implementation keeps deterministic pixel placeholders so the route
-remains testable.
+These are preliminary values for the current slice, not final balance. Issue
+#119 supplies the authored Kolar player and attack sheets without changing
+the route's deterministic loadout or combo behavior.
 
 ## Maynii preliminary values
 
@@ -131,15 +130,17 @@ unrelated hostile patterns.
 Maynii's 48×48 player sprite faces away from the camera and preserves the leaf
 silhouette and palette of her unchanged 64×64 front-facing boss sprite. Ciela's
 unchanged 48×48 player sprite remains rear-facing; her new 64×64 boss sprite is
-front-facing. Kolar's current 48×48 rear-facing player, options, close/ranged
-shots, and River + Roots combo use crisp deterministic placeholder pixels while
-the production visual pack is authored under Issue #119.
+front-facing. Kolar's 48×48 rear-facing player, options, close/ranged shots,
+and River + Roots combo now use the production pixel pack from Issue #119; the
+gameplay route and combo remain unchanged.
 
 Each runtime PNG maps to an editable `.kra` in `assets/exports.json` and one
 GameMaker IncludedFile entry. The character KRA files contain a visible
-`Pixel finish - runtime authority` layer and a hidden, explicitly non-authority
-image-generation reference layer. Full generation renders are not retained or
-packaged as competing asset authority.
+`Pixel finish - runtime authority` layer. Generated-character KRA files retain a
+hidden, explicitly non-authority image-generation reference layer where that
+source is part of their authoring record. Kolar's ImageGen draft is retained
+only in the Issue #119 validation folder; its finished pixel layer and `.kra`
+sources are the authority. See the [Kolar art notes](validation/issue-119/kolar-player-art-notes.md).
 
 The contact sheets show both character views, both Maynii modes, and both new
 Ciela pattern families over dark and busy backgrounds:

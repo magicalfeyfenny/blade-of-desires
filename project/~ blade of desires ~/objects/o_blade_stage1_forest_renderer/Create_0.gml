@@ -77,16 +77,16 @@ ciela_kolar_combo_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/ciela_kolar_combo.png"
 );
 kolar_player_sprite = BladeStage1ForestTextureLoad(
-    "sprites/stage1/kolar_player.png"
+    "sprites/stage1/kolar_player.png", 6
 );
 kolar_option_sprite = BladeStage1ForestTextureLoad(
-    "sprites/stage1/kolar_option.png"
+    "sprites/stage1/kolar_option.png", 2
 );
 kolar_close_shot_sprite = BladeStage1ForestTextureLoad(
-    "sprites/stage1/kolar_close_channel.png"
+    "sprites/stage1/kolar_close_channel.png", 4
 );
 kolar_ranged_shot_sprite = BladeStage1ForestTextureLoad(
-    "sprites/stage1/kolar_ranged_shot.png"
+    "sprites/stage1/kolar_ranged_shot.png", 4
 );
 ciela_maynii_combo_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/ciela_maynii_combo.png"
