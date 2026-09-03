@@ -5,6 +5,7 @@ stage_instance_id = "";
 stage_encounter_id = "";
 stage_managed = true;
 defeat_queued = false;
+auto_cancel_bullets_on_defeat = false;
 target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
 targetable = false;
 fae_role = BladeStage1FaeRole.Maynii;

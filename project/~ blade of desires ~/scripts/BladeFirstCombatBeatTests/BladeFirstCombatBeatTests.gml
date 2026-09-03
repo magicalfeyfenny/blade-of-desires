@@ -335,6 +335,148 @@ function BladeFirstCombatBeatTestsRun(_state) {
         with (_controller) instance_destroy();
     });
 
+    BladeFirstBeatTestRunCase(_state, "ordinary defeat preserves each owned bullet lifetime", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        var _enemy = instance_create_layer(
+            320, 100, "Instances", o_blade_first_beat_enemy
+        );
+        _enemy.stage_managed = true;
+        _enemy.stage_instance_id = "ordinary-persistence-test";
+        _enemy.archetype_id = "enemy.ordinary";
+        var _owned = instance_create_layer(
+            320, 100, "Projectiles", o_blade_first_beat_enemy_bullet
+        );
+        _owned.owner_stage_instance_id = _enemy.stage_instance_id;
+        _owned.velocity_x = 1;
+        _owned.velocity_y = 0;
+        var _unrelated = instance_create_layer(
+            340, 100, "Projectiles", o_blade_first_beat_enemy_bullet
+        );
+        _unrelated.owner_stage_instance_id = "another-participant";
+        BladeKernelTestAssertFalse(
+            _enemy.auto_cancel_bullets_on_defeat,
+            "ordinary target has no defeat conversion privilege"
+        );
+        var _defeat = BladeFirstBeatApplyPlayerShot(
+            _controller, _enemy, _enemy.hit_points
+        );
+        BladeKernelTestAssertTrue(_defeat.defeated, "ordinary target is defeated");
+        BladeKernelTestAssertTrue(
+            instance_exists(_owned) && instance_exists(_unrelated),
+            "ordinary defeat preserves owned and unrelated bullets"
+        );
+        var _before_x = _owned.x;
+        with (_owned) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(_owned.x > _before_x, "owned bullet keeps moving");
+        _owned.x = -1;
+        _owned.velocity_x = -1;
+        with (_owned) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertFalse(
+            instance_exists(_owned), "owned bullet still cleans up at its edge"
+        );
+        BladeKernelTestAssertTrue(
+            instance_exists(_unrelated), "unrelated bullet remains independent"
+        );
+    });
+
+    BladeFirstBeatTestRunCase(_state, "items fall, focus vacuums, and Hyper collects immediately", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        var _player = instance_create_layer(
+            320, 300, "Instances", o_ciela_first_beat_player
+        );
+        _player.focused = false;
+        var _normal = instance_create_layer(
+            320, 214, "Items", o_blade_reward_item
+        );
+        with (_normal) event_perform(ev_step, ev_step_normal);
+        var _normal_y = _normal.y;
+        _player.focused = true;
+        var _focused = instance_create_layer(
+            320, 214, "Items", o_blade_reward_item
+        );
+        with (_focused) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            _normal_y > 214 && _focused.y > _normal_y,
+            "normal items fall while Focus pulls from farther away"
+        );
+        _controller.economy.active_hyper_tier = 1;
+        var _score_before = _controller.economy.score;
+        var _hyper = instance_create_layer(
+            200, 40, "Items", o_blade_reward_item
+        );
+        with (_hyper) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertFalse(
+            instance_exists(_hyper), "active Hyper collects a distant point item"
+        );
+        BladeKernelTestAssertTrue(
+            _controller.economy.score > _score_before,
+            "Hyper collection awards visible score"
+        );
+    });
+
+    BladeFirstBeatTestRunCase(_state, "items continue through hit response, respawn, and Game Over", function() {
+        var _controller = instance_create_layer(
+            0, 0, "Instances", o_blade_first_beat_controller
+        );
+        instance_create_layer(
+            320, 300, "Instances", o_ciela_first_beat_player
+        );
+        var _response_item = instance_create_layer(
+            320, 240, "Items", o_blade_reward_item
+        );
+        _controller.player_phase = BladeSurvivalPlayerPhase.HitResponse;
+        var _response_y = _response_item.y;
+        with (_response_item) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            _response_item.y > _response_y,
+            "items fall during hit response"
+        );
+        var _respawn_item = instance_create_layer(
+            320, 250, "Items", o_blade_reward_item
+        );
+        _controller.hit_response_ticks = 1;
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertEqual(
+            _controller.player_phase, BladeSurvivalPlayerPhase.Respawning,
+            "committed first death enters respawn"
+        );
+        var _respawn_y = _respawn_item.y;
+        with (_respawn_item) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            _respawn_item.y > _respawn_y,
+            "items keep falling during respawn"
+        );
+        var _game_over_item = instance_create_layer(
+            320, 250, "Items", o_blade_reward_item
+        );
+        _controller.economy.lives = 1;
+        _controller.player_phase = BladeSurvivalPlayerPhase.HitResponse;
+        _controller.hit_response_ticks = 1;
+        with (_controller) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertEqual(
+            _controller.state, BladeFirstBeatState.Failed,
+            "last life reaches Game Over"
+        );
+        var _game_over_y = _game_over_item.y;
+        with (_game_over_item) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertTrue(
+            _game_over_item.y > _game_over_y,
+            "items keep falling during Game Over"
+        );
+        var _edge_item = instance_create_layer(
+            350, 353, "Items", o_blade_reward_item
+        );
+        _edge_item.velocity_y = 2;
+        with (_edge_item) event_perform(ev_step, ev_step_normal);
+        BladeKernelTestAssertFalse(
+            instance_exists(_edge_item), "falling items leave without bottom clamping"
+        );
+    });
+
     BladeFirstBeatTestRunCase(_state, "a player hit opens the readable response window", function() {
         var _controller = instance_create_layer(
             0, 0, "Instances", o_blade_first_beat_controller

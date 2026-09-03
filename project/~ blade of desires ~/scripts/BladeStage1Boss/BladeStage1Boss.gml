@@ -134,6 +134,7 @@ function BladeStage1BossRegister(_controller, _boss) {
     _controller.boss_instance = _boss;
     _controller.boss_resolution = BladeStage1BossResolution.None;
     _controller.route_label = "ASAHI  SUNNY FAE";
+    _boss.auto_cancel_bullets_on_defeat = true;
     _boss.boss_phase = 1;
     _boss.boss_state = BladeStage1BossState.Entry;
     _boss.phase_resolved = false;
@@ -264,7 +265,7 @@ function BladeStage1BossBeginRecharge(_controller, _boss) {
     return true;
 }
 
-/// Resolves a phase once, clears its attacks, and advances to recharge or terminal.
+/// Resolves a phase once, converting declared defeats and clearing timeouts.
 function BladeStage1BossResolvePhase(_controller, _boss, _resolution) {
     if (!instance_exists(_controller)
         || !instance_exists(_boss)
@@ -274,7 +275,11 @@ function BladeStage1BossResolvePhase(_controller, _boss, _resolution) {
     }
     _boss.phase_resolved = true;
     _boss.targetable = false;
-    BladeStage1BossClearOwnedBullets(_boss);
+    if (_resolution == BladeStage1BossResolution.Defeat) {
+        BladeFirstBeatConvertOwnedBulletsToPointItems(_boss);
+    } else {
+        BladeStage1BossClearOwnedBullets(_boss);
+    }
 
     if (_boss.boss_phase == 1) {
         if (_resolution == BladeStage1BossResolution.Defeat) {

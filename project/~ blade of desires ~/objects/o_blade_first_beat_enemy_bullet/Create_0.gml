@@ -3,6 +3,7 @@ velocity_x = 0;
 velocity_y = 2.7;
 radius = 4;
 grazed = false;
+defeat_conversion_claimed = false;
 owner_stage_instance_id = "";
 bullet_kind = BladeFirstBeatBulletKind.Ordinary;
 outer_color = make_color_rgb(255, 112, 86);

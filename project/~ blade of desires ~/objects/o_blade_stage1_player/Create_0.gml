@@ -6,4 +6,5 @@ focused = false;
 fire_cooldown = 0;
 hit_radius = 3;
 body_radius = 6;
-graze_radius = 14;
+// Keep the authored graze band wider than the lethal hurtbox.
+graze_radius = BLADE_SURVIVAL_GRAZE_RADIUS;
