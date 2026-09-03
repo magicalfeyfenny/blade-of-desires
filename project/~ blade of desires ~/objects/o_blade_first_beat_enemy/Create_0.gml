@@ -13,13 +13,13 @@ spawn_order = 0;
 hit_flash = 0;
 target_y = 72;
 fire_cooldown = 0;
-role_id = BladeStage1EnemyRole.Mook;
-role_content_id = BLADE_STAGE1_MOOK_CONTENT_ID;
-display_name = "MOOK";
+role_id = BladeStage1EnemyRole.Scout;
+role_content_id = BLADE_STAGE1_SCOUT_CONTENT_ID;
+display_name = "SCOUT";
 variant_id = "bomb_carrier";
 is_bomb_carrier = true;
 projectile_radius = 4;
-bullet_kind = BladeFirstBeatBulletKind.MookPetal;
+bullet_kind = BladeFirstBeatBulletKind.ScoutPetal;
 movement_amplitude = 8;
 movement_step_degrees = 4;
 movement_phase = 0;
@@ -33,7 +33,7 @@ tell_id = "leaf_ring";
 pattern_id = "three_leaf_fan";
 expected_defeat_ticks = 18;
 BladeStage1EnemyConfigure(
-    id, BLADE_STAGE1_MOOK_CONTENT_ID, 0,
+    id, BLADE_STAGE1_SCOUT_CONTENT_ID, 0,
     BLADE_DIFFICULTY_NORMAL_ID, 0, true
 );
 content_id = BLADE_SURVIVAL_BOMB_CARRIER_ID;

@@ -2,14 +2,13 @@
 
 Issue #115 owns the four active ordinary roles in this order:
 
-`enemy.stage1.popcorn < enemy.stage1.mook < enemy.stage1.elite < enemy.stage1.commander`
+`enemy.stage1.popcorn < enemy.stage1.scout < enemy.stage1.elite < enemy.stage1.commander`
 
 The profiles deliberately differ in health, defeat window, movement, pre-fire
-tell, cadence, projectile family, and fan width. `enemy.stage1.scout` remains a
-bounded compatibility alias that resolves to `enemy.stage1.mook`; it is not in
-the Stage 1 catalog and never appears in player-facing labels.
+tell, cadence, projectile family, and fan width. Scout is the canonical name of
+the second tier and appears directly in the Stage 1 catalog and labels.
 
-The bomb carrier remains a reward-bearing mook variant with the existing
+The bomb carrier remains a reward-bearing scout variant with the existing
 `enemy.bomb_carrier` identity. Its carrier identity is separate from the four
 strength tiers so both existing carrier placements remain on the route without
 creating a fifth role.

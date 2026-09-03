@@ -14,7 +14,7 @@ var _scale = variable_instance_exists(self, "visual_scale")
     : 0.86;
 var _role_id = variable_instance_exists(self, "role_id")
     ? role_id
-    : BladeStage1EnemyRole.Mook;
+    : BladeStage1EnemyRole.Scout;
 
 if (_renderer != noone
     && variable_instance_exists(_renderer, "ordinary_enemy_roster_sprite")
@@ -75,7 +75,7 @@ if (hit_flash > 0) {
 }
 
 if (_is_carrier) {
-    // The carrier is a mook variant: this gold ring is its reward marker.
+    // The carrier is a scout variant: this gold ring is its reward marker.
     draw_set_color(make_color_rgb(255, 208, 94));
     draw_circle(x, y, hit_radius + 4, true);
     draw_set_color(make_color_rgb(110, 58, 26));

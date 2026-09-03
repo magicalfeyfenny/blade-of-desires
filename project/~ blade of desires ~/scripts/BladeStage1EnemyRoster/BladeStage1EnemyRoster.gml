@@ -1,22 +1,18 @@
 /// Canonical Stage 1 ordinary-enemy roles and their authored presentation data.
 ///
-/// The old scout string is accepted only at this compatibility boundary. It is
-/// normalized to mook before any player-facing display or active schedule use.
+/// Scout is the canonical name of the second ordinary strength tier.
 
 enum BladeStage1EnemyRole {
     Popcorn = 0,
-    Mook = 1,
+    Scout = 1,
     Elite = 2,
     Commander = 3
 }
 
 #macro BLADE_STAGE1_POPCORN_CONTENT_ID "enemy.stage1.popcorn"
-#macro BLADE_STAGE1_MOOK_CONTENT_ID "enemy.stage1.mook"
+#macro BLADE_STAGE1_SCOUT_CONTENT_ID "enemy.stage1.scout"
 #macro BLADE_STAGE1_ELITE_CONTENT_ID "enemy.stage1.elite"
 #macro BLADE_STAGE1_COMMANDER_CONTENT_ID "enemy.stage1.commander"
-#macro BLADE_STAGE1_SCOUT_COMPATIBILITY_ID "enemy.stage1.scout"
-// Retain the historical macro name for bounded source compatibility only.
-#macro BLADE_STAGE1_SCOUT_CONTENT_ID "enemy.stage1.scout"
 
 #macro BLADE_STAGE1_ROSTER_CELL_WIDTH 64
 #macro BLADE_STAGE1_ROSTER_CELL_HEIGHT 96
@@ -26,17 +22,17 @@ enum BladeStage1EnemyRole {
 function BladeStage1EnemyRoleContentIds() {
     return [
         BLADE_STAGE1_POPCORN_CONTENT_ID,
-        BLADE_STAGE1_MOOK_CONTENT_ID,
+        BLADE_STAGE1_SCOUT_CONTENT_ID,
         BLADE_STAGE1_ELITE_CONTENT_ID,
         BLADE_STAGE1_COMMANDER_CONTENT_ID,
     ];
 }
 
-/// Returns one stable display label without exposing the retired scout alias.
+/// Returns one stable display label for the canonical active roles.
 function BladeStage1EnemyRoleDisplayName(_role_id) {
     switch (_role_id) {
         case BladeStage1EnemyRole.Popcorn: return "POPCORN";
-        case BladeStage1EnemyRole.Mook: return "MOOK";
+        case BladeStage1EnemyRole.Scout: return "SCOUT";
         case BladeStage1EnemyRole.Elite: return "ELITE";
         case BladeStage1EnemyRole.Commander: return "COMMANDER";
     }
@@ -73,11 +69,11 @@ function BladeStage1EnemyProfile(_role_id) {
                 accent_color: make_color_rgb(255, 244, 212),
             };
 
-        case BladeStage1EnemyRole.Mook:
+        case BladeStage1EnemyRole.Scout:
             return {
-                role_id: BladeStage1EnemyRole.Mook,
-                content_id: BLADE_STAGE1_MOOK_CONTENT_ID,
-                display_name: "MOOK",
+                role_id: BladeStage1EnemyRole.Scout,
+                content_id: BLADE_STAGE1_SCOUT_CONTENT_ID,
+                display_name: "SCOUT",
                 authored_max_health: 18,
                 expected_defeat_ticks: 18,
                 hit_radius: 11,
@@ -86,7 +82,7 @@ function BladeStage1EnemyProfile(_role_id) {
                 fire_repeat_ticks: 68,
                 bullet_speed: 2.20,
                 bullet_offsets: [-14, 0, 14],
-                bullet_kind: BladeFirstBeatBulletKind.MookPetal,
+                bullet_kind: BladeFirstBeatBulletKind.ScoutPetal,
                 entry_speed: 1.25,
                 travel_speed_x: 0.70,
                 movement_amplitude: 8,
@@ -157,45 +153,30 @@ function BladeStage1EnemyProfile(_role_id) {
     throw("BladeStage1EnemyRoster: missing profile " + string(_role_id));
 }
 
-/// Identifies active content, the retired alias, and the reward-bearing modifier.
+/// Identifies active content and the reward-bearing scout modifier.
 function BladeStage1EnemyKnownContent(_content_id) {
     return _content_id == BLADE_STAGE1_POPCORN_CONTENT_ID
-        || _content_id == BLADE_STAGE1_MOOK_CONTENT_ID
+        || _content_id == BLADE_STAGE1_SCOUT_CONTENT_ID
         || _content_id == BLADE_STAGE1_ELITE_CONTENT_ID
         || _content_id == BLADE_STAGE1_COMMANDER_CONTENT_ID
-        || _content_id == BLADE_STAGE1_SCOUT_COMPATIBILITY_ID
         || _content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID;
 }
 
-/// Normalizes only the retired scout spelling and the carrier's base role.
-function BladeStage1EnemyNormalizeContentId(_content_id) {
-    if (_content_id == BLADE_STAGE1_SCOUT_COMPATIBILITY_ID
-        || _content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID) {
-        return BLADE_STAGE1_MOOK_CONTENT_ID;
-    }
-    if (_content_id == BLADE_STAGE1_POPCORN_CONTENT_ID
-        || _content_id == BLADE_STAGE1_MOOK_CONTENT_ID
-        || _content_id == BLADE_STAGE1_ELITE_CONTENT_ID
-        || _content_id == BLADE_STAGE1_COMMANDER_CONTENT_ID) {
-        return _content_id;
-    }
-    throw("BladeStage1EnemyRoster: unknown content " + string(_content_id));
-}
-
-/// Resolves any accepted content identity to a canonical four-role enum.
+/// Resolves one canonical content identity to a four-role enum.
 function BladeStage1EnemyRoleForContent(_content_id) {
-    var _normalized = BladeStage1EnemyNormalizeContentId(_content_id);
-    switch (_normalized) {
+    switch (_content_id) {
         case BLADE_STAGE1_POPCORN_CONTENT_ID: return BladeStage1EnemyRole.Popcorn;
-        case BLADE_STAGE1_MOOK_CONTENT_ID: return BladeStage1EnemyRole.Mook;
+        case BLADE_STAGE1_SCOUT_CONTENT_ID: return BladeStage1EnemyRole.Scout;
         case BLADE_STAGE1_ELITE_CONTENT_ID: return BladeStage1EnemyRole.Elite;
         case BLADE_STAGE1_COMMANDER_CONTENT_ID:
             return BladeStage1EnemyRole.Commander;
+        case BLADE_SURVIVAL_BOMB_CARRIER_ID:
+            return BladeStage1EnemyRole.Scout;
     }
     throw("BladeStage1EnemyRoster: content did not resolve " + string(_content_id));
 }
 
-/// Returns the player-facing label for active content and the compatibility alias.
+/// Returns the player-facing label for one canonical active content identity.
 function BladeStage1EnemyDisplayName(_content_id) {
     return BladeStage1EnemyRoleDisplayName(
         BladeStage1EnemyRoleForContent(_content_id)
@@ -242,7 +223,7 @@ function BladeStage1EnemyAdvanceMotion(_enemy) {
             _enemy.y = _enemy.target_y
                 + dsin(_enemy.movement_phase) * _enemy.movement_amplitude;
             break;
-        case BladeStage1EnemyRole.Mook:
+        case BladeStage1EnemyRole.Scout:
             _enemy.y = _enemy.target_y
                 + dsin(_enemy.movement_phase * 1.5)
                 * _enemy.movement_amplitude;
@@ -260,7 +241,7 @@ function BladeStage1EnemyAdvanceMotion(_enemy) {
     }
 }
 
-/// Applies one role profile while preserving the bomb carrier as a mook variant.
+/// Applies one role profile while preserving the bomb carrier as a scout variant.
 function BladeStage1EnemyConfigure(
     _enemy, _content_id, _spawn_order, _difficulty_id, _rank,
     _is_bomb_carrier = false

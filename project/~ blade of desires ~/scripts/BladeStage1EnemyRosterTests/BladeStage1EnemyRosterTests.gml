@@ -21,38 +21,25 @@ function _BladeStage1EnemyRosterUniqueCount(_values) {
 function BladeStage1EnemyRosterTestsRun(_state) {
     BladeKernelTestRunCase(
         _state,
-        "Stage 1 roster exposes four active roles and bounds scout compatibility",
+        "Stage 1 roster exposes four active roles with scout as the canonical tier",
         function() {
             var _ids = BladeStage1EnemyRoleContentIds();
             BladeKernelTestAssertArrayEqual(
                 _ids,
                 [
                     BLADE_STAGE1_POPCORN_CONTENT_ID,
-                    BLADE_STAGE1_MOOK_CONTENT_ID,
+                    BLADE_STAGE1_SCOUT_CONTENT_ID,
                     BLADE_STAGE1_ELITE_CONTENT_ID,
                     BLADE_STAGE1_COMMANDER_CONTENT_ID,
                 ],
                 "active role IDs stay in strength order"
             );
-            BladeKernelTestAssertTrue(
-                BladeStage1EnemyKnownContent(
-                    BLADE_STAGE1_SCOUT_COMPATIBILITY_ID
-                ),
-                "retired scout spelling remains readable at the compatibility boundary"
-            );
-            BladeKernelTestAssertEqual(
-                BladeStage1EnemyNormalizeContentId(
-                    BLADE_STAGE1_SCOUT_COMPATIBILITY_ID
-                ),
-                BLADE_STAGE1_MOOK_CONTENT_ID,
-                "scout normalizes to canonical mook"
-            );
             BladeKernelTestAssertEqual(
                 BladeStage1EnemyDisplayName(
-                    BLADE_STAGE1_SCOUT_COMPATIBILITY_ID
+                    BLADE_STAGE1_SCOUT_CONTENT_ID
                 ),
-                "MOOK",
-                "scout is never player-visible"
+                "SCOUT",
+                "scout is player-visible under its canonical name"
             );
         }
     );
@@ -159,14 +146,14 @@ function BladeStage1EnemyRosterTestsRun(_state) {
 
     BladeKernelTestRunCase(
         _state,
-        "bomb carrier remains a mook reward modifier rather than a fifth tier",
+        "bomb carrier remains a scout reward modifier rather than a fifth tier",
         function() {
             BladeKernelTestAssertEqual(
                 BladeStage1EnemyRoleForContent(
                     BLADE_SURVIVAL_BOMB_CARRIER_ID
                 ),
-                BladeStage1EnemyRole.Mook,
-                "carrier uses the mook base role"
+                BladeStage1EnemyRole.Scout,
+                "carrier uses the scout base role"
             );
             var _ids = BladeStage1EnemyRoleContentIds();
             for (var _index = 0; _index < array_length(_ids); ++_index) {

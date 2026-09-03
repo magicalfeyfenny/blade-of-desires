@@ -17,7 +17,7 @@
   ],
   "participant_kind_ids": [
     "participant_kind.stage1.popcorn",
-    "participant_kind.stage1.mook",
+    "participant_kind.stage1.scout",
     "participant_kind.stage1.elite",
     "participant_kind.stage1.commander",
     "participant_kind.stage1.bomb_carrier",
@@ -686,8 +686,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.weave_far_left",
-          "display_name": "Weave far-left mook",
-          "kind_id": "participant_kind.stage1.mook",
+          "display_name": "Weave far-left scout",
+          "kind_id": "participant_kind.stage1.scout",
           "spawn_order": 0,
           "local_offset_q10": {"x": -87040, "y": 12288},
           "defeat_disposition": "remove"
@@ -713,8 +713,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.weave_far_right",
-          "display_name": "Weave far-right mook",
-          "kind_id": "participant_kind.stage1.mook",
+          "display_name": "Weave far-right scout",
+          "kind_id": "participant_kind.stage1.scout",
           "spawn_order": 3,
           "local_offset_q10": {"x": 87040, "y": 12288},
           "defeat_disposition": "remove"
@@ -832,8 +832,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.return_center",
-          "display_name": "Return center mook",
-          "kind_id": "participant_kind.stage1.mook",
+          "display_name": "Return center scout",
+          "kind_id": "participant_kind.stage1.scout",
           "spawn_order": 1,
           "local_offset_q10": {"x": 0, "y": 10240},
           "defeat_disposition": "remove"
@@ -876,8 +876,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.ridge_far_left",
-          "display_name": "Ridge far-left mook",
-          "kind_id": "participant_kind.stage1.mook",
+          "display_name": "Ridge far-left scout",
+          "kind_id": "participant_kind.stage1.scout",
           "spawn_order": 0,
           "local_offset_q10": {"x": -81920, "y": 8192},
           "defeat_disposition": "remove"
@@ -903,8 +903,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.ridge_far_right",
-          "display_name": "Ridge far-right mook",
-          "kind_id": "participant_kind.stage1.mook",
+          "display_name": "Ridge far-right scout",
+          "kind_id": "participant_kind.stage1.scout",
           "spawn_order": 3,
           "local_offset_q10": {"x": 81920, "y": 8192},
           "defeat_disposition": "remove"

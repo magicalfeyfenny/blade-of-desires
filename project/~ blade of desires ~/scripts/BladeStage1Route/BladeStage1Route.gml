@@ -33,15 +33,12 @@ function BladeStage1RouteResolveParticipant(
     switch (_kind_id) {
         case "participant_kind.stage1.popcorn":
             return { content_id: BLADE_STAGE1_POPCORN_CONTENT_ID };
-        case "participant_kind.stage1.mook":
-            return { content_id: BLADE_STAGE1_MOOK_CONTENT_ID };
+        case "participant_kind.stage1.scout":
+            return { content_id: BLADE_STAGE1_SCOUT_CONTENT_ID };
         case "participant_kind.stage1.elite":
             return { content_id: BLADE_STAGE1_ELITE_CONTENT_ID };
         case "participant_kind.stage1.commander":
             return { content_id: BLADE_STAGE1_COMMANDER_CONTENT_ID };
-        // Bounded migration support for catalogs written before Issue #115.
-        case "participant_kind.stage1.scout":
-            return { content_id: BLADE_STAGE1_MOOK_CONTENT_ID };
         case "participant_kind.stage1.bomb_carrier":
             return { content_id: BLADE_SURVIVAL_BOMB_CARRIER_ID };
         case "participant_kind.stage1.fae_slot_a":
@@ -90,7 +87,7 @@ function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
     _enemy.targetable = true;
     var _is_carrier = _spawn.content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID;
     var _role_content_id = _is_carrier
-        ? BLADE_STAGE1_MOOK_CONTENT_ID
+        ? BLADE_STAGE1_SCOUT_CONTENT_ID
         : _spawn.content_id;
     BladeStage1EnemyConfigure(
         _enemy,

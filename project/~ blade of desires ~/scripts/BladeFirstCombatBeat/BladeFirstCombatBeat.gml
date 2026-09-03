@@ -34,7 +34,7 @@ enum BladeFirstBeatBulletKind {
     ComboRiverRoots = 11,
     ComboLeafRoots = 12,
     PopcornSeed = 13,
-    MookPetal = 14,
+    ScoutPetal = 14,
     EliteMoon = 15,
     CommanderCrown = 16
 }
