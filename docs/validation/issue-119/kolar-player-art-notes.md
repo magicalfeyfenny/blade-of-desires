@@ -8,11 +8,15 @@ not part of this replacement.
 
 ## Authoring record
 
-- ImageGen draft: [kolar-imagegen-draft.png](kolar-imagegen-draft.png). It is a
-  visual exploration only and is not packaged as a runtime asset.
-- Final finishing: deliberate hard-edged pixel clusters using a limited
-  indigo, violet, icy-cyan, white, and mineral-gold palette, with rose accents
-  reserved for hit/defeat feedback.
+- ImageGen draft: [kolar-imagegen-draft.png](kolar-imagegen-draft.png). The
+  retained rear-facing fairy render is the design source for the player finish;
+  it is not packaged as a runtime asset.
+- Combo draft: [ciela-maynii-combo-imagegen-draft.png](ciela-maynii-combo-imagegen-draft.png).
+  It is retained as the visual source for the authored combo finish and is not
+  packaged as a runtime asset.
+- Final finishing: the fairy render is downsampled into deliberate hard-edged
+  pixel clusters using a limited indigo, violet, icy-cyan, white, and
+  mineral-gold palette, with rose accents reserved for hit/defeat feedback.
 - Runtime integration: the existing four Kolar filenames remain the package
   seam. The renderer loads their horizontal sheets with the frame counts below.
 - The player canvas is six 48x48 frames (288x48); each attack/option frame is
@@ -37,6 +41,15 @@ band, shot damage, and option centers remain in the canonical gameplay/loadout
 code. No decorative pixel, art bound, or visual frame is used for collision,
 range, target selection, or reward logic.
 
+## Maynii-Ciela combo shot
+
+`ciela_maynii_combo.png` is a 32x24 authored pixel projectile combining
+Maynii's green leaf/root energy with Ciela's cyan river-current energy. Its
+visible `Pixel finish - runtime authority` layer is the runtime derivative's
+source, while the hidden reference layer preserves the generated combo draft.
+The existing `ComboRiverRoots` and `ComboLeafRoots` bullet kinds still own all
+movement, collision, and damage behavior.
+
 ## Anchors and symmetry
 
 - Every player frame uses a center anchor at `(24,24)`, matching the existing
@@ -54,5 +67,5 @@ range, target selection, or reward logic.
   changes do not move the logical projectile origin.
 
 Native and integer-scaled readability across dark, bright, and busy forest
-backdrops is recorded in
+backdrops, including the combo shot, is recorded in
 [kolar-production-contact-sheet.png](kolar-production-contact-sheet.png).

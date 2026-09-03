@@ -35,7 +35,12 @@ KOLAR_SHEET_FRAME_COUNTS = {
     "kolar_close_channel": 4,
     "kolar_ranged_shot": 4,
 }
-GENERATED_CHARACTER_ASSETS = {"maynii_player", "ciela_boss"}
+GENERATED_REFERENCE_ASSETS = {
+    "maynii_player",
+    "ciela_boss",
+    "kolar_player",
+    "ciela_maynii_combo",
+}
 LFS_POINTER = re.compile(
     rb"version https://git-lfs\.github\.com/spec/v1\n"
     rb"oid sha256:([0-9a-f]{64})\n"
@@ -119,7 +124,7 @@ class Stage1SelectedShipAssetTests(unittest.TestCase):
                 ]
                 self.assertEqual(
                     len(hidden_references),
-                    1 if stem in GENERATED_CHARACTER_ASSETS else 0,
+                    1 if stem in GENERATED_REFERENCE_ASSETS else 0,
                 )
 
     def test_every_runtime_png_is_packaged_once_for_gamemaker(self):

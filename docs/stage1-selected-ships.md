@@ -118,7 +118,9 @@ route retains Maynii's four-leaf standard, Kolar's five-crystal standard, and
 their eight-leaf-plus-five-crystal Root + Ridgeline combo.
 The Kolar route retains Ciela's River Current and Maynii's Leaf Fan standards,
 then adds a seven-bullet river pulse with a delayed three-leaf roots answer
-under River + Roots.
+under River + Roots. The River + Roots attack uses the authored Ciela-Maynii
+combo projectile from Issue #119; its bullet kinds, movement, collision, and
+damage remain unchanged.
 
 Only eligible personal or shared-life defeat reports can advance the route.
 Administrative abort, reset, cleanup, or room teardown cannot impersonate a
@@ -132,15 +134,17 @@ silhouette and palette of her unchanged 64×64 front-facing boss sprite. Ciela's
 unchanged 48×48 player sprite remains rear-facing; her new 64×64 boss sprite is
 front-facing. Kolar's 48×48 rear-facing player, options, close/ranged shots,
 and River + Roots combo now use the production pixel pack from Issue #119; the
-gameplay route and combo remain unchanged.
+Kolar player finish follows the retained rear-facing fairy render, and the
+Maynii-Ciela combo is an authored cyan-current and green-root projectile. The
+gameplay route and combo behavior remain unchanged.
 
 Each runtime PNG maps to an editable `.kra` in `assets/exports.json` and one
-GameMaker IncludedFile entry. The character KRA files contain a visible
-`Pixel finish - runtime authority` layer. Generated-character KRA files retain a
-hidden, explicitly non-authority image-generation reference layer where that
-source is part of their authoring record. Kolar's ImageGen draft is retained
-only in the Issue #119 validation folder; its finished pixel layer and `.kra`
-sources are the authority. See the [Kolar art notes](validation/issue-119/kolar-player-art-notes.md).
+GameMaker IncludedFile entry. The character and combo KRA files contain a
+visible `Pixel finish - runtime authority` layer. KRA files with generated
+source material retain a hidden, explicitly non-authority image-generation
+reference layer. Kolar's rear-facing fairy render is retained in the Issue #119
+validation folder and as the player source reference; the finished pixel layer
+and `.kra` sources are the runtime authority. See the [Kolar art notes](validation/issue-119/kolar-player-art-notes.md).
 
 The contact sheets show both character views, both Maynii modes, and both new
 Ciela pattern families over dark and busy backgrounds:
