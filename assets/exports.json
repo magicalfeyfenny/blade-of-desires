@@ -3,6 +3,7 @@
   "exports": [
     {
       "kind": "raster",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/textures/stage1/lost_forest_materials.kra"
       ],
@@ -12,6 +13,7 @@
     },
     {
       "kind": "raster",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/textures/stage1/lost_forest_fae.kra",
         "assets/source/textures/stage1/lost_forest_grass.kra",
@@ -31,6 +33,7 @@
     },
     {
       "kind": "raster",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/sprites/stage1/maynii_boss.kra",
         "assets/source/sprites/stage1/kolar_boss.kra",
@@ -80,6 +83,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_terrain.blend",
         "assets/source/models/stage1/lost_forest_terrain.obj",
@@ -91,6 +95,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_tree_a.blend",
         "assets/source/models/stage1/lost_forest_tree_a.obj",
@@ -102,6 +107,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_tree_b.blend",
         "assets/source/models/stage1/lost_forest_tree_b.obj",
@@ -113,6 +119,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_world_tree.blend",
         "assets/source/models/stage1/lost_forest_world_tree.obj",
@@ -124,6 +131,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_skybox.blend",
         "assets/source/models/stage1/lost_forest_skybox.obj",
@@ -135,6 +143,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_grass_billboard.blend",
         "assets/source/models/stage1/lost_forest_grass_billboard.obj",
@@ -146,6 +155,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_vines_billboard.blend",
         "assets/source/models/stage1/lost_forest_vines_billboard.obj",
@@ -157,6 +167,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_bush_billboard.blend",
         "assets/source/models/stage1/lost_forest_bush_billboard.obj",
@@ -168,6 +179,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_fae_billboard.blend",
         "assets/source/models/stage1/lost_forest_fae_billboard.obj",
@@ -179,6 +191,7 @@
     },
     {
       "kind": "model_3d",
+      "completion": "authored-placeholder",
       "sources": [
         "assets/source/models/stage1/lost_forest_ball_light_billboard.blend",
         "assets/source/models/stage1/lost_forest_ball_light_billboard.obj",
