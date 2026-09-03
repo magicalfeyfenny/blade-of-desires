@@ -10,7 +10,8 @@
 
 /// Spawns one presentation-only effect; its object initializes next Step.
 function BladeStage1FeedbackSpawn(
-    _x, _y, _kind, _color = c_white, _scale = 1
+    _x, _y, _kind, _color = c_white, _scale = 1,
+    _asset_role = -1, _asset_row = 3
 ) {
     if (room != r_stage1_first_beat) return noone;
     var _effect = instance_create_layer(
@@ -19,6 +20,8 @@ function BladeStage1FeedbackSpawn(
     _effect.effect_kind = _kind;
     _effect.effect_color = _color;
     _effect.effect_scale = max(0.25, _scale);
+    _effect.asset_role = _asset_role;
+    _effect.asset_row = _asset_row;
     return _effect;
 }
 

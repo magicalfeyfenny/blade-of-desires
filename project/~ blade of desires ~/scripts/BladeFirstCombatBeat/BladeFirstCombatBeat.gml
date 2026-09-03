@@ -32,7 +32,11 @@ enum BladeFirstBeatBulletKind {
     AsahiFlame = 9,
     AsahiCrown = 10,
     ComboRiverRoots = 11,
-    ComboLeafRoots = 12
+    ComboLeafRoots = 12,
+    PopcornSeed = 13,
+    ScoutPetal = 14,
+    EliteMoon = 15,
+    CommanderCrown = 16
 }
 
 #macro BLADE_FIRST_BEAT_PRODUCT_CONTRACT_PATH "content/product_contract.json"
@@ -267,7 +271,11 @@ function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
         _is_carrier
             ? make_color_rgb(255, 221, 96)
             : make_color_rgb(100, 242, 174),
-        _is_carrier ? 1.25 : 1
+        _is_carrier ? 1.25 : 1,
+        variable_instance_exists(_target, "role_id")
+            ? _target.role_id
+            : -1,
+        3
     );
     BladeStage1AudioPlayForController(
         _controller, BladeStage1AudioSfx.EnemyDefeat, _is_carrier ? 0.78 : 0.52

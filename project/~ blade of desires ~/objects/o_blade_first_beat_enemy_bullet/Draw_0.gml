@@ -53,6 +53,24 @@ if (_renderer != noone) {
         );
         exit;
     }
+    if (role_id >= BladeStage1EnemyRole.Popcorn
+        && role_id <= BladeStage1EnemyRole.Commander
+        && variable_instance_exists(
+            _renderer, "ordinary_enemy_effects_sprite"
+        )
+        && BladeStage1EnemyDrawEffectCell(
+            _renderer.ordinary_enemy_effects_sprite,
+            role_id,
+            0,
+            x,
+            y,
+            0.55,
+            grazed ? c_white : c_white,
+            1
+        )) {
+        // Authored effect-atlas row 1 is the projectile family.
+        exit;
+    }
 }
 switch (bullet_kind) {
     case BladeFirstBeatBulletKind.MayniiLeaf:

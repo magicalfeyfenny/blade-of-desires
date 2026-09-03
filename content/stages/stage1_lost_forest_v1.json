@@ -16,7 +16,10 @@
     }
   ],
   "participant_kind_ids": [
+    "participant_kind.stage1.popcorn",
     "participant_kind.stage1.scout",
+    "participant_kind.stage1.elite",
+    "participant_kind.stage1.commander",
     "participant_kind.stage1.bomb_carrier",
     "participant_kind.stage1.fae_slot_a",
     "participant_kind.stage1.fae_slot_b",
@@ -268,7 +271,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.spawn_opening_wave",
-          "display_name": "Spawn the opening scouts",
+          "display_name": "Spawn the opening popcorn fae",
           "content_order": 2,
           "kind": "spawn_encounter",
           "encounter_id": "encounter_schedule.stage1.opening_wave",
@@ -282,7 +285,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.wait_opening_wave",
-          "display_name": "Clear the opening scouts",
+          "display_name": "Clear the opening popcorn fae",
           "content_order": 3,
           "kind": "wait_encounter_completion",
           "encounter_id": "encounter_schedule.stage1.opening_wave",
@@ -291,7 +294,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.breathe_after_opening",
-          "display_name": "Breathe after the opening scouts",
+          "display_name": "Breathe after the opening popcorn fae",
           "content_order": 4,
           "kind": "wait",
           "active_ticks": 50,
@@ -300,7 +303,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.spawn_weave_wave",
-          "display_name": "Spawn the weaving scouts",
+          "display_name": "Spawn the weaving fae roles",
           "content_order": 5,
           "kind": "spawn_encounter",
           "encounter_id": "encounter_schedule.stage1.weave_wave",
@@ -314,7 +317,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.wait_weave_wave",
-          "display_name": "Clear the weaving scouts",
+          "display_name": "Clear the weaving fae roles",
           "content_order": 6,
           "kind": "wait_encounter_completion",
           "encounter_id": "encounter_schedule.stage1.weave_wave",
@@ -429,7 +432,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.spawn_return_wave",
-          "display_name": "Spawn the returning scouts",
+          "display_name": "Spawn the returning fae mix",
           "content_order": 17,
           "kind": "spawn_encounter",
           "encounter_id": "encounter_schedule.stage1.return_wave",
@@ -443,7 +446,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.wait_return_wave",
-          "display_name": "Clear the returning scouts",
+          "display_name": "Clear the returning fae mix",
           "content_order": 18,
           "kind": "wait_encounter_completion",
           "encounter_id": "encounter_schedule.stage1.return_wave",
@@ -452,7 +455,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.breathe_after_return_wave",
-          "display_name": "Breathe after the returning scouts",
+          "display_name": "Breathe after the returning fae mix",
           "content_order": 19,
           "kind": "wait",
           "active_ticks": 50,
@@ -461,7 +464,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.spawn_ridge_wave",
-          "display_name": "Spawn the ridge scouts",
+          "display_name": "Spawn the ridge fae mix",
           "content_order": 20,
           "kind": "spawn_encounter",
           "encounter_id": "encounter_schedule.stage1.ridge_wave",
@@ -475,7 +478,7 @@
         {
           "schema_version": 1,
           "id": "stage_node.stage1.wait_ridge_wave",
-          "display_name": "Clear the ridge scouts",
+          "display_name": "Clear the ridge fae mix",
           "content_order": 21,
           "kind": "wait_encounter_completion",
           "encounter_id": "encounter_schedule.stage1.ridge_wave",
@@ -625,13 +628,13 @@
     {
       "schema_version": 1,
       "id": "encounter_schedule.stage1.opening_wave",
-      "display_name": "Opening scout wave",
+      "display_name": "Opening popcorn wave",
       "participants": [
         {
           "schema_version": 1,
           "id": "participant.stage1.opening_left",
-          "display_name": "Opening left scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Opening left popcorn",
+          "kind_id": "participant_kind.stage1.popcorn",
           "spawn_order": 0,
           "local_offset_q10": {"x": -71680, "y": 0},
           "defeat_disposition": "remove"
@@ -639,8 +642,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.opening_center",
-          "display_name": "Opening center scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Opening center popcorn",
+          "kind_id": "participant_kind.stage1.popcorn",
           "spawn_order": 1,
           "local_offset_q10": {"x": 0, "y": -12288},
           "defeat_disposition": "remove"
@@ -648,8 +651,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.opening_right",
-          "display_name": "Opening right scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Opening right popcorn",
+          "kind_id": "participant_kind.stage1.popcorn",
           "spawn_order": 2,
           "local_offset_q10": {"x": 71680, "y": 0},
           "defeat_disposition": "remove"
@@ -678,7 +681,7 @@
     {
       "schema_version": 1,
       "id": "encounter_schedule.stage1.weave_wave",
-      "display_name": "Weaving scout wave",
+      "display_name": "Weaving popcorn-to-commander wave",
       "participants": [
         {
           "schema_version": 1,
@@ -692,8 +695,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.weave_left",
-          "display_name": "Weave left scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Weave left elite",
+          "kind_id": "participant_kind.stage1.elite",
           "spawn_order": 1,
           "local_offset_q10": {"x": -28672, "y": -8192},
           "defeat_disposition": "remove"
@@ -701,8 +704,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.weave_right",
-          "display_name": "Weave right scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Weave right commander",
+          "kind_id": "participant_kind.stage1.commander",
           "spawn_order": 2,
           "local_offset_q10": {"x": 28672, "y": -8192},
           "defeat_disposition": "remove"
@@ -820,8 +823,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.return_left",
-          "display_name": "Return left scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Return left popcorn",
+          "kind_id": "participant_kind.stage1.popcorn",
           "spawn_order": 0,
           "local_offset_q10": {"x": -66560, "y": -8192},
           "defeat_disposition": "remove"
@@ -838,8 +841,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.return_right",
-          "display_name": "Return right scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Return right elite",
+          "kind_id": "participant_kind.stage1.elite",
           "spawn_order": 2,
           "local_offset_q10": {"x": 66560, "y": -8192},
           "defeat_disposition": "remove"
@@ -882,8 +885,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.ridge_left",
-          "display_name": "Ridge left scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Ridge left commander",
+          "kind_id": "participant_kind.stage1.commander",
           "spawn_order": 1,
           "local_offset_q10": {"x": -24576, "y": -10240},
           "defeat_disposition": "remove"
@@ -891,8 +894,8 @@
         {
           "schema_version": 1,
           "id": "participant.stage1.ridge_right",
-          "display_name": "Ridge right scout",
-          "kind_id": "participant_kind.stage1.scout",
+          "display_name": "Ridge right elite",
+          "kind_id": "participant_kind.stage1.elite",
           "spawn_order": 2,
           "local_offset_q10": {"x": 24576, "y": -10240},
           "defeat_disposition": "remove"
