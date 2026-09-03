@@ -3,6 +3,26 @@ var _progress = clamp(age / max(1, duration), 0, 1);
 var _fade = power(1 - _progress, 1.4);
 var _radius = max_radius * effect_scale * (0.12 + _progress * 0.88);
 
+var _renderer = instance_find(o_blade_stage1_forest_renderer, 0);
+if (asset_role >= BladeStage1EnemyRole.Popcorn
+    && asset_role <= BladeStage1EnemyRole.Commander
+    && _renderer != noone
+    && variable_instance_exists(_renderer, "ordinary_enemy_effects_sprite")
+    && BladeStage1EnemyDrawEffectCell(
+        _renderer.ordinary_enemy_effects_sprite,
+        asset_role,
+        asset_row,
+        x,
+        y,
+        effect_scale * (0.72 + _progress * 0.60),
+        c_white,
+        _fade
+    )) {
+    draw_set_color(c_white);
+    draw_set_alpha(1);
+    exit;
+}
+
 draw_set_alpha(_fade * 0.72);
 draw_set_color(effect_color);
 draw_circle(x, y, _radius, true);

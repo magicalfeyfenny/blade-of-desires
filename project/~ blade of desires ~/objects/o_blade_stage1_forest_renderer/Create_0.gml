@@ -102,6 +102,12 @@ asahi_sunfire_sprite = BladeStage1ForestTextureLoad(
 asahi_hud_frame_sprite = BladeStage1ForestTextureLoad(
     "sprites/stage1/asahi_hud_frame.png"
 );
+ordinary_enemy_roster_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/stage1_ordinary_fae_roster.png"
+);
+ordinary_enemy_effects_sprite = BladeStage1ForestTextureLoad(
+    "sprites/stage1/stage1_ordinary_fae_effects.png"
+);
 
 tree_placements = BladeStage1ForestTreePlacementsCreate();
 foliage_placements = BladeStage1ForestFoliagePlacementsCreate();
@@ -160,7 +166,9 @@ assets_ready = terrain_buffer >= 0
     && sprite_exists(kolar_crystal_sprite)
     && sprite_exists(asahi_sprite)
     && sprite_exists(asahi_sunfire_sprite)
-    && sprite_exists(asahi_hud_frame_sprite);
+    && sprite_exists(asahi_hud_frame_sprite)
+    && sprite_exists(ordinary_enemy_roster_sprite)
+    && sprite_exists(ordinary_enemy_effects_sprite);
 
 route_progress = 0;
 route_progress_limit = 218;

@@ -82,6 +82,18 @@
       ]
     },
     {
+      "kind": "raster",
+      "completion": "authored-placeholder",
+      "sources": [
+        "assets/source/sprites/stage1/stage1_ordinary_fae_roster.kra",
+        "assets/source/sprites/stage1/stage1_ordinary_fae_effects.kra"
+      ],
+      "runtime": [
+        "assets/runtime/sprites/stage1/stage1_ordinary_fae_roster.png",
+        "assets/runtime/sprites/stage1/stage1_ordinary_fae_effects.png"
+      ]
+    },
+    {
       "kind": "model_3d",
       "completion": "authored-placeholder",
       "sources": [

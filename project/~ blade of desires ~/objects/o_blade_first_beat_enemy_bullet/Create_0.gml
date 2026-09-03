@@ -6,5 +6,6 @@ grazed = false;
 defeat_conversion_claimed = false;
 owner_stage_instance_id = "";
 bullet_kind = BladeFirstBeatBulletKind.Ordinary;
+role_id = -1;
 outer_color = make_color_rgb(255, 112, 86);
 inner_color = make_color_rgb(255, 229, 166);

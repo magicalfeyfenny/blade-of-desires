@@ -2,6 +2,8 @@
 effect_kind = BLADE_STAGE1_EFFECT_ENEMY;
 effect_color = c_white;
 effect_scale = 1;
+asset_role = -1;
+asset_row = 3;
 initialized = false;
 age = 0;
 duration = 42;

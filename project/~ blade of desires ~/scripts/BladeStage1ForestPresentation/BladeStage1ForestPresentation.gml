@@ -610,6 +610,7 @@ function BladeStage1ForestAssetsDestroy(_renderer) {
         "ciela_maynii_combo_sprite",
         "maynii_leaf_sprite", "kolar_crystal_sprite",
         "asahi_sprite", "asahi_sunfire_sprite", "asahi_hud_frame_sprite",
+        "ordinary_enemy_roster_sprite", "ordinary_enemy_effects_sprite",
     ];
     for (var _sprite_index = 0;
         _sprite_index < array_length(_sprite_fields);

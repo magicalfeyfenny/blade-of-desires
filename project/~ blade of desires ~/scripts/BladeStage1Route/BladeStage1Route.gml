@@ -2,7 +2,6 @@
 
 #macro BLADE_STAGE1_ROUTE_CATALOG_PATH "content/stages/stage1_lost_forest_v1.json"
 #macro BLADE_STAGE1_ROUTE_SEED 14041991
-#macro BLADE_STAGE1_SCOUT_CONTENT_ID "enemy.stage1.scout"
 
 /// Resolves one bundled Stage 1 text file across source and packaged runner layouts.
 function BladeStage1RouteIncludedPath(_relative_path) {
@@ -20,8 +19,7 @@ function BladeStage1RouteIncludedPath(_relative_path) {
 
 /// Recognizes only the concrete content identities spawned by either selected route.
 function BladeStage1RouteKnownContent(_content_id) {
-    return _content_id == BLADE_STAGE1_SCOUT_CONTENT_ID
-        || _content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID
+    return BladeStage1EnemyKnownContent(_content_id)
         || _content_id == "ship.ciela"
         || _content_id == "ship.maynii"
         || _content_id == "ship.kolar"
@@ -33,8 +31,17 @@ function BladeStage1RouteResolveParticipant(
     _kind_id, _participant_id, _x_q10, _y_q10
 ) {
     switch (_kind_id) {
+        case "participant_kind.stage1.popcorn":
+            return { content_id: BLADE_STAGE1_POPCORN_CONTENT_ID };
+        case "participant_kind.stage1.mook":
+            return { content_id: BLADE_STAGE1_MOOK_CONTENT_ID };
+        case "participant_kind.stage1.elite":
+            return { content_id: BLADE_STAGE1_ELITE_CONTENT_ID };
+        case "participant_kind.stage1.commander":
+            return { content_id: BLADE_STAGE1_COMMANDER_CONTENT_ID };
+        // Bounded migration support for catalogs written before Issue #115.
         case "participant_kind.stage1.scout":
-            return { content_id: BLADE_STAGE1_SCOUT_CONTENT_ID };
+            return { content_id: BLADE_STAGE1_MOOK_CONTENT_ID };
         case "participant_kind.stage1.bomb_carrier":
             return { content_id: BLADE_SURVIVAL_BOMB_CARRIER_ID };
         case "participant_kind.stage1.fae_slot_a":
@@ -69,7 +76,7 @@ function BladeStage1RouteAssignOwnership(_target, _spawn) {
     return _target;
 }
 
-/// Creates one scout or bomb carrier using direct, inspectable gameplay fields.
+/// Creates one roster role or bomb-carrier variant using inspectable gameplay fields.
 function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
     var _enemy = instance_create_layer(
         _x, -24 - _spawn.spawn_order * 8,
@@ -81,34 +88,21 @@ function BladeStage1RouteSpawnOrdinary(_controller, _spawn, _x, _target_y) {
     _enemy.target_y = _target_y;
     _enemy.fire_cooldown = 0;
     _enemy.targetable = true;
-    if (_spawn.content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID) {
-        _enemy.archetype_id = BLADE_SURVIVAL_BOMB_CARRIER_ID;
-        _enemy.authored_max_health = 36;
-        _enemy.max_health = BladeDifficultyEnemyHealth(
-            _enemy.authored_max_health, _difficulty_id, _rank
-        );
-        _enemy.hit_radius = 14;
-        _enemy.tell_ticks = 55;
-        _enemy.fire_repeat_ticks = 56;
-        _enemy.bullet_speed = 2.55;
-        _enemy.bullet_offsets = [-14, 0, 14];
-        _enemy.travel_speed_x = 0.65;
-    } else {
-        _enemy.archetype_id = BLADE_STAGE1_SCOUT_CONTENT_ID;
-        _enemy.authored_max_health = 18;
-        _enemy.max_health = BladeDifficultyEnemyHealth(
-            _enemy.authored_max_health, _difficulty_id, _rank
-        );
-        _enemy.hit_radius = 11;
-        _enemy.tell_ticks = 35 + _spawn.spawn_order * 8;
-        _enemy.fire_repeat_ticks = 72 + (_spawn.spawn_order mod 2) * 12;
-        _enemy.bullet_speed = 2.15 + (_spawn.spawn_order mod 3) * 0.12;
-        _enemy.bullet_offsets = (_spawn.spawn_order mod 2 == 0)
-            ? [-18, 18]
-            : [-10, 0, 10];
-        _enemy.travel_speed_x = (_spawn.spawn_order mod 2 == 0) ? 0.55 : -0.55;
-    }
-    _enemy.hit_points = _enemy.max_health;
+    var _is_carrier = _spawn.content_id == BLADE_SURVIVAL_BOMB_CARRIER_ID;
+    var _role_content_id = _is_carrier
+        ? BLADE_STAGE1_MOOK_CONTENT_ID
+        : _spawn.content_id;
+    BladeStage1EnemyConfigure(
+        _enemy,
+        _role_content_id,
+        _spawn.spawn_order,
+        _difficulty_id,
+        _rank,
+        _is_carrier
+    );
+    // Ownership remains the schedule's stable participant identity.
+    _enemy.content_id = _spawn.content_id;
+    _enemy.target_y = _target_y;
     return _enemy;
 }
 
