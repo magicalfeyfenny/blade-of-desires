@@ -72,6 +72,23 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         );
     });
 
+    BladeKernelTestRunCase(_state, "item vacuum and graze use authored wider focus rules", function() {
+        BladeKernelTestAssertTrue(
+            BladeSurvivalItemVacuumRadius(true)
+                > BladeSurvivalItemVacuumRadius(false),
+            "Focus reaches farther for items"
+        );
+        BladeKernelTestAssertTrue(
+            BladeSurvivalItemVacuumSpeed(true)
+                > BladeSurvivalItemVacuumSpeed(false),
+            "Focus pulls items faster"
+        );
+        BladeKernelTestAssertTrue(
+            BLADE_SURVIVAL_GRAZE_RADIUS > 14,
+            "graze radius is wider than the former authored band"
+        );
+    });
+
     BladeKernelTestRunCase(_state, "only defeat rewards and the carrier owns the bomb drop", function() {
         var _defeat_economy = BladeSurvivalEconomyCreate();
         var _defeat = BladeSurvivalResolveEnemyExit(
@@ -339,7 +356,7 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             320, 314, "Instances", o_ciela_first_beat_player
         );
         var _graze = instance_create_layer(
-            332, 314, "Instances", o_blade_first_beat_enemy_bullet
+            343, 314, "Instances", o_blade_first_beat_enemy_bullet
         );
         with (_player) event_perform(ev_step, ev_step_normal);
         with (_player) event_perform(ev_step, ev_step_normal);

@@ -345,12 +345,24 @@ function BladeStage1RouteTestsRun(_state) {
             _controller.economy.active_hyper_tier = 0;
             _controller.economy.hyper_ticks = 0;
 
+            var _maynii_bullet = instance_create_layer(
+                320, 120, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _maynii_bullet.owner_stage_instance_id = _maynii.stage_instance_id;
             var _maynii_solo = BladeStage1MidbossApplyDamage(
                 _controller, _maynii, BLADE_STAGE1_MIDBOSS_PERSONAL_HP
             );
             BladeKernelTestAssertTrue(
                 _maynii_solo.defeated && _maynii.personal_defeated,
                 "Maynii's personal life clears independently"
+            );
+            BladeKernelTestAssertFalse(
+                instance_exists(_maynii_bullet),
+                "Maynii defeat converts her owned bullet"
+            );
+            BladeKernelTestAssertEqual(
+                instance_number(o_blade_reward_item), 1,
+                "Maynii defeat creates one point item"
             );
             BladeKernelTestAssertFalse(
                 _controller.midboss_state.combo_active,
@@ -361,12 +373,24 @@ function BladeStage1RouteTestsRun(_state) {
                 "Kolar remains live while Maynii waits harmlessly"
             );
 
+            var _kolar_bullet = instance_create_layer(
+                340, 120, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _kolar_bullet.owner_stage_instance_id = _kolar.stage_instance_id;
             var _kolar_solo = BladeStage1MidbossApplyDamage(
                 _controller, _kolar, BLADE_STAGE1_MIDBOSS_PERSONAL_HP
             );
             BladeKernelTestAssertTrue(
                 _kolar_solo.defeated && _controller.midboss_state.combo_active,
                 "both cleared solos begin the one shared combo"
+            );
+            BladeKernelTestAssertFalse(
+                instance_exists(_kolar_bullet),
+                "Kolar defeat converts her owned bullet"
+            );
+            BladeKernelTestAssertEqual(
+                instance_number(o_blade_reward_item), 2,
+                "each personal defeat creates one point item"
             );
             BladeKernelTestAssertFalse(
                 _maynii.targetable || _kolar.targetable,
@@ -411,6 +435,14 @@ function BladeStage1RouteTestsRun(_state) {
             );
             BladeStage1MidbossClearPairBullets(_controller);
 
+            var _maynii_combo_bullet = instance_create_layer(
+                310, 140, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _maynii_combo_bullet.owner_stage_instance_id = _maynii.stage_instance_id;
+            var _kolar_combo_bullet = instance_create_layer(
+                330, 140, "Projectiles", o_blade_first_beat_enemy_bullet
+            );
+            _kolar_combo_bullet.owner_stage_instance_id = _kolar.stage_instance_id;
             BladeStage1MidbossApplyDamage(_controller, _maynii, 25);
             BladeKernelTestAssertEqual(
                 _maynii.hit_points, 125,
@@ -424,6 +456,10 @@ function BladeStage1RouteTestsRun(_state) {
             BladeKernelTestAssertTrue(
                 _controller.midboss_state.completed,
                 "the shared combo resolves exactly once"
+            );
+            BladeKernelTestAssertEqual(
+                instance_number(o_blade_reward_item), 4,
+                "combo defeat converts one bullet per declared member"
             );
             BladeKernelTestAssertEqual(
                 array_length(_controller.stage_defeat_queue), 2,

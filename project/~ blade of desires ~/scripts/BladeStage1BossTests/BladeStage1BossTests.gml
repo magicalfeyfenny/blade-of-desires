@@ -168,7 +168,15 @@ function BladeStage1BossTestsRun(_state) {
             );
             BladeKernelTestAssertFalse(
                 instance_exists(_owned),
-                "phase resolution clears Asahi-owned bullets"
+                "phase defeat converts the Asahi-owned bullet"
+            );
+            var _phase_one_item = instance_find(o_blade_reward_item, 0);
+            BladeKernelTestAssertTrue(
+                _phase_one_item != noone
+                    && _phase_one_item.kind == BladeSurvivalItemKind.Point
+                    && _phase_one_item.x == 320
+                    && _phase_one_item.y == 100,
+                "phase defeat creates one point item at each bullet position"
             );
             BladeKernelTestAssertTrue(
                 instance_exists(_unrelated),
@@ -205,6 +213,7 @@ function BladeStage1BossTestsRun(_state) {
                 "Projectiles", o_blade_first_beat_enemy_bullet
             );
             _phase_two_owned.owner_stage_instance_id = _boss.stage_instance_id;
+            var _items_before_timeout = instance_number(o_blade_reward_item);
             _boss.phase_ticks = _boss.phase_time_limit - 1;
             BladeStage1BossStep(_boss);
             BladeKernelTestAssertEqual(
@@ -223,6 +232,10 @@ function BladeStage1BossTestsRun(_state) {
             BladeKernelTestAssertFalse(
                 instance_exists(_phase_two_owned),
                 "timeout clears the last boss-owned attack"
+            );
+            BladeKernelTestAssertEqual(
+                instance_number(o_blade_reward_item), _items_before_timeout,
+                "timeout creates no point item"
             );
             BladeKernelTestAssertFalse(
                 BladeStage1BossResolvePhase(

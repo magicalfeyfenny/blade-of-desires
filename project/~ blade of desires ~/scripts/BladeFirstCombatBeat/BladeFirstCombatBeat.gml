@@ -177,6 +177,38 @@ function BladeFirstBeatClearOwnedBullets(_stage_instance_id) {
     }
 }
 
+/// Replaces an opted-in target's live bullets with one point item per bullet.
+/// Collection, rather than defeat conversion, awards score and Hyper.
+function BladeFirstBeatConvertOwnedBulletsToPointItems(_target) {
+    if (!instance_exists(_target)
+        || !variable_instance_exists(_target, "auto_cancel_bullets_on_defeat")
+        || !_target.auto_cancel_bullets_on_defeat
+        || !variable_instance_exists(_target, "stage_instance_id")
+        || _target.stage_instance_id == "") {
+        return 0;
+    }
+
+    var _owner = _target.stage_instance_id;
+    var _converted = 0;
+    with (o_blade_first_beat_enemy_bullet) {
+        if (owner_stage_instance_id == _owner
+            && !defeat_conversion_claimed) {
+            var _item_x = x;
+            var _item_y = y;
+            defeat_conversion_claimed = true;
+            instance_destroy();
+            var _point = instance_create_layer(
+                _item_x, _item_y, "Items", o_blade_reward_item
+            );
+            _point.kind = BladeSurvivalItemKind.Point;
+            _point.velocity_x = 0;
+            _point.velocity_y = 0.7;
+            _converted += 1;
+        }
+    }
+    return _converted;
+}
+
 /// Queues one concrete object defeat for the next deterministic Stage tick.
 function BladeFirstBeatQueueStageDefeat(_controller, _target) {
     if (!_target.stage_managed || _target.defeat_queued) return false;
@@ -225,7 +257,7 @@ function BladeFirstBeatSpawnTargetRewards(_controller, _target) {
     return _drops;
 }
 
-/// Resolves one ordinary enemy defeat through either Stage ownership or the legacy beat.
+/// Resolves one ordinary enemy defeat without granting it an auto-cancel privilege.
 function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
     var _is_carrier = BladeSurvivalEnemyIsBombCarrier(_target.archetype_id);
     BladeStage1FeedbackSpawn(
@@ -243,7 +275,6 @@ function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
     BladeFirstBeatSpawnTargetRewards(_controller, _target);
     if (_target.stage_managed) {
         BladeFirstBeatQueueStageDefeat(_controller, _target);
-        BladeFirstBeatClearOwnedBullets(_target.stage_instance_id);
         _controller.feedback_text = _is_carrier
             ? "BOMB CARRIER DOWN\nROUTE CONTINUES"
             : "ENEMY DOWN";
@@ -255,7 +286,6 @@ function BladeFirstBeatDefeatOrdinaryTarget(_controller, _target) {
         _controller.feedback_text = "CARRIER DOWN\nCOLLECT REWARDS";
         _controller.feedback_ticks = 120;
         _controller.reward_wait_ticks = 30;
-        with (o_blade_first_beat_enemy_bullet) instance_destroy();
     }
     with (_target) instance_destroy();
 }

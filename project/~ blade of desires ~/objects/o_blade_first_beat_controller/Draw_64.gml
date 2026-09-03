@@ -51,7 +51,7 @@ if (economy.active_hyper_tier > 0) {
 }
 
 draw_text(12, 250, "Move   Arrows\nFocus  Shift\nFire   Z"
-    + "\nPower  X\nHyper boosts danger");
+    + "\nPower  X\nFocus widens item reach\nHyper pulls all items");
 draw_text(12, 304, string_upper(BladeDifficultyPlayerName(economy.difficulty_id))
     + "  RANK " + string(BladeSurvivalEconomyRank(economy)) + " / 50");
 
