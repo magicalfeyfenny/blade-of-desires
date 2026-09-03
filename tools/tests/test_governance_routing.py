@@ -58,6 +58,7 @@ class GovernanceRoutingTests(unittest.TestCase):
             ROOT / ".agents/skills/gamemaker-production/SKILL.md",
             ROOT / ".agents/skills/governed-change/SKILL.md",
             ROOT / ".agents/skills/project-steward/SKILL.md",
+            ROOT / "templates/codex/governed-change.txt",
         )
 
         for source in entrypoints:
@@ -122,12 +123,20 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "imported-dependencies",
             },
         )
-        self.assertEqual(assets, {"derived-assets"})
+        self.assertEqual(
+            assets,
+            {
+                "derived-assets",
+                "placeholder-backed-mixed-work",
+            },
+        )
         self.assertTrue(
             {
                 "issue-authority",
                 "branches",
                 "unit-of-work",
+                "placeholder-backed-mixed-work",
+                "validation-coverage-allocation",
                 "validation-evidence",
                 "milestone-commits-and-draft-publication",
                 "human-created-changes",
@@ -147,7 +156,11 @@ class GovernanceRoutingTests(unittest.TestCase):
         )
         self.assertEqual(
             steward,
-            {"issue-authority", "human-created-changes"},
+            {
+                "issue-authority",
+                "validation-coverage-allocation",
+                "human-created-changes",
+            },
         )
 
         policy = (ROOT / "PROJECT_POLICY.toml").resolve()
@@ -191,6 +204,18 @@ class GovernanceRoutingTests(unittest.TestCase):
         }
 
         self.assertTrue(expected.issubset(setup_targets))
+
+    def test_scheduled_claim_policy_has_one_implementation_owner(self):
+        """Route scheduled claims through Governed Change, not stewardship."""
+        governed = governance_fragments(
+            ROOT / "templates/codex/governed-change.txt"
+        )
+        steward = governance_fragments(
+            ROOT / "templates/codex/project-steward.txt"
+        )
+
+        self.assertIn("scheduled-claim-eligibility", governed)
+        self.assertNotIn("scheduled-claim-eligibility", steward)
 
 
 if __name__ == "__main__":

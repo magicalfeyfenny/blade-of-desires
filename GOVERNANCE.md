@@ -41,8 +41,8 @@ Classify issue requirements as follows:
   lifecycle invariants, coordinate systems, compatibility requirements, or
   asset-authority rules.
 - Validation describes evidence used to establish that the outcome and its
-  constraints hold, such as representative automated tests, fixtures,
-  playtests, captures, or other checks.
+  constraints hold, such as automated tests and fixtures, representative
+  manual or live playtests and captures, or other checks.
 - Repository-wide policy requirements are not repeated as issue acceptance
   criteria merely because they apply to the work. The governed validation
   lifecycle and other applicable repository policy remain required without
@@ -59,11 +59,11 @@ distinguishes a plausible but incorrect implementation, records a known
 regression or important failure case, or expresses a requirement that cannot
 safely be inferred.
 
-Prefer concise representative criteria over exhaustive permutations. Merge
+Prefer concise outcome criteria over exhaustive permutations. Merge
 equivalent lifecycle states and edge cases unless their differences create
-distinct behavior or a known feature-specific risk. Validation should likewise
-cover representative risks rather than enumerate every theoretically testable
-state.
+distinct behavior or a known feature-specific risk. Keep validation plans out
+of acceptance criteria and allocate their evidence under
+[Validation coverage allocation](#validation-coverage-allocation).
 
 An implementation issue defines one coherent, independently meaningful outcome
 with one acceptance contract. Atomicity is measured by the product or
@@ -97,6 +97,82 @@ Project Steward owns evidence-backed issue creation for stewardship audits,
 including scheduled audits. Its skill owns the audit-specific evidence and
 per-run constraints. In scheduled operation, Project Steward owns issue
 creation and does not implement issues.
+
+### Scheduled claim eligibility
+
+The scheduled Governed Change automation owns selection and claim decisions
+for existing implementation issues. Project Steward continues to own audit,
+tracking, and evidence-backed issue creation; it does not claim or execute
+issues. Skills route scheduled work to the Governed Change automation template
+instead of defining separate claim policies.
+
+Before claiming an issue, compare its primary non-degradable deliverable with
+the capabilities available in the current execution environment. The primary
+non-degradable deliverable is the outcome that makes the issue independently
+meaningful and cannot be deferred, substituted, or reduced without violating
+its acceptance contract. The issue is eligible only when the environment has
+the capabilities required to complete that deliverable. If capability is
+unknown, fail closed and leave the issue available for a later capable run.
+
+The ability to create, encode, convert, or procedurally construct a file in the
+required runtime or source format does not by itself establish the capability
+to author the requested asset. Eligibility depends on the environment being
+capable of producing the asset form and quality required by the issue’s
+acceptance contract.
+
+When final authored assets are that deliverable, the issue is
+ineligible if the environment lacks the required asset-authoring capability.
+Eligibility is based on capability, not on a named runner, provider, model, or
+generation mechanism.
+
+Broader implementation work remains eligible when authored assets are
+incidental and deterministic placeholders preserve meaningful implementation
+progress without weakening the issue's acceptance contract. A placeholder is
+scaffolding, not evidence for an acceptance criterion that explicitly requires
+final production or authored assets.
+
+This capability check composes with every other scheduled eligibility
+condition, including issue atomicity, risk handling, dependency order, and the
+fail-closed recheck immediately before repository mutation. It does not replace
+or relax any of them.
+
+### Placeholder-backed mixed work
+
+A mixed implementation issue may use deterministic placeholders when final
+authored assets are secondary and the current execution environment
+lacks the capability to produce them. This is allowed only when the placeholder
+preserves an independently meaningful primary outcome and the issue's existing
+acceptance contract permits the final asset to be deferred. It does not make an
+asset-primary issue eligible.
+
+Keep every placeholder explicitly identified as non-production scaffolding in
+the implementation and pull-request handoff. Preserve the intended gameplay,
+UI, or runtime integration point so the final authored asset can replace the
+placeholder without recreating completed implementation work.
+
+A placeholder never satisfies an acceptance criterion that requires a final
+authored or production asset. If the current issue still contains such a
+criterion, the issue remains incomplete; linking a follow-up does not make that
+criterion complete.
+
+When the implementation issue can complete independently and only the
+separable final-asset deliverable remains, resolve its tracking before the
+implementation issue completes:
+
+1. Search live tracking for an appropriate canonical asset issue. Link the
+   original issue and pull request to that issue, updating it only as needed to
+   identify the remaining authored-asset deliverable and replacement point.
+2. If no appropriate issue exists, create exactly one narrow follow-up assigned
+   to the current user. Reference the original issue and pull request, own only
+   the unresolved authored-asset replacement and its asset-specific validation,
+   and exclude implementation scope already completed with the placeholder.
+3. Record the canonical follow-up link and the exact placeholder scope and
+   replacement point in the original pull-request handoff.
+
+This required follow-up is part of completing the selected mixed issue, not
+permission to generate a general backlog. A scheduled execution may create it
+only after claiming that issue and only under the rules above. The follow-up
+uses the normal issue-authority, dependency, and risk rules for its own scope.
 
 ## Branches
 
@@ -165,6 +241,42 @@ semantic assertion.
 A wording, formatting, ordering, or representation change that preserves the
 intended contract should not require unrelated test changes merely to satisfy
 stale textual expectations.
+
+### Validation coverage allocation
+
+Allocate validation coverage according to risk, contract relevance, and what
+each form of evidence can establish. Automated and manual or live validation
+have complementary responsibilities; neither is a blanket substitute for the
+other.
+
+When numeric, combinatorial, deterministic, or state-transition behavior is
+contract-relevant and practical to assert mechanically, prefer automated
+validation for the exhaustive relevant state space. Automated invariant
+coverage should replace manual repetition of every ship, difficulty, rank,
+state, or similar machine-testable combination. Do not require exhaustive
+automated matrices when the combinations are meaningless, intractable,
+redundant, or outside the contract.
+
+Use manual or live validation to sample a small, risk-appropriate set of cases
+for qualities that automated assertions cannot adequately establish. Check
+representative player-visible behavior and integration, visual readability and
+accessibility, timing and feel, interaction, and tool or engine behavior. As
+applicable, sample baseline, typical or midpoint, edge, and highest-pressure
+cases. These are selection dimensions, not a universal checklist or fixed
+sample count. Preserve additional manual coverage for known cross-state risks
+or any genuinely visual, interactive, timing-sensitive, accessibility,
+readability, integration, or tool and engine outcome that remains unproven
+mechanically.
+
+Issue acceptance criteria state required outcomes. Feature-specific validation
+plans choose this allocation and record the evidence needed without expanding
+the criteria into a large coverage matrix. Manual or live samples may traverse
+states already covered by automation to judge different qualities, but they do
+not need to repeat the complete machine-tested state space.
+
+This allocation operates inside the existing validation stages. It does not
+remove required Stage 1 checks or the full Stage 2 suite, weaken Stage 3 hosted
+evidence, change risk classification, or replace required human review.
 
 ## Validation evidence
 

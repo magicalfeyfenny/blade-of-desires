@@ -13,8 +13,11 @@ with the narrower selection and authority in its automation template.
 - Start: [Issue authority](../../../GOVERNANCE.md#issue-authority),
   [Branches](../../../GOVERNANCE.md#branches), and
   [Unit of work](../../../GOVERNANCE.md#unit-of-work).
-- Evidence and publication:
-  [Validation evidence](../../../GOVERNANCE.md#validation-evidence) and
+- Placeholder-backed mixed implementation:
+  [Placeholder-backed mixed work](../../../GOVERNANCE.md#placeholder-backed-mixed-work).
+- Validation planning, evidence, and publication:
+  [Validation coverage allocation](../../../GOVERNANCE.md#validation-coverage-allocation),
+  [Validation evidence](../../../GOVERNANCE.md#validation-evidence), and
   [Milestone commits](../../../GOVERNANCE.md#milestone-commits-and-draft-publication).
 - Completion: [Risk](../../../GOVERNANCE.md#risk),
   [Completion transition](../../../GOVERNANCE.md#completion-transition), and
@@ -47,6 +50,11 @@ Deferred work is not automatically backlog work. Create a follow-up issue
 only for an explicit requested outcome, a concrete defect or risk that should
 be tracked, or a blocker that cannot remain in the current issue.
 
+For placeholder-backed mixed work, resolve the canonical final-asset follow-up
+required by Governance before Stage 2. Record the exact placeholder scope,
+replacement point, and issue link in the draft pull request without claiming
+that the placeholder satisfies authored-asset acceptance.
+
 ## Execute
 
 1. Inspect live tracking and checkout state. Immediately before direct work,
@@ -54,7 +62,8 @@ be tracked, or a blocker that cannot remain in the current issue.
    work, recheck every template eligibility condition.
 2. Refresh `origin/dev` and create the governed issue branch.
 3. Implement only the issue scope in coherent milestones through any additional
-   task route above.
+   task route above, allocating automated and manual or live validation through
+   the Governance route above.
 4. For each milestone, obtain Stage 1 evidence, commit it, and publish or
    update the draft PR under the milestone rules.
 5. After the whole issue is complete, obtain Stage 2 evidence for the unchanged
