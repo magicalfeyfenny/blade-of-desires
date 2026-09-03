@@ -108,6 +108,7 @@ function BladeStage1MidbossRegister(
     var _rank = BladeSurvivalEconomyRank(_controller.economy);
     _member.fae_role = _role;
     _member.standard_pattern_id = _standard_pattern_id;
+    _member.auto_cancel_bullets_on_defeat = true;
     _member.target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
     _member.authored_max_health = BLADE_STAGE1_MIDBOSS_PERSONAL_HP;
     _member.max_health = BladeDifficultyEnemyHealth(
@@ -239,7 +240,7 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
             _member.personal_defeated = true;
             _member.targetable = false;
             _member.hit_radius = 0;
-            BladeFirstBeatClearOwnedBullets(_member.stage_instance_id);
+            BladeFirstBeatConvertOwnedBulletsToPointItems(_member);
             _controller.feedback_text = BladeStage1MidbossRoleName(
                 _member.fae_role
             ) + " SOLO CLEARED";
@@ -259,7 +260,6 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
     }
     if (_result.defeated && !_state.completed) {
         _state.completed = true;
-        BladeStage1MidbossClearPairBullets(_controller);
         BladeSurvivalApplyScore(_controller.economy, 25000);
         _controller.feedback_text = "DUO DEFEATED\nTHE FOREST PATH OPENS";
         _controller.feedback_ticks = 150;
@@ -267,6 +267,7 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
             _defeat_index < array_length(_state.members); ++_defeat_index) {
             var _defeated_member = _state.members[_defeat_index];
             if (!instance_exists(_defeated_member)) continue;
+            BladeFirstBeatConvertOwnedBulletsToPointItems(_defeated_member);
             _defeated_member.targetable = false;
             BladeFirstBeatQueueStageDefeat(_controller, _defeated_member);
         }

@@ -5,6 +5,8 @@ stage_instance_id = "";
 stage_encounter_id = "";
 stage_managed = false;
 defeat_queued = false;
+// Ordinary enemies never auto-cancel their emitted bullets on defeat.
+auto_cancel_bullets_on_defeat = false;
 target_kind = BladeFirstBeatTargetKind.Ordinary;
 targetable = true;
 spawn_order = 0;

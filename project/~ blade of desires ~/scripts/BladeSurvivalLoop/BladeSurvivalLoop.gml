@@ -30,6 +30,11 @@ enum BladeSurvivalPowerAction {
 #macro BLADE_SURVIVAL_STARTING_POINT_VALUE 1000
 #macro BLADE_SURVIVAL_POINT_VALUE_STEP 250
 #macro BLADE_SURVIVAL_POINT_VALUE_CAP 5000
+#macro BLADE_SURVIVAL_ITEM_VACUUM_NORMAL_RADIUS 64
+#macro BLADE_SURVIVAL_ITEM_VACUUM_FOCUS_RADIUS 128
+#macro BLADE_SURVIVAL_ITEM_VACUUM_NORMAL_SPEED 3.6
+#macro BLADE_SURVIVAL_ITEM_VACUUM_FOCUS_SPEED 5.2
+#macro BLADE_SURVIVAL_GRAZE_RADIUS 20
 #macro BLADE_SURVIVAL_LIFE_THRESHOLD_1 100000
 #macro BLADE_SURVIVAL_LIFE_THRESHOLD_2 500000
 #macro BLADE_SURVIVAL_LIFE_THRESHOLD_3 1500000
@@ -96,6 +101,20 @@ function BladeSurvivalCurrentPointValue(_economy) {
         BladeSurvivalEconomyDifficulty(_economy),
         BladeSurvivalEconomyRank(_economy)
     );
+}
+
+/// Returns the authored item-attraction reach for the current player stance.
+function BladeSurvivalItemVacuumRadius(_focused) {
+    return _focused
+        ? BLADE_SURVIVAL_ITEM_VACUUM_FOCUS_RADIUS
+        : BLADE_SURVIVAL_ITEM_VACUUM_NORMAL_RADIUS;
+}
+
+/// Returns the authored item-attraction speed for the current player stance.
+function BladeSurvivalItemVacuumSpeed(_focused) {
+    return _focused
+        ? BLADE_SURVIVAL_ITEM_VACUUM_FOCUS_SPEED
+        : BLADE_SURVIVAL_ITEM_VACUUM_NORMAL_SPEED;
 }
 
 /// Emits attempt economy, effective reward value, and rank for gameplay snapshots.
@@ -350,6 +369,13 @@ function BladeSurvivalGameplayAdvances(_controller) {
     return (_controller.state == BladeFirstBeatState.Playing
             || _controller.state == BladeFirstBeatState.Rewarding)
         && _controller.player_phase == BladeSurvivalPlayerPhase.Active;
+}
+
+/// Lets collectibles fall during response, death, and Game Over, but not after clear.
+function BladeSurvivalItemMotionAdvances(_controller) {
+    return _controller.state == BladeFirstBeatState.Playing
+        || _controller.state == BladeFirstBeatState.Rewarding
+        || _controller.state == BladeFirstBeatState.Failed;
 }
 
 /// Starts the single readable hit-response window when protection is absent.

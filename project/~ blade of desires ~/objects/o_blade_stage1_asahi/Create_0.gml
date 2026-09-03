@@ -5,6 +5,7 @@ stage_instance_id = "";
 stage_encounter_id = "";
 stage_managed = true;
 defeat_queued = false;
+auto_cancel_bullets_on_defeat = false;
 target_kind = BladeFirstBeatTargetKind.Stage1Asahi;
 targetable = false;
 max_health = BLADE_STAGE1_ASAHI_PHASE_1_HP;

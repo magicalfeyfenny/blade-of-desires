@@ -1,28 +1,37 @@
 var _controller = instance_find(o_blade_first_beat_controller, 0);
 var _player = BladeStage1PlayerInstance(_controller);
-if (_controller == noone || _player == noone
-    || !BladeSurvivalGameplayAdvances(_controller)) exit;
+// Rewards keep their own fall/collection lifecycle through response and death.
+if (_controller == noone || !BladeSurvivalItemMotionAdvances(_controller)) exit;
 
-var _bounds = BladeCombatPlanePixelBounds(_controller.gameplay_plane);
-var _distance = point_distance(x, y, _player.x, _player.y);
-var _bottom_y = _bounds.bottom_exclusive - radius - 2;
-if (_distance < 86 || y >= _bottom_y) {
-    var _direction = point_direction(x, y, _player.x, _player.y);
-    x += lengthdir_x(3.6, _direction);
-    y += lengthdir_y(3.6, _direction);
-} else {
+var _can_collect = _player != noone
+    && BladeSurvivalGameplayAdvances(_controller);
+var _hyper_active = _controller.economy.active_hyper_tier > 0;
+var _distance = _can_collect
+    ? point_distance(x, y, _player.x, _player.y)
+    : infinity;
+var _vacuum_radius = _can_collect
+    ? BladeSurvivalItemVacuumRadius(_player.focused)
+    : 0;
+if (!_can_collect || (!_hyper_active && _distance > _vacuum_radius)) {
     x += velocity_x;
     y += velocity_y;
     velocity_x *= 0.985;
     velocity_y = min(1.7, velocity_y + 0.018);
+} else if (!_hyper_active) {
+    var _direction = point_direction(x, y, _player.x, _player.y);
+    var _vacuum_speed = BladeSurvivalItemVacuumSpeed(_player.focused);
+    x += lengthdir_x(_vacuum_speed, _direction);
+    y += lengthdir_y(_vacuum_speed, _direction);
 }
 
-x = clamp(x, _bounds.left + radius, _bounds.right_exclusive - radius);
-y = min(y, _bottom_y);
+if (!BladeCombatPlaneContainsPixelCircle(_controller.gameplay_plane, x, y, radius)) {
+    instance_destroy();
+    exit;
+}
 
-if (!BladeFirstBeatCirclesOverlap(
+if (!_can_collect || (!_hyper_active && !BladeFirstBeatCirclesOverlap(
     x, y, radius, _player.x, _player.y, _player.body_radius
-)) exit;
+))) exit;
 
 if (kind == BladeSurvivalItemKind.Bomb) {
     var _bomb = BladeSurvivalCollectBomb(_controller.economy);
