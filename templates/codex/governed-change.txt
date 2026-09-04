@@ -9,9 +9,10 @@ for an existing continuation and resume it under
 [Scheduled continuation](../../GOVERNANCE.md#scheduled-continuation). If a
 continuation is actionable because the current environment can make meaningful
 progress on at least one remaining implementation or validation milestone, do
-not select new work in the same run. If it is pending only for unavailable
-manual or live evidence, an unavailable interactive desktop, or required human
-action, leave it pending and allow new-issue selection for this run.
+not select new work in the same run. If it is pending only for independently
+required interactive runtime validation that cannot run in the current
+environment, or for required human action, leave it pending and allow new-issue
+selection for this run.
 
 If no actionable continuation exists, select at most one new eligible issue under
 [Scheduled claim eligibility](../../GOVERNANCE.md#scheduled-claim-eligibility).
@@ -55,10 +56,15 @@ create the governed issue branch. For a continuation, use the existing matching
 issue branch and draft pull request; do not recreate the branch. Do not absorb
 unrelated fixes.
 
-If required manual or live evidence is unavailable after practical preflight,
-follow [Manual and live validation availability](../../GOVERNANCE.md#manual-and-live-validation-availability):
-continue only with coherent implementation and available automated evidence,
-then leave the draft incomplete and report the missing observation.
+Prefer automated and machine-verifiable evidence. Do not invent manual
+playtesting, human observation, experiential review, subjective acceptance, or
+generic gameplay smoke requirements; human judgment is required only by
+explicit human direction. Perform interactive runtime validation only for a
+concrete purpose permitted by
+[Interactive runtime validation](../../GOVERNANCE.md#interactive-runtime-validation).
+If a permitted required interactive check cannot run, record the environment
+limitation and follow the issue's actual completion contract without inventing
+a human-observation blocker.
 
 Return:
 
@@ -66,4 +72,5 @@ Return:
 - branch;
 - draft pull request;
 - validation state;
-- remaining blocker, missing manual or live evidence, or required human action.
+- remaining blocker, missing independently required interactive runtime
+  evidence, or required human action.

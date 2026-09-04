@@ -39,9 +39,13 @@ Inspect live issues and PRs, then report only:
 - tracking whose only purpose is an abstraction that no longer has a consumer;
 - asset tracking whose only unresolved outcome is human review, approval,
   acceptance, or promotion of an existing authored asset rather than concrete
-  remaining asset-production work; and
+  remaining asset-production work;
 - compatibility or migration requirements that do not identify independent
-  pre-work evidence for the consumer or durable contract they preserve.
+  pre-work evidence for the consumer or durable contract they preserve; and
+- agent-authored manual playtesting, generic gameplay smoke testing, human
+  observation, experiential acceptance, readability or feel review, or
+  subjective visual-review requirements that lack explicit human source
+  authority.
 
 Create an issue only from:
 
@@ -69,3 +73,10 @@ run.
 - Do not create issues to simplify over-decomposed issue clusters, fix
   over-prescribed technical machinery, or repair stale tracking or language
   unless the issue is explicitly requested.
+- Do not create or retain manual playtesting, subjective review, human
+  observation, experiential acceptance, or generic gameplay smoke requirements
+  unless explicit human direction requires that specific judgment.
+- Player-visible, runtime-affecting, visual, interactive, or high-risk work
+  alone is not evidence that manual or human-observed validation is required.
+- Prefer machine-verifiable validation requirements when authoring or auditing
+  issues.

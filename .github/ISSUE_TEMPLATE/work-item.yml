@@ -33,12 +33,12 @@ body:
     attributes:
       label: Validation
       description: >-
-        Choose proportionate feature-specific evidence: automate practical
-        exhaustive coverage of contract-relevant deterministic invariants,
-        and use representative manual or live cases for player-visible,
-        integration, readability, accessibility, timing or feel, and engine or
-        tool qualities automation cannot establish. Do not repeat the
-        repository-wide governed validation suite.
+        Choose proportionate feature-specific evidence. Prefer automated,
+        deterministic, rendering or snapshot, runtime, and other
+        machine-verifiable checks for mechanically observable properties.
+        Include manual playtesting, subjective review, or human observation
+        only when explicit human direction requires that specific judgment. Do
+        not repeat the repository-wide governed validation suite.
     validations:
       required: false
 
