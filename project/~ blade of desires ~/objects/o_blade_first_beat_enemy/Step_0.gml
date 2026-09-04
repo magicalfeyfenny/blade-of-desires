@@ -35,7 +35,9 @@ if (_controller.bomb_clears_this_frame
 var _player = BladeStage1PlayerInstance(_controller);
 if (_player == noone) exit;
 var _aim = point_direction(x, y, _player.x, _player.y);
-var _directions = BladeStage1EnemyFireDirections(id, _aim);
+var _directions = BladeStage1EnemyFireDirections(
+    id, _aim, _difficulty_id, _rank, _hyper_tier
+);
 var _emitted_count = 0;
 for (var _index = 0; _index < array_length(_directions); ++_index) {
     var _emission_x = x;

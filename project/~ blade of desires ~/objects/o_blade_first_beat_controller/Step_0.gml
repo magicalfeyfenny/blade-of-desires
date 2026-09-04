@@ -65,7 +65,7 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
             if (_emergency.used) {
                 BladeDifficultyRankApplyReason(
                     economy.rank_state,
-                    BladeDifficultyRankReason.EmergencyBomb,
+                    BladeDifficultyRankReason.DeathBombBomb,
                     rank_clock_tick
                 );
                 BladeStage1AudioPlayForController(

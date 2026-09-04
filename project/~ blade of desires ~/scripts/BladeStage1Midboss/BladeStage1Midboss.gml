@@ -197,6 +197,15 @@ function _BladeStage1MidbossRank(_member) {
         : BladeSurvivalEconomyRank(_controller.economy);
 }
 
+function _BladeStage1MidbossDensityOffsets(_member, _base_offsets, _hyper_tier) {
+    return BladeDifficultyExpandFanOffsets(
+        _base_offsets,
+        _BladeStage1MidbossDifficultyId(_member),
+        _BladeStage1MidbossRank(_member),
+        _hyper_tier
+    );
+}
+
 function _BladeStage1MidbossFireInterval(_member, _base_ticks, _hyper_tier) {
     return BladeDifficultyHostileFireInterval(
         _base_ticks,
@@ -260,7 +269,7 @@ function BladeStage1MidbossApplyDamage(_controller, _member, _damage) {
     }
     if (_result.defeated && !_state.completed) {
         _state.completed = true;
-        BladeSurvivalApplyScore(_controller.economy, 25000);
+        BladeSurvivalApplyDirectScore(_controller.economy, 25000);
         _controller.feedback_text = "DUO DEFEATED\nTHE FOREST PATH OPENS";
         _controller.feedback_ticks = 150;
         for (var _defeat_index = 0;
@@ -324,7 +333,9 @@ function BladeStage1MidbossMayniiSolo(_member, _player, _hyper_tier = 0) {
     var _interval = _BladeStage1MidbossFireInterval(_member, 54, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
-    var _offsets = [-42, -24, 24, 42];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-42, -24, 24, 42], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.05 + _index * 0.08,
@@ -342,7 +353,9 @@ function BladeStage1MidbossCielaSolo(_member, _player, _hyper_tier = 0) {
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _pulse = (_member.attack_ticks div _interval) mod 4;
-    var _offsets = [-52, -34, -16, 16, 34, 52];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-52, -34, -16, 16, 34, 52], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         var _bank = _index < 3 ? -1 : 1;
         var _current = (_pulse - 1.5) * 3 * _bank;
@@ -364,7 +377,9 @@ function BladeStage1MidbossKolarSolo(_member, _player, _hyper_tier = 0) {
     var _interval = _BladeStage1MidbossFireInterval(_member, 64, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
-    var _offsets = [-30, -15, 0, 15, 30];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-30, -15, 0, 15, 30], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.25 + abs(_index - 2) * 0.12,
@@ -380,8 +395,17 @@ function BladeStage1MidbossKolarSolo(_member, _player, _hyper_tier = 0) {
 function BladeStage1MidbossMayniiCombo(_member, _hyper_tier = 0) {
     var _interval = _BladeStage1MidbossFireInterval(_member, 72, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
-    var _lane_count = 9;
-    var _open_lane = 1 + ((_member.attack_ticks div _interval) mod 7);
+    var _lane_count = max(
+        3,
+        BladeDifficultyHostileVolleyCount(
+            9,
+            _BladeStage1MidbossDifficultyId(_member),
+            _BladeStage1MidbossRank(_member),
+            _hyper_tier
+        )
+    );
+    var _open_lane = 1 + ((_member.attack_ticks div _interval)
+        mod max(1, _lane_count - 2));
     for (var _lane = 0; _lane < _lane_count; ++_lane) {
         if (_lane == _open_lane) continue;
         BladeStage1MidbossBulletSpawn(
@@ -400,7 +424,9 @@ function BladeStage1MidbossKolarCombo(_member, _player, _hyper_tier = 0) {
     var _answer_tick = max(1, _interval div 2);
     if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
-    var _offsets = [-34, -17, 0, 17, 34];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-34, -17, 0, 17, 34], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member, _aim + _offsets[_index], 2.7 - abs(_index - 2) * 0.12,
@@ -416,8 +442,18 @@ function BladeStage1MidbossKolarCombo(_member, _player, _hyper_tier = 0) {
 function BladeStage1MidbossCielaCombo(_member, _hyper_tier = 0) {
     var _interval = _BladeStage1MidbossFireInterval(_member, 68, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
-    var _wave = (_member.attack_ticks div _interval) mod 5;
-    for (var _lane = 0; _lane < 8; ++_lane) {
+    var _lane_count = max(
+        4,
+        BladeDifficultyHostileVolleyCount(
+            8,
+            _BladeStage1MidbossDifficultyId(_member),
+            _BladeStage1MidbossRank(_member),
+            _hyper_tier
+        )
+    );
+    var _wave = (_member.attack_ticks div _interval)
+        mod max(1, _lane_count - 3);
+    for (var _lane = 0; _lane < _lane_count; ++_lane) {
         var _open_lane = 1 + _wave;
         if (_lane == _open_lane || _lane == _open_lane + 1) continue;
         var _bend = dsin((_lane * 45) + (_wave * 36)) * 7;
@@ -444,7 +480,9 @@ function BladeStage1MidbossKolarRiverCombo(
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
     var _wave = (_member.attack_ticks div _interval) mod 5;
     var _sweep = (_wave - 2) * 6;
-    var _offsets = [-27, -9, 9, 27];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-27, -9, 9, 27], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1MidbossBulletSpawn(
             _member,
@@ -464,7 +502,9 @@ function BladeStage1MidbossCielaMayniiRiverRoots(_member, _hyper_tier = 0) {
     var _interval = _BladeStage1MidbossFireInterval(_member, 76, _hyper_tier);
     if (_member.attack_ticks mod _interval != 0) return false;
     var _wave = (_member.attack_ticks div _interval) mod 4;
-    var _angles = [210, 228, 246, 294, 312, 330, 348];
+    var _angles = _BladeStage1MidbossDensityOffsets(
+        _member, [210, 228, 246, 294, 312, 330, 348], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_angles); ++_index) {
         var _bend = ((_wave + _index) mod 3 - 1) * 4;
         BladeStage1MidbossBulletSpawn(
@@ -488,7 +528,9 @@ function BladeStage1MidbossMayniiRiverRoots(
     var _answer_tick = max(1, _interval div 2);
     if (_member.attack_ticks mod _interval != _answer_tick) return false;
     var _aim = point_direction(_member.x, _member.y, _player.x, _player.y);
-    var _offsets = [-24, 0, 24];
+    var _offsets = _BladeStage1MidbossDensityOffsets(
+        _member, [-24, 0, 24], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         var _root_turn = (_index - 1) * 11;
         BladeStage1MidbossBulletSpawn(
