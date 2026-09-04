@@ -48,17 +48,20 @@ canonical state without consulting wall-clock time or ambient randomness.
 
 Stage 1's selected run is a version-2 identity carrying one of those three
 difficulties. Its `BladeSurvivalEconomy` owns the attempt-local rank state,
-which starts at integer rank `0`, clamps to `0..50`, and is recreated on retry.
-The rank event stream is canonicalized into the Stage kernel snapshot and is
-never written to configuration, career, or replay storage.
+which starts at integer rank `0` for Easy/Normal and `20` for Hard, clamps to
+the selected difficulty's `0..25`, `0..50`, or `20..50` bounds, and is recreated
+on retry. The rank event stream is canonicalized into the Stage kernel snapshot
+and is never written to configuration, career, or replay storage.
 
 The authored rank deltas are fixed and applied once per accepted action: active
-play `+1` every 30 eligible ticks; defensive recovery `-3`; normal Bomb `-6`;
-committed life loss `-10`; normal Hyper `+4`; death-bomb Hyper `-4`; and an
-emergency all-stock Bomb `-8`. Rank does not advance during hit response,
+play `+1` every 30 eligible ticks; normal Bomb `-3`; committed life loss `-15`;
+normal Hyper `+5`; hit-response death-bomb Hyper `-5`; and hit-response
+all-stock death-bomb Bomb `-10`. Rank does not advance during hit response,
 respawn, pause, result, warning/cutscene, cleanup, or reward collection.
-Difficulty and rank compose once over authored Stage 1 hostile speed/fire and
-point/reward values, while Normal at rank zero retains the prior cadence.
+Difficulty and rank compose once over authored Stage 1 hostile speed, fire,
+volley density, and pickup/reward values. Authored enemy HP and direct enemy
+hit/defeat score remain invariant; Normal at rank zero retains the prior
+cadence and volley cardinality.
 
 Each fresh attempt owns `own:1` as its run event owner and `ins:1` as its
 player. The player starts active at simulation tick zero. Public snapshots,

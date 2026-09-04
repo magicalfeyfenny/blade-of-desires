@@ -56,6 +56,15 @@ function _BladeStage1BossRank(_boss) {
         : BladeSurvivalEconomyRank(_controller.economy);
 }
 
+function _BladeStage1BossDensityOffsets(_boss, _base_offsets, _hyper_tier) {
+    return BladeDifficultyExpandFanOffsets(
+        _base_offsets,
+        _BladeStage1BossDifficultyId(_boss),
+        _BladeStage1BossRank(_boss),
+        _hyper_tier
+    );
+}
+
 function _BladeStage1BossFireInterval(_boss, _base_ticks, _hyper_tier) {
     return BladeDifficultyHostileFireInterval(
         _base_ticks,
@@ -182,7 +191,9 @@ function BladeStage1BossSolarWaltz(_boss, _player, _hyper_tier = 0) {
     if (_boss.attack_ticks <= 0 || _cycle_tick != 0) return false;
 
     var _aim = point_direction(_boss.x, _boss.y, _player.x, _player.y);
-    var _offsets = [-48, -32, -16, 0, 16, 32, 48];
+    var _offsets = _BladeStage1BossDensityOffsets(
+        _boss, [-48, -32, -16, 0, 16, 32, 48], _hyper_tier
+    );
     for (var _index = 0; _index < array_length(_offsets); ++_index) {
         BladeStage1BossBulletSpawn(
             _boss,
@@ -207,13 +218,22 @@ function BladeStage1BossCrownOfDawn(_boss, _player, _hyper_tier = 0) {
     var _fired = false;
     if (_boss.attack_ticks > 0 && _cycle_tick == 0) {
         var _cycle = _boss.attack_ticks div _interval;
-        var _gap = (_cycle * 3) mod 16;
+        var _ray_count = max(
+            4,
+            BladeDifficultyHostileVolleyCount(
+                16,
+                _BladeStage1BossDifficultyId(_boss),
+                _BladeStage1BossRank(_boss),
+                _hyper_tier
+            )
+        );
+        var _gap = (_cycle * 3) mod _ray_count;
         var _rotation = (_cycle * 11) mod 360;
-        for (var _ray = 0; _ray < 16; ++_ray) {
-            if (_ray == _gap || _ray == ((_gap + 1) mod 16)) continue;
+        for (var _ray = 0; _ray < _ray_count; ++_ray) {
+            if (_ray == _gap || _ray == ((_gap + 1) mod _ray_count)) continue;
             BladeStage1BossBulletSpawn(
                 _boss,
-                _rotation + _ray * 22.5,
+                _rotation + _ray * 360 / _ray_count,
                 1.75 + (_ray mod 3) * 0.10,
                 BladeFirstBeatBulletKind.AsahiCrown,
                 make_color_rgb(255, 173, 54),
@@ -226,7 +246,9 @@ function BladeStage1BossCrownOfDawn(_boss, _player, _hyper_tier = 0) {
 
     if (_cycle_tick == max(1, _interval div 2)) {
         var _aim = point_direction(_boss.x, _boss.y, _player.x, _player.y);
-        var _offsets = [-14, 0, 14];
+        var _offsets = _BladeStage1BossDensityOffsets(
+            _boss, [-14, 0, 14], _hyper_tier
+        );
         for (var _index = 0; _index < array_length(_offsets); ++_index) {
             BladeStage1BossBulletSpawn(
                 _boss,
@@ -283,7 +305,7 @@ function BladeStage1BossResolvePhase(_controller, _boss, _resolution) {
 
     if (_boss.boss_phase == 1) {
         if (_resolution == BladeStage1BossResolution.Defeat) {
-            BladeSurvivalApplyScore(_controller.economy, 20000);
+            BladeSurvivalApplyDirectScore(_controller.economy, 20000);
         }
         var _recharge_started = BladeStage1BossBeginRecharge(
             _controller, _boss
@@ -299,7 +321,7 @@ function BladeStage1BossResolvePhase(_controller, _boss, _resolution) {
     _boss.terminal_ticks = 150;
     _controller.boss_resolution = _resolution;
     if (_resolution == BladeStage1BossResolution.Defeat) {
-        BladeSurvivalApplyScore(_controller.economy, 50000);
+        BladeSurvivalApplyDirectScore(_controller.economy, 50000);
         _controller.feedback_text = "ASAHI DEFEATED\nDAWN BREAKS";
         BladeStage1AudioPlayForController(
             _controller, BladeStage1AudioSfx.BossDefeat, 1

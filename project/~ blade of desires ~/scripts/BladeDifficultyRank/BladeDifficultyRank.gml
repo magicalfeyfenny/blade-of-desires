@@ -2,12 +2,11 @@
 
 enum BladeDifficultyRankReason {
     ActivePlay = 1,
-    DefensiveRecovery = 2,
-    NormalBomb = 3,
-    LifeLoss = 4,
-    NormalHyper = 5,
-    DeathBombHyper = 6,
-    EmergencyBomb = 7
+    NormalBomb = 2,
+    LifeLoss = 3,
+    NormalHyper = 4,
+    DeathBombHyper = 5,
+    DeathBombBomb = 6
 }
 
 #macro BLADE_DIFFICULTY_EASY_ID "difficulty.easy"
@@ -15,16 +14,22 @@ enum BladeDifficultyRankReason {
 #macro BLADE_DIFFICULTY_HARD_ID "difficulty.hard"
 #macro BLADE_DIFFICULTY_RANK_MIN 0
 #macro BLADE_DIFFICULTY_RANK_MAX 50
+#macro BLADE_DIFFICULTY_RANK_EASY_MIN 0
+#macro BLADE_DIFFICULTY_RANK_EASY_MAX 25
+#macro BLADE_DIFFICULTY_RANK_NORMAL_MIN 0
+#macro BLADE_DIFFICULTY_RANK_NORMAL_MAX 50
+#macro BLADE_DIFFICULTY_RANK_HARD_MIN 20
+#macro BLADE_DIFFICULTY_RANK_HARD_MAX 50
+#macro BLADE_DIFFICULTY_RANK_REASON_COUNT 6
 #macro BLADE_DIFFICULTY_RANK_ACTIVE_PERIOD 30
 
 // Fixed deltas make every rank transition auditable and replayable.
 #macro BLADE_DIFFICULTY_RANK_ACTIVE_DELTA 1
-#macro BLADE_DIFFICULTY_RANK_DEFENSIVE_DELTA -3
-#macro BLADE_DIFFICULTY_RANK_BOMB_DELTA -6
-#macro BLADE_DIFFICULTY_RANK_LIFE_DELTA -10
-#macro BLADE_DIFFICULTY_RANK_HYPER_DELTA 4
-#macro BLADE_DIFFICULTY_RANK_DEATH_BOMB_HYPER_DELTA -4
-#macro BLADE_DIFFICULTY_RANK_EMERGENCY_DELTA -8
+#macro BLADE_DIFFICULTY_RANK_BOMB_DELTA -3
+#macro BLADE_DIFFICULTY_RANK_LIFE_DELTA -15
+#macro BLADE_DIFFICULTY_RANK_HYPER_DELTA 5
+#macro BLADE_DIFFICULTY_RANK_DEATH_BOMB_HYPER_DELTA -5
+#macro BLADE_DIFFICULTY_RANK_DEATH_BOMB_BOMB_DELTA -10
 
 function _BladeDifficultyRankFail(_field, _reason) {
     throw("BladeDifficultyRank: " + _field + ": " + _reason);
@@ -44,18 +49,19 @@ function _BladeDifficultyRankRequireId(_difficulty_id, _field = "difficulty_id")
 }
 
 function _BladeDifficultyRankRequireReason(_reason, _field = "reason") {
-    return _BladeDifficultyRankInteger(_reason, 1, 7, _field);
+    return _BladeDifficultyRankInteger(
+        _reason, 1, BLADE_DIFFICULTY_RANK_REASON_COUNT, _field
+    );
 }
 
 function _BladeDifficultyRankReasonToken(_reason) {
     switch (_reason) {
         case BladeDifficultyRankReason.ActivePlay: return "active_play";
-        case BladeDifficultyRankReason.DefensiveRecovery: return "defensive_recovery";
         case BladeDifficultyRankReason.NormalBomb: return "normal_bomb";
         case BladeDifficultyRankReason.LifeLoss: return "life_loss";
         case BladeDifficultyRankReason.NormalHyper: return "normal_hyper";
         case BladeDifficultyRankReason.DeathBombHyper: return "death_bomb_hyper";
-        case BladeDifficultyRankReason.EmergencyBomb: return "emergency_bomb";
+        case BladeDifficultyRankReason.DeathBombBomb: return "death_bomb_bomb";
     }
     _BladeDifficultyRankFail("reason", "has no canonical token");
     return "";
@@ -65,10 +71,9 @@ function _BladeDifficultyRankPriority(_reason) {
     switch (_reason) {
         case BladeDifficultyRankReason.ActivePlay: return 10;
         case BladeDifficultyRankReason.NormalHyper: return 20;
-        case BladeDifficultyRankReason.DefensiveRecovery:
         case BladeDifficultyRankReason.NormalBomb:
         case BladeDifficultyRankReason.DeathBombHyper:
-        case BladeDifficultyRankReason.EmergencyBomb: return 30;
+        case BladeDifficultyRankReason.DeathBombBomb: return 30;
         case BladeDifficultyRankReason.LifeLoss: return 40;
     }
     _BladeDifficultyRankFail("reason", "has no same-tick ordering priority");
@@ -108,7 +113,8 @@ function BladeDifficultyProfile(_difficulty_id) {
             difficulty_id: _difficulty_id,
             hostile_speed_per_mille: 850,
             hostile_fire_per_mille: 820,
-            enemy_health_per_mille: 850,
+            hostile_density_per_mille: 900,
+            enemy_health_per_mille: 1000,
             reward_per_mille: 900,
         };
     }
@@ -117,7 +123,8 @@ function BladeDifficultyProfile(_difficulty_id) {
             difficulty_id: _difficulty_id,
             hostile_speed_per_mille: 1150,
             hostile_fire_per_mille: 1200,
-            enemy_health_per_mille: 1150,
+            hostile_density_per_mille: 1100,
+            enemy_health_per_mille: 1000,
             reward_per_mille: 1100,
         };
     }
@@ -125,6 +132,7 @@ function BladeDifficultyProfile(_difficulty_id) {
         difficulty_id: _difficulty_id,
         hostile_speed_per_mille: 1000,
         hostile_fire_per_mille: 1000,
+        hostile_density_per_mille: 1000,
         enemy_health_per_mille: 1000,
         reward_per_mille: 1000,
     };
@@ -150,6 +158,44 @@ function _BladeDifficultyRankValue(_rank, _field = "rank") {
     );
 }
 
+/// Returns the inclusive attempt-local rank bounds for one selected difficulty.
+function BladeDifficultyRankBounds(_difficulty_id) {
+    _BladeDifficultyRankRequireId(_difficulty_id);
+    if (_difficulty_id == BLADE_DIFFICULTY_EASY_ID) {
+        return {
+            minimum: BLADE_DIFFICULTY_RANK_EASY_MIN,
+            maximum: BLADE_DIFFICULTY_RANK_EASY_MAX,
+        };
+    }
+    if (_difficulty_id == BLADE_DIFFICULTY_HARD_ID) {
+        return {
+            minimum: BLADE_DIFFICULTY_RANK_HARD_MIN,
+            maximum: BLADE_DIFFICULTY_RANK_HARD_MAX,
+        };
+    }
+    return {
+        minimum: BLADE_DIFFICULTY_RANK_NORMAL_MIN,
+        maximum: BLADE_DIFFICULTY_RANK_NORMAL_MAX,
+    };
+}
+
+function _BladeDifficultyRankMinimum(_difficulty_id) {
+    return BladeDifficultyRankBounds(_difficulty_id).minimum;
+}
+
+function _BladeDifficultyRankMaximum(_difficulty_id) {
+    return BladeDifficultyRankBounds(_difficulty_id).maximum;
+}
+
+function _BladeDifficultyRankValueForDifficulty(
+    _rank, _difficulty_id, _field = "rank"
+) {
+    var _bounds = BladeDifficultyRankBounds(_difficulty_id);
+    return _BladeDifficultyRankInteger(
+        _rank, _bounds.minimum, _bounds.maximum, _field
+    );
+}
+
 /// Returns the authored rank multipliers in permille, avoiding floating-point policy state.
 function BladeDifficultyRankMultipliers(_rank) {
     var _value = _BladeDifficultyRankValue(_rank);
@@ -164,7 +210,9 @@ function BladeDifficultyRankMultipliers(_rank) {
 /// Composes difficulty, rank, and the existing Hyper speed multiplier exactly once.
 function BladeDifficultyHostileBulletSpeed(_base_speed, _difficulty_id, _rank, _hyper_tier = 0) {
     var _profile = BladeDifficultyProfile(_difficulty_id);
-    var _rank_profile = BladeDifficultyRankMultipliers(_rank);
+    var _rank_profile = BladeDifficultyRankMultipliers(
+        _BladeDifficultyRankValueForDifficulty(_rank, _difficulty_id)
+    );
     return max(0, _base_speed)
         * _profile.hostile_speed_per_mille
         * _rank_profile.hostile_speed_per_mille
@@ -175,7 +223,9 @@ function BladeDifficultyHostileBulletSpeed(_base_speed, _difficulty_id, _rank, _
 /// Returns the composed hostile fire rate used by ordinary, midboss, and boss emitters.
 function BladeDifficultyHostileFireRate(_difficulty_id, _rank, _hyper_tier = 0) {
     var _profile = BladeDifficultyProfile(_difficulty_id);
-    var _rank_profile = BladeDifficultyRankMultipliers(_rank);
+    var _rank_profile = BladeDifficultyRankMultipliers(
+        _BladeDifficultyRankValueForDifficulty(_rank, _difficulty_id)
+    );
     return _profile.hostile_fire_per_mille
         * _rank_profile.hostile_fire_per_mille
         / 1000000
@@ -191,17 +241,116 @@ function BladeDifficultyHostileFireInterval(_base_ticks, _difficulty_id, _rank, 
     );
 }
 
+/// Composes authored, rank, and Hyper volley density in permille.
+function BladeDifficultyHostileDensityPerMille(
+    _difficulty_id, _rank, _hyper_tier = 0
+) {
+    var _profile = BladeDifficultyProfile(_difficulty_id);
+    var _rank_value = _BladeDifficultyRankValueForDifficulty(
+        _rank, _difficulty_id
+    );
+    var _hyper_value = _BladeDifficultyRankInteger(
+        _hyper_tier, 0, 3, "hyper_tier"
+    );
+    return _profile.hostile_density_per_mille
+        * (1000 + _rank_value * 4)
+        * BladeSurvivalHyperHostileDensityPerMille(_hyper_value)
+        / 1000000;
+}
+
+/// Converts one authored volley count to a stable difficulty/rank/Hyper count.
+function BladeDifficultyHostileVolleyCount(
+    _base_count, _difficulty_id, _rank, _hyper_tier = 0
+) {
+    var _count = _BladeDifficultyRankInteger(_base_count, 1, 64, "base_count");
+    return max(
+        1,
+        round(_count * BladeDifficultyHostileDensityPerMille(
+            _difficulty_id, _rank, _hyper_tier
+        ) / 1000)
+    );
+}
+
+function _BladeDifficultyRankOffset(_value, _field) {
+    var _type = typeof(_value);
+    if ((_type != "number" && _type != "int32" && _type != "int64")
+        || is_nan(_value) || is_infinity(_value)) {
+        _BladeDifficultyRankFail(_field, "must be a finite numeric offset");
+    }
+    return _value;
+}
+
+/// Expands a sorted authored fan while retaining its centerline and endpoints.
+function BladeDifficultyExpandFanOffsets(
+    _base_offsets, _difficulty_id, _rank, _hyper_tier = 0
+) {
+    if (!is_array(_base_offsets) || array_length(_base_offsets) == 0) {
+        _BladeDifficultyRankFail("base_offsets", "must be a non-empty array");
+    }
+    var _base_count = array_length(_base_offsets);
+    for (var _validate_index = 0;
+        _validate_index < _base_count;
+        ++_validate_index) {
+        _BladeDifficultyRankOffset(
+            _base_offsets[_validate_index],
+            "base_offsets[" + string(_validate_index) + "]"
+        );
+    }
+    var _target_count = BladeDifficultyHostileVolleyCount(
+        _base_count, _difficulty_id, _rank, _hyper_tier
+    );
+    var _expanded = [];
+    if (_base_count == 1 || _target_count == _base_count) {
+        for (var _copy_index = 0; _copy_index < _base_count; ++_copy_index) {
+            array_push(_expanded, _base_offsets[_copy_index]);
+        }
+        return _expanded;
+    }
+
+    if (_target_count < _base_count) {
+        for (var _target_index = 0;
+            _target_index < _target_count;
+            ++_target_index) {
+            var _source_index = _target_count == 1
+                ? floor(_base_count * 0.5)
+                : round(_target_index * (_base_count - 1)
+                    / (_target_count - 1));
+            array_push(_expanded, _base_offsets[_source_index]);
+        }
+        return _expanded;
+    }
+
+    var _minimum = _base_offsets[0];
+    var _maximum = _base_offsets[0];
+    for (var _range_index = 1; _range_index < _base_count; ++_range_index) {
+        _minimum = min(_minimum, _base_offsets[_range_index]);
+        _maximum = max(_maximum, _base_offsets[_range_index]);
+    }
+    for (var _expand_index = 0;
+        _expand_index < _target_count;
+        ++_expand_index) {
+        array_push(
+            _expanded,
+            _minimum + (_maximum - _minimum) * _expand_index
+                / (_target_count - 1)
+        );
+    }
+    return _expanded;
+}
+
 /// Scales authored health without changing the baseline source value.
 function BladeDifficultyEnemyHealth(_base_health, _difficulty_id, _rank) {
     var _profile = BladeDifficultyProfile(_difficulty_id);
-    _BladeDifficultyRankValue(_rank);
+    _BladeDifficultyRankValueForDifficulty(_rank, _difficulty_id);
     return max(1, round(max(1, _base_health) * _profile.enemy_health_per_mille / 1000));
 }
 
 /// Scales authored score and point rewards with a monotonic rank multiplier.
 function BladeDifficultyRewardValue(_base_value, _difficulty_id, _rank) {
     var _profile = BladeDifficultyProfile(_difficulty_id);
-    var _rank_profile = BladeDifficultyRankMultipliers(_rank);
+    var _rank_profile = BladeDifficultyRankMultipliers(
+        _BladeDifficultyRankValueForDifficulty(_rank, _difficulty_id)
+    );
     return max(
         0,
         round(max(0, _base_value)
@@ -214,10 +363,15 @@ function BladeDifficultyRewardValue(_base_value, _difficulty_id, _rank) {
 /// Exposes deterministic permille pressure data for HUDs, tests, and replay snapshots.
 function BladeDifficultyPressureSnapshot(_difficulty_id, _rank, _hyper_tier = 0) {
     var _profile = BladeDifficultyProfile(_difficulty_id);
-    var _rank_profile = BladeDifficultyRankMultipliers(_rank);
+    var _rank_profile = BladeDifficultyRankMultipliers(
+        _BladeDifficultyRankValueForDifficulty(_rank, _difficulty_id)
+    );
     var _hyper_value = _BladeDifficultyRankInteger(_hyper_tier, 0, 3, "hyper_tier");
     var _hyper_speed_per_mille = 1000 + _hyper_value * 200;
     var _hyper_fire_per_mille = 1000 + _hyper_value * 250;
+    var _hyper_density_per_mille = BladeSurvivalHyperHostileDensityPerMille(
+        _hyper_value
+    );
     return {
         difficulty_id: _difficulty_id,
         rank: _rank_profile.rank,
@@ -228,6 +382,9 @@ function BladeDifficultyPressureSnapshot(_difficulty_id, _rank, _hyper_tier = 0)
         hostile_fire_per_mille: _profile.hostile_fire_per_mille
             * _rank_profile.hostile_fire_per_mille
             * _hyper_fire_per_mille / 1000000,
+        hostile_density_per_mille: _profile.hostile_density_per_mille
+            * (1000 + _rank_profile.rank * 4)
+            * _hyper_density_per_mille / 1000000,
         reward_per_mille: _profile.reward_per_mille
             * _rank_profile.reward_per_mille / 1000,
     };
@@ -242,6 +399,7 @@ function BladeDifficultyPressureCanonical(_difficulty_id, _rank, _hyper_tier = 0
         string(_pressure.hyper_tier),
         string(_pressure.hostile_speed_per_mille),
         string(_pressure.hostile_fire_per_mille),
+        string(_pressure.hostile_density_per_mille),
         string(_pressure.reward_per_mille),
     ]);
 }
@@ -252,11 +410,13 @@ function BladeDifficultyPressureHash(_difficulty_id, _rank, _hyper_tier = 0) {
     );
 }
 
-/// Creates fresh attempt-local rank state; retries recreate this state at rank zero.
-function BladeDifficultyRankStateCreate() {
+/// Creates fresh attempt-local rank state; retries recreate its difficulty floor.
+function BladeDifficultyRankStateCreate(_difficulty_id = BLADE_DIFFICULTY_NORMAL_ID) {
+    _difficulty_id = _BladeDifficultyRankRequireId(_difficulty_id);
     return {
-        __blade_difficulty_rank_state_version: 1,
-        value: BLADE_DIFFICULTY_RANK_MIN,
+        __blade_difficulty_rank_state_version: 2,
+        difficulty_id: _difficulty_id,
+        value: _BladeDifficultyRankMinimum(_difficulty_id),
         active_play_ticks: 0,
         event_ordinal: 0,
         last_tick: -1,
@@ -270,11 +430,11 @@ function BladeDifficultyRankStateCreate() {
 function _BladeDifficultyRankRequireState(_state) {
     if (!is_struct(_state)
         || !variable_struct_exists(_state, "__blade_difficulty_rank_state_version")
-        || _state.__blade_difficulty_rank_state_version != 1) {
-        _BladeDifficultyRankFail("state", "must be a rank-state version 1 struct");
+        || _state.__blade_difficulty_rank_state_version != 2) {
+        _BladeDifficultyRankFail("state", "must be a rank-state version 2 struct");
     }
     var _expected_keys = [
-        "__blade_difficulty_rank_state_version", "value", "active_play_ticks",
+        "__blade_difficulty_rank_state_version", "difficulty_id", "value", "active_play_ticks",
         "event_ordinal", "last_tick", "last_reason", "last_delta",
         "last_priority", "events",
     ];
@@ -287,7 +447,10 @@ function _BladeDifficultyRankRequireState(_state) {
             _BladeDifficultyRankFail("state", "requires " + _expected_keys[_key_index]);
         }
     }
-    _BladeDifficultyRankValue(_state.value, "state.value");
+    _BladeDifficultyRankRequireId(_state.difficulty_id, "state.difficulty_id");
+    _BladeDifficultyRankValueForDifficulty(
+        _state.value, _state.difficulty_id, "state.value"
+    );
     _BladeDifficultyRankInteger(_state.active_play_ticks, 0, BLADE_DIFFICULTY_RANK_ACTIVE_PERIOD - 1, "state.active_play_ticks");
     _BladeDifficultyRankInteger(_state.event_ordinal, 0, 2147483647, "state.event_ordinal");
     _BladeDifficultyRankInteger(_state.last_tick, -1, 9007199254740991, "state.last_tick");
@@ -332,30 +495,34 @@ function _BladeDifficultyRankRequireState(_state) {
         if (!is_string(_event.reason) || string_length(_event.reason) == 0) {
             _BladeDifficultyRankFail("state.events", "reasons must be canonical tokens");
         }
-        var _event_reason_valid = false;
-        for (var _reason_index = 1; _reason_index <= 7; ++_reason_index) {
+        var _event_reason = 0;
+        for (var _reason_index = 1;
+            _reason_index <= BLADE_DIFFICULTY_RANK_REASON_COUNT;
+            ++_reason_index) {
             if (_event.reason == _BladeDifficultyRankReasonToken(_reason_index)) {
-                _event_reason_valid = true;
+                _event_reason = _reason_index;
                 break;
             }
         }
-        if (!_event_reason_valid) {
+        if (_event_reason == 0) {
             _BladeDifficultyRankFail("state.events", "contains an unknown reason");
         }
         _BladeDifficultyRankInteger(
             _event.delta, -50, 50,
             "state.events[" + string(_event_index) + "].delta"
         );
-        _BladeDifficultyRankValue(
-            _event.before, "state.events[" + string(_event_index) + ".before"
+        _BladeDifficultyRankValueForDifficulty(
+            _event.before, _state.difficulty_id,
+            "state.events[" + string(_event_index) + "].before"
         );
-        _BladeDifficultyRankValue(
-            _event.after, "state.events[" + string(_event_index) + ".after"
+        _BladeDifficultyRankValueForDifficulty(
+            _event.after, _state.difficulty_id,
+            "state.events[" + string(_event_index) + "].after"
         );
         if (typeof(_event.clamped) != "bool") {
             _BladeDifficultyRankFail("state.events", "clamped must be a boolean");
         }
-        var _event_priority = _BladeDifficultyRankPriority(_reason_index);
+        var _event_priority = _BladeDifficultyRankPriority(_event_reason);
         if (_event_tick == _previous_tick && _event_priority < _previous_priority) {
             _BladeDifficultyRankFail("state.events", "same-tick priorities must be monotonic");
         }
@@ -376,12 +543,11 @@ function BladeDifficultyRankReasonDelta(_reason) {
     _BladeDifficultyRankRequireReason(_reason);
     switch (_reason) {
         case BladeDifficultyRankReason.ActivePlay: return BLADE_DIFFICULTY_RANK_ACTIVE_DELTA;
-        case BladeDifficultyRankReason.DefensiveRecovery: return BLADE_DIFFICULTY_RANK_DEFENSIVE_DELTA;
         case BladeDifficultyRankReason.NormalBomb: return BLADE_DIFFICULTY_RANK_BOMB_DELTA;
         case BladeDifficultyRankReason.LifeLoss: return BLADE_DIFFICULTY_RANK_LIFE_DELTA;
         case BladeDifficultyRankReason.NormalHyper: return BLADE_DIFFICULTY_RANK_HYPER_DELTA;
         case BladeDifficultyRankReason.DeathBombHyper: return BLADE_DIFFICULTY_RANK_DEATH_BOMB_HYPER_DELTA;
-        case BladeDifficultyRankReason.EmergencyBomb: return BLADE_DIFFICULTY_RANK_EMERGENCY_DELTA;
+        case BladeDifficultyRankReason.DeathBombBomb: return BLADE_DIFFICULTY_RANK_DEATH_BOMB_BOMB_DELTA;
     }
     return 0;
 }
@@ -400,7 +566,9 @@ function BladeDifficultyRankApplyReason(_state, _reason, _tick) {
     }
     var _delta = BladeDifficultyRankReasonDelta(_reason);
     var _before = _state.value;
-    var _after = clamp(_before + _delta, BLADE_DIFFICULTY_RANK_MIN, BLADE_DIFFICULTY_RANK_MAX);
+    var _minimum = _BladeDifficultyRankMinimum(_state.difficulty_id);
+    var _maximum = _BladeDifficultyRankMaximum(_state.difficulty_id);
+    var _after = clamp(_before + _delta, _minimum, _maximum);
     var _clamped = _after != _before + _delta;
     _state.event_ordinal += 1;
     array_push(_state.events, {
@@ -491,6 +659,7 @@ function BladeDifficultyRankCanonical(_state) {
     }
     return BladeCanonicalRecord("BDR1", [
         string(_state.__blade_difficulty_rank_state_version),
+        _state.difficulty_id,
         string(_state.value),
         string(_state.active_play_ticks),
         string(_state.event_ordinal),
