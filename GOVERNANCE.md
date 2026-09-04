@@ -41,8 +41,13 @@ Classify issue requirements as follows:
   lifecycle invariants, coordinate systems, compatibility requirements, or
   asset-authority rules.
 - Validation describes evidence used to establish that the outcome and its
-  constraints hold, such as automated tests and fixtures, representative
-  manual or live playtests and captures, or other checks.
+  constraints hold. Prefer automated tests, fixtures, validators, deterministic
+  runtime checks, and other machine-verifiable evidence whenever the required
+  property is mechanically observable. Human observation, manual playtesting,
+  experiential review, subjective visual review, or human acceptance may be
+  included only when explicit human direction requires that specific judgment.
+  Do not infer a need for human or manual validation merely because an outcome
+  is player-visible, interactive, visual, runtime-affecting, or high-risk.
 - Repository-wide policy requirements are not repeated as issue acceptance
   criteria merely because they apply to the work. The governed validation
   lifecycle and other applicable repository policy remain required without
@@ -245,28 +250,37 @@ issue-numbered `work/<issue>-<slug>` branch, and its draft pull request. The
 issue and pull request must still pass the normal ownership, dependency,
 blocker, and human-authority checks. The capability check still applies to any
 remaining primary non-degradable deliverable; an unavailable environment
-needed only for required manual or live evidence is handled by the validation
-availability rule and does not invalidate the continuation. A human-created
-branch or pull request and a `work:blocked` change are never continuations.
-The draft pull request must not already have a completion line or completion
-label; a `work:complete` or `work:review-ready` pull request follows its normal
+needed only for independently required interactive runtime validation is
+handled by [Interactive runtime validation](#interactive-runtime-validation)
+and does not invalidate the continuation. A human-created branch or pull
+request and a `work:blocked` change are never continuations. The draft pull
+request must not already have a completion line or completion label; a
+`work:complete` or `work:review-ready` pull request follows its normal
 completion path instead of being resumed as incomplete work.
 
 When a valid continuation exists, resume its next incomplete implementation or
 validation milestone on that branch and draft pull request before selecting
 new work only when the current environment can make meaningful progress on at
 least one remaining implementation or validation milestone. A continuation
-that can only wait for unavailable manual or live evidence, an unavailable
-interactive desktop, or required human action is pending rather than
-actionable; leave it pending and allow the run to select at most one new
-eligible issue. Do not repeatedly retry an unavailable GUI or alter the
-pending continuation just to make progress appear possible.
+that can only wait for unavailable independently required interactive runtime
+evidence or required human action is pending rather than actionable; leave it
+pending and allow the run to select at most one new eligible issue. Do not
+repeatedly retry an unavailable runtime environment or alter the pending
+continuation just to make progress appear possible.
+
+A continuation is pending for unavailable interactive validation only when
+that interactive validation is independently required by explicit human
+direction or by a concrete machine-verifiable runtime requirement permitted
+under Interactive runtime validation. Do not treat an agent-authored generic
+smoke test, subjective review, experiential acceptance, or human-observation
+requirement as a valid completion blocker.
 
 A continuation does not make an asset-primary issue eligible when its remaining
 primary deliverable still needs an unavailable capability. When the required
 environment becomes available, or the required human action is resolved, the
-continuation becomes actionable and takes priority again. Resume the missing
-manual or live observation and then follow the ordinary completion transition.
+continuation becomes actionable and takes priority again. Resume the next
+incomplete milestone, including any permitted interactive runtime validation,
+and then follow the ordinary completion transition.
 
 Do not create a replacement issue for a pending continuation. If no actionable
 continuation exists, the run may select at most one new eligible issue under
@@ -413,57 +427,76 @@ stale textual expectations.
 
 ### Validation coverage allocation
 
-Allocate validation coverage according to risk, contract relevance, and what
-each form of evidence can establish. Automated and manual or live validation
-have complementary responsibilities; neither is a blanket substitute for the
-other.
+Prefer automated validation whenever the required property is
+machine-verifiable.
 
-When numeric, combinatorial, deterministic, or state-transition behavior is
-contract-relevant and practical to assert mechanically, prefer automated
-validation for the exhaustive relevant state space. Automated invariant
-coverage should replace manual repetition of every ship, difficulty, rank,
-state, or similar machine-testable combination. Do not require exhaustive
-automated matrices when the combinations are meaningless, intractable,
-redundant, or outside the contract.
+Numeric, combinatorial, deterministic, structural, state-transition,
+integration, rendering, interaction, persistence, packaging, and other
+mechanically observable behavior should normally be established through
+automated tests, fixtures, validators, deterministic runtime checks, or
+equivalent machine-verifiable evidence.
 
-Use manual or live validation to sample a small, risk-appropriate set of cases
-for qualities that automated assertions cannot adequately establish. Check
-representative player-visible behavior and integration, visual readability and
-accessibility, timing and feel, interaction, and tool or engine behavior. As
-applicable, sample baseline, typical or midpoint, edge, and highest-pressure
-cases. These are selection dimensions, not a universal checklist or fixed
-sample count. Preserve additional manual coverage for known cross-state risks
-or any genuinely visual, interactive, timing-sensitive, accessibility,
-readability, integration, or tool and engine outcome that remains unproven
-mechanically.
+Manual playtesting, human experiential review, subjective visual review, human
+observation, and human acceptance are not default validation methods. Agents
+must not add them to an issue, pull request, validation plan, blocker, handoff,
+or completion requirement unless explicit human direction requires that
+specific human judgment.
 
-Issue acceptance criteria state required outcomes. Feature-specific validation
-plans choose this allocation and record the evidence needed without expanding
-the criteria into a large coverage matrix. Manual or live samples may traverse
-states already covered by automation to judge different qualities, but they do
-not need to repeat the complete machine-tested state space.
+Player-visible behavior does not by itself require manual validation. Prefer
+automated runtime, rendering, snapshot, deterministic interaction, or other
+machine-verifiable evidence where practical.
 
-This allocation operates inside the existing validation stages. It does not
-remove required Stage 1 checks or the full Stage 2 suite, weaken Stage 3 hosted
-evidence, change risk classification, or replace required human review.
+Agent-authored issue text, validation plans, pull-request handoffs, tests, or
+intermediate implementation decisions cannot bootstrap a requirement for
+human observation or experiential acceptance that was not already present in
+explicit human direction or an independently established product contract.
 
-### Manual and live validation availability
+Preservation requirements do not imply exhaustive retesting of preserved
+behavior. Validation should target plausible regressions introduced by the
+actual change. A requirement to preserve existing behavior does not by itself
+require manually re-observing all of that behavior.
 
-Automated evidence and manual or live evidence establish different facts. Do
-not use automated tests, headless checks, or source inspection as a substitute
-for required manual or live observation.
+Do not require a generic gameplay smoke test merely because repository files,
+runtime code, GameMaker resources, assets, packaging, configuration, or
+governance files changed. Every validation action must establish a specific
+claim materially connected to the implemented delta.
 
-For GUI or GameMaker validation, preflight interactive desktop availability
-where practical. If the desktop or required interactive tool is unavailable,
-record that environment blocker and avoid repeated GUI launch attempts.
+Interactive execution is appropriate only when it has a concrete
+machine-verifiable purpose that cannot be established adequately through
+ordinary static or automated evidence.
 
-When required manual or live evidence is unavailable after practical preflight,
-the agent may continue coherent implementation work and collect the automated
-evidence that is available. It may commit, push, and update the draft pull
-request, but it must stop before adding completion metadata or claiming the
-issue complete. The handoff must identify the exact missing observation and
-the environment condition that prevented it. The missing evidence remains
-required and must be obtained before the ordinary completion transition.
+### Interactive runtime validation
+
+Launching the game is exceptional validation, not a default completion stage.
+
+Agents may launch the GameMaker runtime only for a concrete machine-verifiable
+purpose, including:
+
+- executing GameMaker-hosted automated test suites such as GMTL;
+- bounded deterministic UI or interaction smoke tests whose expected results
+  are mechanically observable;
+- explicitly scoped performance profiling or runtime measurement; or
+- another specific runtime-only validation explicitly required by human
+  direction.
+
+Do not launch the game for generic "does it still run", "does gameplay still
+work", broad regression smoke testing, player-experience review, readability
+review, feel testing, subjective visual-quality judgment, or other
+experiential validation.
+
+Human manual playtesting, experiential judgment, visual approval, or
+subjective acceptance must never be inferred from player visibility, issue
+risk, changed runtime files, changed resources, changed assets, or absence of
+stronger automated evidence. Such human judgment is required only when
+explicitly requested by the human author.
+
+If an explicitly required interactive machine-verifiable validation cannot run
+because the necessary environment is unavailable, record that environment
+limitation and follow the issue's actual completion contract. Do not invent a
+human-observation blocker as a substitute.
+
+An issue must not remain incomplete solely because a generic gameplay smoke
+run or unrequested human observation has not occurred.
 
 ## Validation evidence
 

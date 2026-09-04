@@ -121,7 +121,7 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "compatibility-obligations",
                 "source-structure",
                 "gamemaker-structured-data",
-                "manual-and-live-validation-availability",
+                "interactive-runtime-validation",
                 "imported-dependencies",
             },
         )
@@ -143,7 +143,7 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "compatibility-obligations",
                 "scheduled-continuation",
                 "validation-coverage-allocation",
-                "manual-and-live-validation-availability",
+                "interactive-runtime-validation",
                 "validation-evidence",
                 "milestone-commits-and-draft-publication",
                 "human-created-changes",
@@ -228,10 +228,26 @@ class GovernanceRoutingTests(unittest.TestCase):
             {
                 "scheduled-claim-eligibility",
                 "scheduled-continuation",
-                "manual-and-live-validation-availability",
+                "interactive-runtime-validation",
             }.issubset(governed)
         )
         self.assertNotIn("scheduled-claim-eligibility", steward)
+
+    def test_validation_entrypoints_require_independent_human_authority(self):
+        """Keep issue and worker prompts from inventing manual requirements."""
+        entrypoints = (
+            ROOT / ".github/ISSUE_TEMPLATE/work-item.yml",
+            ROOT / "templates/codex/governed-change.txt",
+        )
+
+        for source in entrypoints:
+            with self.subTest(source=source):
+                normalized = " ".join(
+                    source.read_text(encoding="utf-8").split()
+                ).casefold()
+                self.assertIn("machine-verifiable", normalized)
+                self.assertIn("explicit human direction", normalized)
+                self.assertNotIn("representative manual or live", normalized)
 
 
 if __name__ == "__main__":
