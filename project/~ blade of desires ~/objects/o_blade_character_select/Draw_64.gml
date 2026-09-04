@@ -85,5 +85,5 @@ draw_set_color(make_color_rgb(238, 226, 170));
 draw_text(34, 316, "MOVE: CONFIGURED UP / DOWN");
 draw_text(34, 334, "DIFFICULTY: CONFIGURED LEFT / RIGHT");
 draw_set_halign(fa_right);
-draw_text(606, 334, "CONFIRM: CONFIGURED CONFIRM");
+draw_text(606, 334, "CONFIRM / BACK: CONFIGURED");
 draw_set_halign(fa_left);

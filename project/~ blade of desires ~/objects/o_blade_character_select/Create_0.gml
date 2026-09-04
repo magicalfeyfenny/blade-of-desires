@@ -3,11 +3,9 @@ catalog = undefined;
 selector_state = undefined;
 preview_sprites = [];
 error_text = "";
-keyboard_bindings = BladeConfigCreateDefault().bindings.keyboard;
+input_config = BladeConfigCreateDefault();
 if (variable_global_exists("blade_config_service")) {
-    keyboard_bindings = BladeConfigServiceSnapshot(
-        global.blade_config_service
-    ).bindings.keyboard;
+    input_config = BladeConfigServiceSnapshot(global.blade_config_service);
 }
 
 try {

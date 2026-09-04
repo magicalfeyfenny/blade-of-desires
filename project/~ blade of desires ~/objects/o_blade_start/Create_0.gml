@@ -11,7 +11,7 @@ for (var _index = 1; _index <= parameter_count(); ++_index) {
 if (_run_tests) {
     room_goto(r_blade_kernel_tests);
 } else {
-    // Load the established per-user owner once for display, input, and audio.
+    // Load the established per-user owner once for front-end, input, and audio.
     global.blade_config_service = BladeConfigServiceCreate(
         BladeConfigFileStorageCreate()
     );
@@ -40,5 +40,7 @@ if (_run_tests) {
         global.__gmtl_internal.suites.list = [];
     }
     global.blade_selected_run = undefined;
-    room_goto(r_blade_character_select);
+    frontend_state = BladeFrontendStateCreate(_config);
+    frontend_input = BladeLiveInputSample(frontend_state.config);
+    depth = -1000;
 }
