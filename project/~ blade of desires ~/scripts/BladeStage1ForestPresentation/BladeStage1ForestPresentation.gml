@@ -2,6 +2,8 @@
 #macro BLADE_STAGE1_FOREST_SECOND_HALF_CAP 176
 #macro BLADE_STAGE1_WORLD_TREE_TRAVEL_TICKS 180
 #macro BLADE_STAGE1_FOREST_POINT_LIGHT_LIMIT 8
+#macro BLADE_STAGE1_FOREST_TREE_CULL_RADIUS 18
+#macro BLADE_STAGE1_FOREST_WORLD_TREE_CULL_RADIUS 56
 
 /// Creates the normal-bearing layout used by every modular Stage 1 model.
 function BladeStage1ForestWorldVertexFormatCreate() {
@@ -105,6 +107,24 @@ function BladeStage1ForestBillboardUniformsCreate(
             ? shader_get_uniform(_shader, "u_sway_pivot")
             : -1,
     };
+}
+
+/// Returns whether a bounded prop can still cross the camera-facing plane.
+function BladeStage1ForestCameraDepthVisible(
+    _renderer, _x, _y, _z, _radius
+) {
+    var _forward_x = _renderer.look_x - _renderer.camera_x;
+    var _forward_y = _renderer.look_y - _renderer.camera_y;
+    var _forward_z = _renderer.look_z - _renderer.camera_z;
+    var _forward_length = sqrt(
+        sqr(_forward_x) + sqr(_forward_y) + sqr(_forward_z)
+    );
+    if (_forward_length <= 0) return true;
+
+    var _depth = (_x - _renderer.camera_x) * _forward_x
+        + (_y - _renderer.camera_y) * _forward_y
+        + (_z - _renderer.camera_z) * _forward_z;
+    return _depth >= -max(0, _radius) * _forward_length;
 }
 
 /// Maps each authored route cue to one bounded, player-visible camera segment.
@@ -468,7 +488,14 @@ function BladeStage1ForestDraw(_renderer) {
         _tree_index < array_length(_renderer.tree_placements);
         ++_tree_index) {
         var _tree = _renderer.tree_placements[_tree_index];
-        if (abs(_tree.y - _renderer.camera_y) > 95) continue;
+        if (abs(_tree.y - _renderer.camera_y) > 95
+            || !BladeStage1ForestCameraDepthVisible(
+                _renderer,
+                _tree.x,
+                _tree.y,
+                _tree.z,
+                BLADE_STAGE1_FOREST_TREE_CULL_RADIUS * _tree.scale
+            )) continue;
         var _buffer = _tree.model_kind == 0
             ? _renderer.tree_a_buffer
             : _renderer.tree_b_buffer;
@@ -477,15 +504,25 @@ function BladeStage1ForestDraw(_renderer) {
             _tree.x, _tree.y, _tree.z, _tree.rotation, _tree.scale
         );
     }
-    BladeStage1ForestModelSubmit(
-        _renderer.world_tree_buffer,
-        _renderer.material_sprite,
-        BladeStage1ForestRouteCenter(248),
+    var _world_tree_x = BladeStage1ForestRouteCenter(248);
+    var _world_tree_z = BladeStage1ForestSurfaceZ(_world_tree_x, 248);
+    if (BladeStage1ForestCameraDepthVisible(
+        _renderer,
+        _world_tree_x,
         248,
-        BladeStage1ForestSurfaceZ(BladeStage1ForestRouteCenter(248), 248),
-        0,
-        1
-    );
+        _world_tree_z,
+        BLADE_STAGE1_FOREST_WORLD_TREE_CULL_RADIUS
+    )) {
+        BladeStage1ForestModelSubmit(
+            _renderer.world_tree_buffer,
+            _renderer.material_sprite,
+            _world_tree_x,
+            248,
+            _world_tree_z,
+            0,
+            1
+        );
+    }
 
     // Each foliage kind reuses its own authored buffer with a rooted sway.
     gpu_set_zwriteenable(false);
@@ -498,7 +535,14 @@ function BladeStage1ForestDraw(_renderer) {
         _foliage_index < array_length(_renderer.foliage_placements);
         ++_foliage_index) {
         var _foliage = _renderer.foliage_placements[_foliage_index];
-        if (abs(_foliage.y - _renderer.camera_y) > 85) continue;
+        if (abs(_foliage.y - _renderer.camera_y) > 85
+            || !BladeStage1ForestCameraDepthVisible(
+                _renderer,
+                _foliage.x,
+                _foliage.y,
+                _foliage.z,
+                max(_foliage.width, _foliage.height)
+            )) continue;
         BladeStage1ForestBillboardSubmit(
             BladeStage1ForestFoliageBuffer(_renderer, _foliage.kind),
             _cylindrical,
@@ -517,7 +561,14 @@ function BladeStage1ForestDraw(_renderer) {
         _fae_index < array_length(_renderer.fae_placements);
         ++_fae_index) {
         var _fae = _renderer.fae_placements[_fae_index];
-        if (abs(_fae.y - _renderer.camera_y) > 80) continue;
+        if (abs(_fae.y - _renderer.camera_y) > 80
+            || !BladeStage1ForestCameraDepthVisible(
+                _renderer,
+                _fae.x,
+                _fae.y,
+                _fae.z,
+                max(_fae.width, _fae.height)
+            )) continue;
         BladeStage1ForestBillboardSubmit(
             _renderer.fae_billboard_buffer,
             _spherical,
@@ -534,7 +585,14 @@ function BladeStage1ForestDraw(_renderer) {
         _trail_index < array_length(_renderer.fae_trail_placements);
         ++_trail_index) {
         var _trail = _renderer.fae_trail_placements[_trail_index];
-        if (abs(_trail.y - _renderer.camera_y) > 80) continue;
+        if (abs(_trail.y - _renderer.camera_y) > 80
+            || !BladeStage1ForestCameraDepthVisible(
+                _renderer,
+                _trail.x,
+                _trail.y,
+                _trail.z,
+                max(_trail.width, _trail.height)
+            )) continue;
         BladeStage1ForestBillboardSubmit(
             _renderer.ball_light_billboard_buffer,
             _spherical,
@@ -550,7 +608,14 @@ function BladeStage1ForestDraw(_renderer) {
         _ball_index < array_length(_renderer.ball_light_placements);
         ++_ball_index) {
         var _ball = _renderer.ball_light_placements[_ball_index];
-        if (abs(_ball.y - _renderer.camera_y) > 80) continue;
+        if (abs(_ball.y - _renderer.camera_y) > 80
+            || !BladeStage1ForestCameraDepthVisible(
+                _renderer,
+                _ball.x,
+                _ball.y,
+                _ball.z,
+                max(_ball.width, _ball.height)
+            )) continue;
         BladeStage1ForestBillboardSubmit(
             _renderer.ball_light_billboard_buffer,
             _spherical,
