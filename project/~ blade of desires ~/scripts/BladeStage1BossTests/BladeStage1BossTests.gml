@@ -14,6 +14,60 @@ function _BladeStage1BossTestsCreate(_controller, _instance_id) {
 
 /// Runs the boss-specific cases through the existing instance cleanup wrapper.
 function BladeStage1BossTestsRun(_state) {
+    BladeFirstBeatTestRunCase(
+        _state,
+        "camera-depth culling rejects rearward props but keeps bounds crossing the plane",
+        function() {
+            var _renderer = {
+                camera_x: 0,
+                camera_y: 0,
+                camera_z: 0,
+                look_x: 0,
+                look_y: 10,
+                look_z: 0,
+            };
+            BladeKernelTestAssertTrue(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, 0, 20, 0, 0
+                ),
+                "a prop in front of the camera remains visible"
+            );
+            BladeKernelTestAssertFalse(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, 0, -20, 0, 0
+                ),
+                "a prop fully behind the camera is culled"
+            );
+            BladeKernelTestAssertTrue(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, 0, -2, 0, 3
+                ),
+                "a bounded prop crossing the camera plane remains visible"
+            );
+            BladeKernelTestAssertFalse(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, 0, -4, 0, 3
+                ),
+                "a bounded prop outside the rear bound is culled"
+            );
+
+            _renderer.look_x = 10;
+            _renderer.look_y = 0;
+            BladeKernelTestAssertTrue(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, 20, 0, 0, 0
+                ),
+                "culling follows camera direction rather than world Y"
+            );
+            BladeKernelTestAssertFalse(
+                BladeStage1ForestCameraDepthVisible(
+                    _renderer, -20, 0, 0, 0
+                ),
+                "camera-space rear props remain culled after orbiting"
+            );
+        }
+    );
+
     BladeKernelTestRunCase(
         _state,
         "Asahi presentation orbits the World Tree without moving gameplay",
