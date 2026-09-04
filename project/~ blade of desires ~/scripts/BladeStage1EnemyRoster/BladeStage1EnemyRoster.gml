@@ -184,7 +184,10 @@ function BladeStage1EnemyDisplayName(_content_id) {
 }
 
 /// Produces one deterministic role-specific set of aim offsets for a volley.
-function BladeStage1EnemyFireDirections(_enemy, _aim_direction) {
+function BladeStage1EnemyFireDirections(
+    _enemy, _aim_direction, _difficulty_id = BLADE_DIFFICULTY_NORMAL_ID,
+    _rank = BLADE_DIFFICULTY_RANK_MIN, _hyper_tier = 0
+) {
     var _phase_offset = 0;
     if (_enemy.role_id == BladeStage1EnemyRole.Elite) {
         _phase_offset = (_enemy.pattern_phase mod 2 == 0) ? -6 : 6;
@@ -192,13 +195,16 @@ function BladeStage1EnemyFireDirections(_enemy, _aim_direction) {
         _phase_offset = ((_enemy.pattern_phase mod 3) - 1) * 8;
     }
 
+    var _offsets = BladeDifficultyExpandFanOffsets(
+        _enemy.bullet_offsets, _difficulty_id, _rank, _hyper_tier
+    );
     var _directions = [];
     for (var _index = 0;
-        _index < array_length(_enemy.bullet_offsets);
+        _index < array_length(_offsets);
         ++_index) {
         array_push(
             _directions,
-            _aim_direction + _enemy.bullet_offsets[_index] + _phase_offset
+            _aim_direction + _offsets[_index] + _phase_offset
         );
     }
     return _directions;

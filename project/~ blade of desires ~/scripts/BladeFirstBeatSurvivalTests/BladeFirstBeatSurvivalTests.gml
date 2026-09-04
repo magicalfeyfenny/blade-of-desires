@@ -126,6 +126,39 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
         );
     });
 
+    BladeKernelTestRunCase(_state, "direct combat score ignores difficulty and rank", function() {
+        var _easy = BladeSurvivalEconomyCreate(BLADE_DIFFICULTY_EASY_ID);
+        var _normal = BladeSurvivalEconomyCreate(BLADE_DIFFICULTY_NORMAL_ID);
+        var _hard = BladeSurvivalEconomyCreate(BLADE_DIFFICULTY_HARD_ID);
+        BladeDifficultyRankApplyReason(
+            _normal.rank_state, BladeDifficultyRankReason.NormalHyper, 0
+        );
+        var _easy_hit = BladeSurvivalAwardEnemyHit(_easy, 4);
+        var _normal_hit = BladeSurvivalAwardEnemyHit(_normal, 4);
+        var _hard_hit = BladeSurvivalAwardEnemyHit(_hard, 4);
+        BladeKernelTestAssertEqual(_easy_hit.score, 100, "Easy direct hit score");
+        BladeKernelTestAssertEqual(
+            _normal_hit.score, _easy_hit.score,
+            "rank does not alter direct hit score"
+        );
+        BladeKernelTestAssertEqual(
+            _hard_hit.score, _easy_hit.score,
+            "difficulty does not alter direct hit score"
+        );
+
+        var _easy_defeat = BladeSurvivalResolveEnemyExit(
+            _easy, BladeSurvivalEnemyExitReason.Defeated, false
+        );
+        var _hard_defeat = BladeSurvivalResolveEnemyExit(
+            _hard, BladeSurvivalEnemyExitReason.Defeated, false
+        );
+        BladeKernelTestAssertEqual(_easy_defeat.score, 10000, "Easy direct defeat score");
+        BladeKernelTestAssertEqual(
+            _hard_defeat.score, _easy_defeat.score,
+            "difficulty does not alter direct defeat score"
+        );
+    });
+
     BladeKernelTestRunCase(_state, "bomb pickups stock to cap then use explicit overflow", function() {
         var _economy = BladeSurvivalEconomyCreate();
         _economy.bombs = BLADE_SURVIVAL_BOMB_CAP - 1;
@@ -249,6 +282,11 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             BladeKernelTestAssertTrue(
                 BladeSurvivalHyperHostileBulletSpeed(2, _tier) > 2,
                 "tier raises hostile bullet speed"
+            );
+            BladeKernelTestAssertTrue(
+                BladeSurvivalHyperHostileDensityPerMille(_tier)
+                    > BladeSurvivalHyperHostileDensityPerMille(_tier - 1),
+                "tier raises hostile volley density"
             );
             BladeKernelTestAssertTrue(
                 BladeSurvivalHyperHostileFireInterval(60, _tier) < 60,

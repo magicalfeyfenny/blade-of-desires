@@ -70,7 +70,7 @@ function BladeSurvivalEconomyCreate(_difficulty_id = BLADE_DIFFICULTY_NORMAL_ID)
     _difficulty_id = _BladeDifficultyRankRequireId(_difficulty_id, "economy.difficulty_id");
     return {
         difficulty_id: _difficulty_id,
-        rank_state: BladeDifficultyRankStateCreate(),
+        rank_state: BladeDifficultyRankStateCreate(_difficulty_id),
         score: 0,
         point_value: BLADE_SURVIVAL_STARTING_POINT_VALUE,
         lives: BLADE_SURVIVAL_STARTING_LIVES,
@@ -91,7 +91,11 @@ function BladeSurvivalEconomyDifficulty(_economy) {
 
 /// Returns the current attempt-local rank used by authored Stage 1 consumers.
 function BladeSurvivalEconomyRank(_economy) {
-    return BladeDifficultyRankValue(_economy.rank_state);
+    var _rank = BladeDifficultyRankValue(_economy.rank_state);
+    if (_economy.rank_state.difficulty_id != _economy.difficulty_id) {
+        throw("BladeSurvivalLoop: economy and rank difficulty IDs differ");
+    }
+    return _rank;
 }
 
 /// Returns the next point item's actual score value without mutating the economy.
@@ -195,6 +199,11 @@ function BladeSurvivalHyperHostileFireRate(_tier) {
     return 1 + clamp(floor(_tier), 0, 3) * 0.25;
 }
 
+/// Raises volley cardinality in visible Hyper tiers without changing authored patterns.
+function BladeSurvivalHyperHostileDensityPerMille(_tier) {
+    return 1000 + clamp(floor(_tier), 0, 3) * 100;
+}
+
 /// Shortens a pattern interval without allowing a zero-tick firing loop.
 function BladeSurvivalHyperHostileFireInterval(_base_ticks, _tier) {
     return max(
@@ -213,14 +222,18 @@ function BladeSurvivalAddHyper(_economy, _amount) {
     return _economy.hyper_meter - _before;
 }
 
-/// Awards score once, applies active Hyper, and grants every newly crossed extend once.
-function BladeSurvivalApplyScore(_economy, _base_score) {
+/// Applies one score event, optionally scaling pickup/reward values by difficulty and rank.
+function _BladeSurvivalAwardScore(_economy, _base_score, _scale_reward) {
     var _authored_score = max(0, round(_base_score));
-    var _scaled_score = BladeDifficultyRewardValue(
-        _authored_score,
-        BladeSurvivalEconomyDifficulty(_economy),
-        BladeSurvivalEconomyRank(_economy)
-    );
+    var _difficulty_id = BladeSurvivalEconomyDifficulty(_economy);
+    var _rank = BladeSurvivalEconomyRank(_economy);
+    var _scaled_score = _scale_reward
+        ? BladeDifficultyRewardValue(
+            _authored_score,
+            _difficulty_id,
+            _rank
+        )
+        : _authored_score;
     var _multiplier = BladeSurvivalHyperScoreMultiplier(
         _economy.active_hyper_tier
     );
@@ -239,6 +252,16 @@ function BladeSurvivalApplyScore(_economy, _base_score) {
         }
     }
     return { score: _awarded, life_awards: _life_awards };
+}
+
+/// Awards difficulty/rank-scaled score for pickups, graze, and end-of-stage rewards.
+function BladeSurvivalApplyScore(_economy, _base_score) {
+    return _BladeSurvivalAwardScore(_economy, _base_score, true);
+}
+
+/// Awards authored direct-combat score without difficulty or rank scaling.
+function BladeSurvivalApplyDirectScore(_economy, _base_score) {
+    return _BladeSurvivalAwardScore(_economy, _base_score, false);
 }
 
 /// Converts one point pickup into score, a larger next item value, and stocked Hyper.
@@ -272,7 +295,7 @@ function BladeSurvivalTryGrazeBullet(_economy, _bullet) {
 /// Converts actual enemy damage into immediate score and stocked Hyper.
 function BladeSurvivalAwardEnemyHit(_economy, _applied_damage) {
     var _damage = max(0, _applied_damage);
-    var _reward = BladeSurvivalApplyScore(_economy, _damage * 25);
+    var _reward = BladeSurvivalApplyDirectScore(_economy, _damage * 25);
     BladeSurvivalAddHyper(_economy, _damage * 10);
     return _reward;
 }
@@ -289,7 +312,7 @@ function BladeSurvivalResolveEnemyExit(
     };
     if (_reason != BladeSurvivalEnemyExitReason.Defeated) return _result;
 
-    var _reward = BladeSurvivalApplyScore(_economy, 10000);
+    var _reward = BladeSurvivalApplyDirectScore(_economy, 10000);
     BladeSurvivalAddHyper(_economy, 20);
     _result.rewarded = true;
     _result.score = _reward.score;

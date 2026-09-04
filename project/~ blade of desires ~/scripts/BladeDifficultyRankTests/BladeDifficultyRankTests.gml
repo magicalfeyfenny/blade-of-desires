@@ -14,6 +14,31 @@ function _BladeDifficultyRankTestIdsAndProfiles() {
         1000,
         "Normal pressure baseline"
     );
+    BladeKernelTestAssertEqual(
+        BladeDifficultyProfile(_ids[0]).enemy_health_per_mille,
+        1000,
+        "Easy preserves authored enemy health"
+    );
+    BladeKernelTestAssertEqual(
+        BladeDifficultyProfile(_ids[2]).enemy_health_per_mille,
+        1000,
+        "Hard preserves authored enemy health"
+    );
+    BladeKernelTestAssertTrue(
+        BladeDifficultyProfile(_ids[0]).hostile_density_per_mille
+            < BladeDifficultyProfile(_ids[1]).hostile_density_per_mille
+            && BladeDifficultyProfile(_ids[1]).hostile_density_per_mille
+                < BladeDifficultyProfile(_ids[2]).hostile_density_per_mille,
+        "difficulty changes authored hostile density"
+    );
+    var _easy_bounds = BladeDifficultyRankBounds(_ids[0]);
+    var _normal_bounds = BladeDifficultyRankBounds(_ids[1]);
+    var _hard_bounds = BladeDifficultyRankBounds(_ids[2]);
+    BladeKernelTestAssertEqual(_easy_bounds.minimum, 0, "Easy rank starts at zero");
+    BladeKernelTestAssertEqual(_easy_bounds.maximum, 25, "Easy rank caps at twenty-five");
+    BladeKernelTestAssertEqual(_normal_bounds.maximum, 50, "Normal rank caps at fifty");
+    BladeKernelTestAssertEqual(_hard_bounds.minimum, 20, "Hard rank starts at twenty");
+    BladeKernelTestAssertEqual(_hard_bounds.maximum, 50, "Hard rank caps at fifty");
     BladeKernelTestAssertThrows(
         method({}, function() {
             BladeDifficultyProfile("stage.extra.dreams_of_a_clockwork_angel");
@@ -38,7 +63,7 @@ function _BladeDifficultyRankTestMappings() {
     );
     BladeKernelTestAssertTrue(
         _normal_speed < BladeDifficultyHostileBulletSpeed(
-            2, BLADE_DIFFICULTY_HARD_ID, 0
+            2, BLADE_DIFFICULTY_HARD_ID, BLADE_DIFFICULTY_RANK_HARD_MIN
         ),
         "Hard bullet speed is higher"
     );
@@ -64,8 +89,11 @@ function _BladeDifficultyRankTestMappings() {
         "Easy emitter interval is longer"
     );
     BladeKernelTestAssertTrue(
-        BladeDifficultyHostileFireInterval(120, BLADE_DIFFICULTY_HARD_ID, 0)
-            < BladeDifficultyHostileFireInterval(120, BLADE_DIFFICULTY_NORMAL_ID, 0),
+        BladeDifficultyHostileFireInterval(
+            120, BLADE_DIFFICULTY_HARD_ID, BLADE_DIFFICULTY_RANK_HARD_MIN
+        ) < BladeDifficultyHostileFireInterval(
+            120, BLADE_DIFFICULTY_NORMAL_ID, BLADE_DIFFICULTY_RANK_NORMAL_MIN
+        ),
         "Hard emitter interval is shorter"
     );
     BladeKernelTestAssertEqual(
@@ -80,7 +108,9 @@ function _BladeDifficultyRankTestMappings() {
     );
     BladeKernelTestAssertTrue(
         BladeDifficultyRewardValue(1000, BLADE_DIFFICULTY_NORMAL_ID, 0)
-            < BladeDifficultyRewardValue(1000, BLADE_DIFFICULTY_HARD_ID, 0),
+            < BladeDifficultyRewardValue(
+                1000, BLADE_DIFFICULTY_HARD_ID, BLADE_DIFFICULTY_RANK_HARD_MIN
+            ),
         "Hard reward is higher"
     );
     BladeKernelTestAssertTrue(
@@ -88,10 +118,36 @@ function _BladeDifficultyRankTestMappings() {
             < BladeDifficultyRewardValue(1000, BLADE_DIFFICULTY_NORMAL_ID, 50),
         "rank raises reward value"
     );
+    BladeKernelTestAssertEqual(
+        BladeDifficultyEnemyHealth(80, BLADE_DIFFICULTY_EASY_ID, 25),
+        80,
+        "Easy preserves authored enemy health at its rank cap"
+    );
+    BladeKernelTestAssertEqual(
+        BladeDifficultyEnemyHealth(80, BLADE_DIFFICULTY_HARD_ID, 20),
+        80,
+        "Hard preserves authored enemy health at its rank floor"
+    );
     BladeKernelTestAssertTrue(
-        BladeDifficultyEnemyHealth(80, BLADE_DIFFICULTY_EASY_ID, 50)
-            < BladeDifficultyEnemyHealth(80, BLADE_DIFFICULTY_HARD_ID, 0),
-        "difficulty health tuning is independent of rank pressure"
+        BladeDifficultyHostileDensityPerMille(
+            BLADE_DIFFICULTY_NORMAL_ID, 0, 0
+        ) < BladeDifficultyHostileDensityPerMille(
+            BLADE_DIFFICULTY_NORMAL_ID, 50, 3
+        ),
+        "rank and Hyper raise hostile density"
+    );
+    BladeKernelTestAssertEqual(
+        array_length(BladeDifficultyExpandFanOffsets(
+            [-30, 0, 30], BLADE_DIFFICULTY_NORMAL_ID, 0, 0
+        )),
+        3,
+        "baseline fan keeps authored cardinality"
+    );
+    BladeKernelTestAssertTrue(
+        array_length(BladeDifficultyExpandFanOffsets(
+            [-30, 0, 30], BLADE_DIFFICULTY_NORMAL_ID, 0, 3
+        )) > 3,
+        "Hyper expands fan cardinality"
     );
     BladeKernelTestAssertEqual(
         BladeDifficultyPressureHash(BLADE_DIFFICULTY_NORMAL_ID, 25),
@@ -107,7 +163,10 @@ function _BladeDifficultyRankTestMappings() {
 
 function _BladeDifficultyRankTestStateAndOrdering() {
     var _state = BladeDifficultyRankStateCreate();
-    BladeKernelTestAssertEqual(_state.value, 0, "rank starts at zero");
+    BladeKernelTestAssertEqual(
+        _state.value, BLADE_DIFFICULTY_RANK_NORMAL_MIN,
+        "Normal rank starts at zero"
+    );
     for (var _tick = 0; _tick < BLADE_DIFFICULTY_RANK_ACTIVE_PERIOD - 1; ++_tick) {
         var _quiet = BladeDifficultyRankAdvanceActive(_state, _tick);
         BladeKernelTestAssertFalse(_quiet.advanced, "active rank waits for its period");
@@ -123,8 +182,10 @@ function _BladeDifficultyRankTestStateAndOrdering() {
     var _bomb = BladeDifficultyRankApplyReason(
         _state, BladeDifficultyRankReason.NormalBomb, 29
     );
-    BladeKernelTestAssertEqual(_hyper.after, 5, "Normal Hyper raises rank once");
-    BladeKernelTestAssertEqual(_bomb.after, 0, "Normal Bomb lowers and clamps rank");
+    BladeKernelTestAssertEqual(_hyper.delta, 5, "Normal Hyper delta is five");
+    BladeKernelTestAssertEqual(_hyper.after, 6, "Normal Hyper raises rank once");
+    BladeKernelTestAssertEqual(_bomb.delta, -3, "Normal Bomb delta is three down");
+    BladeKernelTestAssertEqual(_bomb.after, 3, "Normal Bomb lowers rank once");
     BladeKernelTestAssertEqual(array_length(_state.events), 3, "each rank action is logged once");
     BladeKernelTestAssertThrows(
         method({ rank_state: _state }, function() {
@@ -148,6 +209,20 @@ function _BladeDifficultyRankTestStateAndOrdering() {
         _same_sequence.value, 0,
         "death-bomb Hyper lowers its rank once after its ordered action"
     );
+    var _death_bomb_bomb = BladeDifficultyRankApplyReason(
+        _same_sequence, BladeDifficultyRankReason.DeathBombBomb, 1
+    );
+    BladeKernelTestAssertEqual(
+        _death_bomb_bomb.delta, -10,
+        "death-bomb Bomb delta is ten down"
+    );
+    var _life_loss = BladeDifficultyRankApplyReason(
+        _same_sequence, BladeDifficultyRankReason.LifeLoss, 2
+    );
+    BladeKernelTestAssertEqual(
+        _life_loss.delta, -15,
+        "committed life loss delta is fifteen down"
+    );
     BladeKernelTestAssertThrows(
         method({ rank_state: _same_sequence }, function() {
             BladeDifficultyRankApplyReason(
@@ -159,16 +234,40 @@ function _BladeDifficultyRankTestStateAndOrdering() {
         "between 0 and",
         "rank events reject negative ticks"
     );
+    BladeKernelTestAssertThrows(
+        method({}, function() {
+            BladeDifficultyRankReasonDelta(7);
+        }),
+        "between 1 and 6",
+        "generic recovery reasons are rejected"
+    );
+    var _easy = BladeDifficultyRankStateCreate(BLADE_DIFFICULTY_EASY_ID);
+    for (var _easy_index = 0; _easy_index < 6; ++_easy_index) {
+        BladeDifficultyRankApplyReason(
+            _easy, BladeDifficultyRankReason.NormalHyper, _easy_index
+        );
+    }
+    BladeKernelTestAssertEqual(_easy.value, 25, "Easy clamps at twenty-five");
+    BladeKernelTestAssertTrue(_easy.events[5].clamped, "Easy upper clamp is recorded");
+
+    var _hard = BladeDifficultyRankStateCreate(BLADE_DIFFICULTY_HARD_ID);
+    BladeKernelTestAssertEqual(_hard.value, 20, "Hard starts at twenty");
+    var _hard_bomb = BladeDifficultyRankApplyReason(
+        _hard, BladeDifficultyRankReason.DeathBombBomb, 0
+    );
+    BladeKernelTestAssertTrue(_hard_bomb.clamped, "Hard lower clamp is recorded");
+    BladeKernelTestAssertEqual(_hard.value, 20, "Hard stays above its floor");
+
     var _high = BladeDifficultyRankStateCreate();
-    for (var _event_index = 0; _event_index < 13; ++_event_index) {
+    for (var _event_index = 0; _event_index < 11; ++_event_index) {
         BladeDifficultyRankApplyReason(
             _high, BladeDifficultyRankReason.NormalHyper, _event_index
         );
     }
     BladeKernelTestAssertEqual(_high.value, 50, "rank clamps at fifty");
-    BladeKernelTestAssertTrue(_high.events[12].clamped, "upper clamp is recorded");
-    BladeDifficultyRankApplyReason(_high, BladeDifficultyRankReason.LifeLoss, 13);
-    BladeKernelTestAssertEqual(_high.value, 40, "life loss lowers rank once");
+    BladeKernelTestAssertTrue(_high.events[10].clamped, "upper clamp is recorded");
+    BladeDifficultyRankApplyReason(_high, BladeDifficultyRankReason.LifeLoss, 11);
+    BladeKernelTestAssertEqual(_high.value, 35, "life loss lowers rank once");
 }
 
 function _BladeDifficultyRankTestCanonicalDeterminism() {
@@ -198,26 +297,14 @@ function _BladeDifficultyRankTestCanonicalDeterminism() {
 }
 
 function _BladeDifficultyRankTestRaiseTo(_economy, _target_rank) {
-    if (_target_rank == 0) return;
-    if (_target_rank == 25) {
-        for (var _index = 0; _index < 6; ++_index) {
-            BladeDifficultyRankApplyReason(
-                _economy.rank_state,
-                BladeDifficultyRankReason.NormalHyper,
-                _index
-            );
-        }
-        BladeDifficultyRankApplyReason(
-            _economy.rank_state, BladeDifficultyRankReason.ActivePlay, 6
-        );
-        return;
-    }
-    for (var _max_index = 0; _max_index < 13; ++_max_index) {
+    var _tick = _economy.rank_state.event_ordinal;
+    while (BladeDifficultyRankValue(_economy.rank_state) < _target_rank) {
         BladeDifficultyRankApplyReason(
             _economy.rank_state,
             BladeDifficultyRankReason.NormalHyper,
-            _max_index
+            _tick
         );
+        _tick += 1;
     }
 }
 
@@ -247,9 +334,19 @@ function _BladeDifficultyRankTestAllStage1Combinations() {
                 "selected ship is excluded from its midboss pair"
             );
             for (var _rank_index = 0; _rank_index < 3; ++_rank_index) {
-                var _rank = _rank_index == 0 ? 0 : (_rank_index == 1 ? 25 : 50);
+                var _bounds = BladeDifficultyRankBounds(_difficulty_id);
+                var _rank = _rank_index == 0
+                    ? _bounds.minimum
+                    : (_rank_index == 1
+                        ? _bounds.minimum
+                            + floor((_bounds.maximum - _bounds.minimum) / 10) * 5
+                        : _bounds.maximum);
                 _controller.economy = BladeSurvivalEconomyCreate(_difficulty_id);
                 _BladeDifficultyRankTestRaiseTo(_controller.economy, _rank);
+                BladeKernelTestAssertEqual(
+                    BladeSurvivalEconomyRank(_controller.economy), _rank,
+                    "rank fixture reaches its documented snapshot"
+                );
                 var _member = instance_create_layer(
                     320, 80, "Instances", o_blade_stage1_fae_midboss
                 );
