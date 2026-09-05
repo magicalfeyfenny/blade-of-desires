@@ -7,8 +7,8 @@ function BladeFrontendUiTestsRun(_state) {
         var _contract = BladeFrontendUiNineSliceContract();
         BladeKernelTestAssertEqual(
             _contract.frame_count,
-            2,
-            "base and selected frames are present"
+            1,
+            "one shared panel frame is present"
         );
         BladeKernelTestAssertEqual(
             _contract.frame_width,
