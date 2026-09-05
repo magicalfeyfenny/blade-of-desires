@@ -42,17 +42,14 @@ for (var _index = 0; _index < _entry_count; ++_index) {
     var _left = _card_margin + _index * (_card_width + _card_gap);
     var _right = _left + _card_width;
     var _center = (_left + _right) * 0.5;
-    draw_set_color(_selected
-        ? make_color_rgb(54, 102, 91)
-        : make_color_rgb(21, 48, 51));
-    draw_rectangle(_left, 82, _right, 288, false);
-    draw_set_color(_selected
-        ? make_color_rgb(176, 255, 203)
-        : make_color_rgb(72, 114, 108));
-    draw_rectangle(_left, 82, _right, 288, true);
-    if (_selected) {
-        draw_rectangle(_left + 3, 85, _right - 3, 285, true);
-    }
+    BladeFrontendUiDrawPanel(
+        frontend_ui,
+        _selected,
+        _left,
+        82,
+        _card_width,
+        206
+    );
 
     var _preview = preview_sprites[_index];
     if (sprite_exists(_preview)) {

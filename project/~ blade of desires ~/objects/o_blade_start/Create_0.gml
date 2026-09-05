@@ -41,6 +41,7 @@ if (_run_tests) {
     }
     global.blade_selected_run = undefined;
     frontend_state = BladeFrontendStateCreate(_config);
+    frontend_ui = BladeFrontendUiCreate();
     frontend_input = BladeLiveInputSample(frontend_state.config);
     depth = -1000;
 }

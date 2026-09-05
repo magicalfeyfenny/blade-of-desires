@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeFrontendUiTests",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeFrontendUiTests",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/Blade/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0"
+}
