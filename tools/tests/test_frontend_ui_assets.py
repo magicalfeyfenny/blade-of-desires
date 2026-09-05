@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import re
 import struct
 import tomllib
 import unittest
@@ -20,6 +21,11 @@ PROJECT_UI_LINK = ROOT / "project/~ blade of desires ~/datafiles/ui"
 UI_SCRIPT_PATH = ROOT / "project/~ blade of desires ~/scripts/BladeFrontendUi/BladeFrontendUi.gml"
 START_DRAW_PATH = ROOT / "project/~ blade of desires ~/objects/o_blade_start/Draw_64.gml"
 SELECT_DRAW_PATH = ROOT / "project/~ blade of desires ~/objects/o_blade_character_select/Draw_64.gml"
+LFS_POINTER = re.compile(
+    rb"version https://git-lfs\.github\.com/spec/v1\n"
+    rb"oid sha256:[0-9a-f]{64}\n"
+    rb"size [1-9][0-9]*\n"
+)
 
 
 class FrontendUiAssetTests(unittest.TestCase):
@@ -86,6 +92,9 @@ class FrontendUiAssetTests(unittest.TestCase):
     def test_runtime_png_is_the_expected_two_frame_sheet(self):
         """Pin the raster export dimensions used by the dynamic sprite loader."""
         data = RUNTIME_PATH.read_bytes()
+        if data.startswith(b"version https://git-lfs.github.com/spec/v1\n"):
+            self.assertIsNotNone(LFS_POINTER.fullmatch(data))
+            return
         self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(data[12:16], b"IHDR")
         self.assertEqual(struct.unpack(">II", data[16:24]), (128, 64))
