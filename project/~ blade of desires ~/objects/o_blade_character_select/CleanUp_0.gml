@@ -5,3 +5,4 @@ for (var _index = 0; _index < array_length(preview_sprites); ++_index) {
     }
 }
 preview_sprites = [];
+BladeFrontendUiDestroy(frontend_ui);

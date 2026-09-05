@@ -25,14 +25,14 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         ++_main_index) {
         var _main_y = 112 + _main_index * 42;
         var _main_selected = frontend_state.selected_index == _main_index;
-        draw_set_color(_main_selected
-            ? make_color_rgb(54, 102, 91)
-            : make_color_rgb(21, 48, 51));
-        draw_rectangle(168, _main_y, 472, _main_y + 31, false);
-        draw_set_color(_main_selected
-            ? make_color_rgb(176, 255, 203)
-            : make_color_rgb(72, 114, 108));
-        draw_rectangle(168, _main_y, 472, _main_y + 31, true);
+        BladeFrontendUiDrawPanel(
+            frontend_ui,
+            _main_selected,
+            168,
+            _main_y,
+            304,
+            31
+        );
         draw_set_color(_main_selected ? c_white : make_color_rgb(174, 196, 190));
         draw_set_halign(fa_center);
         draw_text(320, _main_y + 6, _main_labels[_main_index]);
@@ -47,14 +47,14 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         ++_option_index) {
         var _option_y = 94 + _option_index * 30;
         var _option_selected = frontend_state.selected_index == _option_index;
-        draw_set_color(_option_selected
-            ? make_color_rgb(54, 102, 91)
-            : make_color_rgb(21, 48, 51));
-        draw_rectangle(54, _option_y, 586, _option_y + 24, false);
-        draw_set_color(_option_selected
-            ? make_color_rgb(176, 255, 203)
-            : make_color_rgb(72, 114, 108));
-        draw_rectangle(54, _option_y, 586, _option_y + 24, true);
+        BladeFrontendUiDrawPanel(
+            frontend_ui,
+            _option_selected,
+            54,
+            _option_y,
+            532,
+            24
+        );
         draw_set_color(_option_selected ? c_white : make_color_rgb(190, 214, 202));
         draw_text(68, _option_y + 4, _option_labels[_option_index]);
 
@@ -105,14 +105,14 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         var _binding_index = _first_index + _visible_index;
         var _binding_y = 76 + _visible_index * 30;
         var _binding_selected = frontend_state.selected_index == _binding_index;
-        draw_set_color(_binding_selected
-            ? make_color_rgb(54, 102, 91)
-            : make_color_rgb(21, 48, 51));
-        draw_rectangle(42, _binding_y, 598, _binding_y + 24, false);
-        draw_set_color(_binding_selected
-            ? make_color_rgb(176, 255, 203)
-            : make_color_rgb(72, 114, 108));
-        draw_rectangle(42, _binding_y, 598, _binding_y + 24, true);
+        BladeFrontendUiDrawPanel(
+            frontend_ui,
+            _binding_selected,
+            42,
+            _binding_y,
+            556,
+            24
+        );
         draw_set_color(_binding_selected ? c_white : make_color_rgb(190, 214, 202));
         draw_text(
             56, _binding_y + 4,

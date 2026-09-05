@@ -34,13 +34,23 @@ if (_run_tests) {
     // GMTL ships demo suites that run ten frames after startup. Blade keeps the
     // pinned library read-only and clears only those registered demo callbacks
     // before production objects exist, so their simulated frames cannot drive play.
+    // GMTL deletes this temporary suite state after the tests finish, so a later
+    // return to this room must treat the missing state as normal cleanup.
     if (variable_global_exists("__gmtl_internal")
         && is_struct(global.__gmtl_internal)
         && variable_struct_exists(global.__gmtl_internal, "suites")) {
-        global.__gmtl_internal.suites.list = [];
+        var _gmtl_suites = variable_struct_get(
+            global.__gmtl_internal,
+            "suites"
+        );
+        if (is_struct(_gmtl_suites)
+            && variable_struct_exists(_gmtl_suites, "list")) {
+            variable_struct_set(_gmtl_suites, "list", []);
+        }
     }
     global.blade_selected_run = undefined;
     frontend_state = BladeFrontendStateCreate(_config);
+    frontend_ui = BladeFrontendUiCreate();
     frontend_input = BladeLiveInputSample(frontend_state.config);
     depth = -1000;
 }

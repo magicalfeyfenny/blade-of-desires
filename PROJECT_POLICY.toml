@@ -39,6 +39,10 @@ lock = "project/gmtl.lock.json"
 source_extensions = [".svg"]
 runtime_extensions = [".svg"]
 
+[assets.pipelines.ui]
+source_extensions = [".svg", ".png"]
+runtime_extensions = [".png"]
+
 [assets.pipelines.raster]
 source_extensions = [".kra"]
 runtime_extensions = [".png"]
