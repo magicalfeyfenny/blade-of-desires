@@ -250,22 +250,22 @@ issue-numbered `work/<issue>-<slug>` branch, and its draft pull request. The
 issue and pull request must still pass the normal ownership, dependency,
 blocker, and human-authority checks. The capability check still applies to any
 remaining primary non-degradable deliverable; an unavailable environment
-needed only for independently required interactive runtime validation is
-handled by [Interactive runtime validation](#interactive-runtime-validation)
-and does not invalidate the continuation. A human-created branch or pull
-request and a `work:blocked` change are never continuations. The draft pull
-request must not already have a completion line or completion label; a
-`work:complete` or `work:review-ready` pull request follows its normal
+needed only for required interactive evidence is handled by
+[Interactive runtime validation](#interactive-runtime-validation) and does not
+invalidate the continuation. A human-created branch or pull request and a
+`work:blocked` change are never continuations. The draft pull request must not
+already have a completion line or completion label; a `work:complete` or
+`work:review-ready` pull request follows its normal
 completion path instead of being resumed as incomplete work.
 
 When a valid continuation exists, resume its next incomplete implementation or
 validation milestone on that branch and draft pull request before selecting
 new work only when the current environment can make meaningful progress on at
 least one remaining implementation or validation milestone. A continuation
-that can only wait for unavailable independently required interactive runtime
-evidence or required human action is pending rather than actionable; leave it
-pending and allow the run to select at most one new eligible issue. Do not
-repeatedly retry an unavailable runtime environment or alter the pending
+that can only wait for unavailable required runtime evidence, an unavailable
+interactive environment, or explicitly required human action is pending rather
+than actionable; leave it pending and allow the run to select at most one new
+eligible issue. Do not repeatedly retry an unavailable GUI or alter the pending
 continuation just to make progress appear possible.
 
 A continuation is pending for unavailable interactive validation only when
@@ -278,9 +278,8 @@ requirement as a valid completion blocker.
 A continuation does not make an asset-primary issue eligible when its remaining
 primary deliverable still needs an unavailable capability. When the required
 environment becomes available, or the required human action is resolved, the
-continuation becomes actionable and takes priority again. Resume the next
-incomplete milestone, including any permitted interactive runtime validation,
-and then follow the ordinary completion transition.
+continuation becomes actionable and takes priority again. Resume the missing
+required check and then follow the ordinary completion transition.
 
 Do not create a replacement issue for a pending continuation. If no actionable
 continuation exists, the run may select at most one new eligible issue under
@@ -449,7 +448,7 @@ machine-verifiable evidence where practical.
 Agent-authored issue text, validation plans, pull-request handoffs, tests, or
 intermediate implementation decisions cannot bootstrap a requirement for
 human observation or experiential acceptance that was not already present in
-explicit human direction or an independently established product contract.
+explicit human direction requiring that specific judgment.
 
 Preservation requirements do not imply exhaustive retesting of preserved
 behavior. Validation should target plausible regressions introduced by the
@@ -536,6 +535,9 @@ Missing, failed, invalid, or stale evidence does not satisfy this stage.
 A head change invalidates Stage 3. Changing only the PR body or labels leaves
 local evidence valid but invalidates Stage 3, so obtain fresh hosted evidence
 without rerunning the local suite.
+
+Human review, merge, promotion, and publication gates allocate authority; they
+do not create additional human observation or experiential verification work.
 
 No validation stage changes risk classification or grants completion,
 readiness, review, merge, release, or publication authority. Those actions
@@ -670,12 +672,18 @@ A release:
 1. starts from current `origin/dev`;
 2. uses `release/<issue>-v<semver>`;
 3. receives required CI;
-4. receives a manually initiated release-candidate build;
-5. is manually verified;
+4. receives a human-authorized release-candidate build;
+5. verifies the candidate source tree, build identity, artifact contents, and
+   artifact digests against the release contract;
 6. is manually merged into `main`;
 7. is tagged from the resulting `main` commit;
 8. receives its final build from that tag;
 9. is manually published.
+
+Record the source commit and tree, build provenance, and artifact digests for
+the release candidate and final tagged build. Verify packaging and integrity
+with concrete machine-verifiable evidence. Experiential release testing is
+required only when explicit human direction requests that specific judgment.
 
 Tags, release builds, merges into `main`, and publication are never automatic.
 

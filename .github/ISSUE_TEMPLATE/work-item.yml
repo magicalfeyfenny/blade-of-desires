@@ -33,12 +33,16 @@ body:
     attributes:
       label: Validation
       description: >-
-        Choose proportionate feature-specific evidence. Prefer automated,
-        deterministic, rendering or snapshot, runtime, and other
-        machine-verifiable checks for mechanically observable properties.
-        Include manual playtesting, subjective review, or human observation
-        only when explicit human direction requires that specific judgment. Do
-        not repeat the repository-wide governed validation suite.
+        Choose proportionate machine-verifiable evidence, including practical
+        exhaustive coverage of contract-relevant deterministic invariants and
+        focused deterministic runtime checks with machine-observable results.
+        Require manual playtesting, human observation, readability or feel
+        review, subjective visual review, or experiential acceptance only when
+        explicit human direction requires that specific judgment; cite that
+        direction. Player visibility or risk alone does not require it. Do not
+        repeat the repository-wide governed validation suite. See
+        [Validation coverage allocation](../../GOVERNANCE.md#validation-coverage-allocation)
+        and [Interactive runtime validation](../../GOVERNANCE.md#interactive-runtime-validation).
     validations:
       required: false
 
