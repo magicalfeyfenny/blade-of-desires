@@ -44,7 +44,7 @@ for (var _index = 0; _index < _entry_count; ++_index) {
     var _center = (_left + _right) * 0.5;
     BladeFrontendUiDrawPanel(
         frontend_ui,
-        _selected ? frontend_ui.selected_frame : frontend_ui.base_frame,
+        _selected,
         _left,
         82,
         _card_width,

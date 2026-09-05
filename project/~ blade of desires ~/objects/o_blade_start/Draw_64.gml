@@ -27,7 +27,7 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         var _main_selected = frontend_state.selected_index == _main_index;
         BladeFrontendUiDrawPanel(
             frontend_ui,
-            _main_selected ? frontend_ui.selected_frame : frontend_ui.base_frame,
+            _main_selected,
             168,
             _main_y,
             304,
@@ -49,7 +49,7 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         var _option_selected = frontend_state.selected_index == _option_index;
         BladeFrontendUiDrawPanel(
             frontend_ui,
-            _option_selected ? frontend_ui.selected_frame : frontend_ui.base_frame,
+            _option_selected,
             54,
             _option_y,
             532,
@@ -107,7 +107,7 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         var _binding_selected = frontend_state.selected_index == _binding_index;
         BladeFrontendUiDrawPanel(
             frontend_ui,
-            _binding_selected ? frontend_ui.selected_frame : frontend_ui.base_frame,
+            _binding_selected,
             42,
             _binding_y,
             556,
