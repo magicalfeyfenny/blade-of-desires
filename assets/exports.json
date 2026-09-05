@@ -94,6 +94,16 @@
       ]
     },
     {
+      "kind": "ui",
+      "completion": "authored-placeholder",
+      "sources": [
+        "assets/source/ui/blade_frontend_panels.svg"
+      ],
+      "runtime": [
+        "assets/runtime/ui/blade_frontend_panels.png"
+      ]
+    },
+    {
       "kind": "model_3d",
       "completion": "authored-placeholder",
       "sources": [
