@@ -155,10 +155,14 @@ class FrontendUiAssetTests(unittest.TestCase):
             'sprite_add',
             'sprite_nineslice_create',
             'sprite_set_nineslice',
-            'draw_sprite_part_ext',
+            'draw_sprite_stretched_ext',
         ):
             self.assertIn(fragment, ui_script)
-        self.assertGreaterEqual(ui_script.count("_BladeFrontendUiDrawPart("), 10)
+        self.assertNotIn(
+            'draw_sprite_part_ext',
+            ui_script,
+            'native nine-slice sprites must use a compatible whole-sprite draw',
+        )
 
         start_draw = START_DRAW_PATH.read_text(encoding="utf-8")
         selector_draw = SELECT_DRAW_PATH.read_text(encoding="utf-8")
