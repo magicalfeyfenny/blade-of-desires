@@ -13,6 +13,10 @@ from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE_PATH = ROOT / "assets/source/ui/blade_frontend_panels.svg"
+SOURCE_IMAGE_PATHS = (
+    ROOT / "assets/source/ui/blade_frontend_panel_base_generated.png",
+    ROOT / "assets/source/ui/blade_frontend_panel_selected_generated.png",
+)
 RUNTIME_PATH = ROOT / "assets/runtime/ui/blade_frontend_panels.png"
 MANIFEST_PATH = ROOT / "assets/exports.json"
 POLICY_PATH = ROOT / "PROJECT_POLICY.toml"
@@ -44,12 +48,19 @@ class FrontendUiAssetTests(unittest.TestCase):
         """Require the UI pipeline and its manifest mapping to agree."""
         self.assertEqual(
             self.policy["assets"]["pipelines"]["ui"],
-            {"source_extensions": [".svg"], "runtime_extensions": [".png"]},
+            {
+                "source_extensions": [".svg", ".png"],
+                "runtime_extensions": [".png"],
+            },
         )
         self.assertEqual(len(self.ui_exports), 1)
         self.assertEqual(
             self.ui_exports[0]["sources"],
-            ["assets/source/ui/blade_frontend_panels.svg"],
+            [
+                "assets/source/ui/blade_frontend_panels.svg",
+                "assets/source/ui/blade_frontend_panel_base_generated.png",
+                "assets/source/ui/blade_frontend_panel_selected_generated.png",
+            ],
         )
         self.assertEqual(
             self.ui_exports[0]["runtime"],
@@ -58,14 +69,16 @@ class FrontendUiAssetTests(unittest.TestCase):
         self.assertEqual(self.ui_exports[0]["completion"], "authored-placeholder")
         self.assertTrue(SOURCE_PATH.is_file())
         self.assertTrue(RUNTIME_PATH.is_file())
+        for source_image in SOURCE_IMAGE_PATHS:
+            self.assertTrue(source_image.is_file())
 
-    def test_svg_contains_two_square_panel_frames_without_external_references(self):
-        """Keep base and selected styling as portable authored vector frames."""
+    def test_svg_composes_two_generated_panel_frames_from_local_sources(self):
+        """Keep the generated artwork and editable sheet layout together."""
         root = ElementTree.fromstring(SOURCE_PATH.read_text(encoding="utf-8"))
         self.assertEqual(root.tag.rsplit("}", 1)[-1], "svg")
-        self.assertEqual(root.get("viewBox"), "0 0 128 64")
-        self.assertEqual(root.get("width"), "128")
-        self.assertEqual(root.get("height"), "64")
+        self.assertEqual(root.get("viewBox"), "0 0 256 128")
+        self.assertEqual(root.get("width"), "256")
+        self.assertEqual(root.get("height"), "128")
 
         frame_groups = {
             element.get("id"): element
@@ -74,19 +87,22 @@ class FrontendUiAssetTests(unittest.TestCase):
         }
         self.assertEqual(set(frame_groups), {"base-panel", "selected-panel"})
         for group in frame_groups.values():
-            self.assertIsNotNone(group.find("{*}rect"))
-            self.assertIsNotNone(group.find("{*}path"))
+            image = group.find("{*}image")
+            self.assertIsNotNone(image)
+            self.assertIn(image.get("href"), {
+                "blade_frontend_panel_base_generated.png",
+                "blade_frontend_panel_selected_generated.png",
+            })
 
-        external_attributes = {
-            "href",
-            "{http://www.w3.org/1999/xlink}href",
-        }
-        self.assertFalse(
-            any(
-                key in external_attributes
-                for element in root.iter()
-                for key in element.attrib
-            )
+        self.assertEqual(
+            {
+                image.get("href")
+                for image in root.findall(".//{*}image")
+            },
+            {
+                "blade_frontend_panel_base_generated.png",
+                "blade_frontend_panel_selected_generated.png",
+            },
         )
 
     def test_runtime_png_is_the_expected_two_frame_sheet(self):
@@ -97,7 +113,21 @@ class FrontendUiAssetTests(unittest.TestCase):
             return
         self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
         self.assertEqual(data[12:16], b"IHDR")
-        self.assertEqual(struct.unpack(">II", data[16:24]), (128, 64))
+        self.assertEqual(struct.unpack(">II", data[16:24]), (256, 128))
+        self.assertEqual(data[25], 6)
+
+    def test_generated_source_pngs_are_square_and_have_transparency(self):
+        """Keep each generated panel source suitable for the composed sheet."""
+        for source_path in SOURCE_IMAGE_PATHS:
+            with self.subTest(source_path=source_path.name):
+                data = source_path.read_bytes()
+                if data.startswith(b"version https://git-lfs.github.com/spec/v1\n"):
+                    self.assertIsNotNone(LFS_POINTER.fullmatch(data))
+                    continue
+                self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+                self.assertEqual(data[12:16], b"IHDR")
+                self.assertEqual(struct.unpack(">II", data[16:24]), (1254, 1254))
+                self.assertEqual(data[25], 6)
 
     def test_game_maker_project_packages_and_consumes_the_shared_panel_sprite(self):
         """Require one IncludedFile and both front-end consumers to use the helper."""
@@ -120,14 +150,15 @@ class FrontendUiAssetTests(unittest.TestCase):
         ui_script = UI_SCRIPT_PATH.read_text(encoding="utf-8")
         for fragment in (
             'BLADE_FRONTEND_UI_FRAME_COUNT 2',
-            'BLADE_FRONTEND_UI_FRAME_WIDTH 64',
-            'BLADE_FRONTEND_UI_GUIDE_LEFT 8',
+            'BLADE_FRONTEND_UI_FRAME_WIDTH 128',
+            'BLADE_FRONTEND_UI_GUIDE_LEFT 24',
             'sprite_add',
             'sprite_nineslice_create',
             'sprite_set_nineslice',
-            'draw_sprite_stretched_ext',
+            'draw_sprite_part_ext',
         ):
             self.assertIn(fragment, ui_script)
+        self.assertGreaterEqual(ui_script.count("_BladeFrontendUiDrawPart("), 10)
 
         start_draw = START_DRAW_PATH.read_text(encoding="utf-8")
         selector_draw = SELECT_DRAW_PATH.read_text(encoding="utf-8")

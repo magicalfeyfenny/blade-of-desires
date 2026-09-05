@@ -40,7 +40,7 @@ source_extensions = [".svg"]
 runtime_extensions = [".svg"]
 
 [assets.pipelines.ui]
-source_extensions = [".svg"]
+source_extensions = [".svg", ".png"]
 runtime_extensions = [".png"]
 
 [assets.pipelines.raster]

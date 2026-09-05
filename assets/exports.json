@@ -97,7 +97,9 @@
       "kind": "ui",
       "completion": "authored-placeholder",
       "sources": [
-        "assets/source/ui/blade_frontend_panels.svg"
+        "assets/source/ui/blade_frontend_panels.svg",
+        "assets/source/ui/blade_frontend_panel_base_generated.png",
+        "assets/source/ui/blade_frontend_panel_selected_generated.png"
       ],
       "runtime": [
         "assets/runtime/ui/blade_frontend_panels.png"

@@ -30,5 +30,17 @@ function BladeFrontendUiTestsRun(_state) {
             "center region remains available"
         );
     });
+    BladeKernelTestRunCase(_state, "front-end UI asset loads and releases", function() {
+        var _ui = BladeFrontendUiCreate();
+        BladeKernelTestAssertTrue(
+            _ui.ready,
+            "packaged front-end UI sheet creates a runtime sprite"
+        );
+        BladeFrontendUiDestroy(_ui);
+        BladeKernelTestAssertTrue(
+            !_ui.ready,
+            "front-end UI cleanup releases its runtime sprite"
+        );
+    });
     return _state;
 }

@@ -1,11 +1,11 @@
 #macro BLADE_FRONTEND_UI_ASSET_PATH "ui/blade_frontend_panels.png"
 #macro BLADE_FRONTEND_UI_FRAME_COUNT 2
-#macro BLADE_FRONTEND_UI_FRAME_WIDTH 64
-#macro BLADE_FRONTEND_UI_FRAME_HEIGHT 64
-#macro BLADE_FRONTEND_UI_GUIDE_LEFT 8
-#macro BLADE_FRONTEND_UI_GUIDE_RIGHT 8
-#macro BLADE_FRONTEND_UI_GUIDE_TOP 8
-#macro BLADE_FRONTEND_UI_GUIDE_BOTTOM 8
+#macro BLADE_FRONTEND_UI_FRAME_WIDTH 128
+#macro BLADE_FRONTEND_UI_FRAME_HEIGHT 128
+#macro BLADE_FRONTEND_UI_GUIDE_LEFT 24
+#macro BLADE_FRONTEND_UI_GUIDE_RIGHT 24
+#macro BLADE_FRONTEND_UI_GUIDE_TOP 24
+#macro BLADE_FRONTEND_UI_GUIDE_BOTTOM 24
 
 /// Returns one packaged front-end UI asset path without owning project packaging.
 function _BladeFrontendUiIncludedPath(_relative_path) {
@@ -87,7 +87,38 @@ function BladeFrontendUiDestroy(_ui) {
     _ui.ready = false;
 }
 
-/// Draws one reusable base or selected panel at absolute logical dimensions.
+/// Draws one source region into a destination region with independent scaling.
+function _BladeFrontendUiDrawPart(
+    _ui,
+    _frame,
+    _source_x,
+    _source_y,
+    _source_width,
+    _source_height,
+    _destination_x,
+    _destination_y,
+    _destination_width,
+    _destination_height,
+    _alpha
+) {
+    if (_destination_width <= 0 || _destination_height <= 0) return;
+    draw_sprite_part_ext(
+        _ui.sprite,
+        _frame,
+        _source_x,
+        _source_y,
+        _source_width,
+        _source_height,
+        _destination_x,
+        _destination_y,
+        _destination_width / _source_width,
+        _destination_height / _source_height,
+        c_white,
+        _alpha
+    );
+}
+
+/// Draws one reusable base or selected panel with explicit nine-slice regions.
 function BladeFrontendUiDrawPanel(
     _ui,
     _frame,
@@ -101,14 +132,104 @@ function BladeFrontendUiDrawPanel(
         && variable_struct_exists(_ui, "ready")
         && _ui.ready
         && sprite_exists(_ui.sprite)) {
-        draw_sprite_stretched_ext(
-            _ui.sprite,
-            _frame,
+        // Compress only the ornate borders when a short row cannot fit them.
+        var _left = min(BLADE_FRONTEND_UI_GUIDE_LEFT, _width * 0.5);
+        var _right = min(BLADE_FRONTEND_UI_GUIDE_RIGHT, _width - _left);
+        var _top = min(BLADE_FRONTEND_UI_GUIDE_TOP, _height * 0.5);
+        var _bottom = min(BLADE_FRONTEND_UI_GUIDE_BOTTOM, _height - _top);
+        var _center_width = max(0, _width - _left - _right);
+        var _center_height = max(0, _height - _top - _bottom);
+        var _source_center_width = BLADE_FRONTEND_UI_FRAME_WIDTH
+            - BLADE_FRONTEND_UI_GUIDE_LEFT
+            - BLADE_FRONTEND_UI_GUIDE_RIGHT;
+        var _source_center_height = BLADE_FRONTEND_UI_FRAME_HEIGHT
+            - BLADE_FRONTEND_UI_GUIDE_TOP
+            - BLADE_FRONTEND_UI_GUIDE_BOTTOM;
+
+        _BladeFrontendUiDrawPart(
+            _ui, _frame, 0, 0,
+            BLADE_FRONTEND_UI_GUIDE_LEFT,
+            BLADE_FRONTEND_UI_GUIDE_TOP,
+            _x, _y, _left, _top, _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_GUIDE_LEFT, 0,
+            _source_center_width,
+            BLADE_FRONTEND_UI_GUIDE_TOP,
+            _x + _left, _y, _center_width, _top, _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_FRAME_WIDTH - BLADE_FRONTEND_UI_GUIDE_RIGHT, 0,
+            BLADE_FRONTEND_UI_GUIDE_RIGHT,
+            BLADE_FRONTEND_UI_GUIDE_TOP,
+            _x + _width - _right, _y, _right, _top, _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            0, BLADE_FRONTEND_UI_GUIDE_TOP,
+            BLADE_FRONTEND_UI_GUIDE_LEFT,
+            _source_center_height,
+            _x, _y + _top, _left, _center_height, _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_GUIDE_LEFT,
+            BLADE_FRONTEND_UI_GUIDE_TOP,
+            _source_center_width,
+            _source_center_height,
+            _x + _left,
+            _y + _top,
+            _center_width,
+            _center_height,
+            _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_FRAME_WIDTH - BLADE_FRONTEND_UI_GUIDE_RIGHT,
+            BLADE_FRONTEND_UI_GUIDE_TOP,
+            BLADE_FRONTEND_UI_GUIDE_RIGHT,
+            _source_center_height,
+            _x + _width - _right,
+            _y + _top,
+            _right,
+            _center_height,
+            _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame, 0,
+            BLADE_FRONTEND_UI_FRAME_HEIGHT - BLADE_FRONTEND_UI_GUIDE_BOTTOM,
+            BLADE_FRONTEND_UI_GUIDE_LEFT,
+            BLADE_FRONTEND_UI_GUIDE_BOTTOM,
             _x,
-            _y,
-            _width,
-            _height,
-            c_white,
+            _y + _height - _bottom,
+            _left,
+            _bottom,
+            _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_GUIDE_LEFT,
+            BLADE_FRONTEND_UI_FRAME_HEIGHT - BLADE_FRONTEND_UI_GUIDE_BOTTOM,
+            _source_center_width,
+            BLADE_FRONTEND_UI_GUIDE_BOTTOM,
+            _x + _left,
+            _y + _height - _bottom,
+            _center_width,
+            _bottom,
+            _alpha
+        );
+        _BladeFrontendUiDrawPart(
+            _ui, _frame,
+            BLADE_FRONTEND_UI_FRAME_WIDTH - BLADE_FRONTEND_UI_GUIDE_RIGHT,
+            BLADE_FRONTEND_UI_FRAME_HEIGHT - BLADE_FRONTEND_UI_GUIDE_BOTTOM,
+            BLADE_FRONTEND_UI_GUIDE_RIGHT,
+            BLADE_FRONTEND_UI_GUIDE_BOTTOM,
+            _x + _width - _right,
+            _y + _height - _bottom,
+            _right,
+            _bottom,
             _alpha
         );
         return;
