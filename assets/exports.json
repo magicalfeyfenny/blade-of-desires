@@ -9,7 +9,11 @@
       ],
       "runtime": [
         "assets/runtime/textures/stage1/lost_forest_materials.png"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The existing Stage 1 forest renderer passes these packaged textures/stage1 PNG paths to BladeStage1ForestTextureLoad, which reads them with sprite_add for model and billboard textures. The project includes these files through datafiles/textures."
+      }
     },
     {
       "kind": "raster",
@@ -29,7 +33,11 @@
         "assets/runtime/textures/stage1/lost_forest_bush.png",
         "assets/runtime/textures/stage1/lost_forest_ball_light.png",
         "assets/runtime/textures/stage1/lost_forest_skybox.png"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The existing Stage 1 forest renderer passes these packaged textures/stage1 PNG paths to BladeStage1ForestTextureLoad, which reads them with sprite_add for model and billboard textures. The project includes these files through datafiles/textures."
+      }
     },
     {
       "kind": "raster",
@@ -79,7 +87,11 @@
         "assets/runtime/sprites/stage1/kolar_close_channel.png",
         "assets/runtime/sprites/stage1/kolar_ranged_shot.png",
         "assets/runtime/sprites/stage1/ciela_maynii_combo.png"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The existing Stage 1 forest renderer loads these packaged sprites/stage1 PNG paths with BladeStage1ForestTextureLoad and sprite_add, with explicit frame counts for sprite sheets. The character selector also loads the player PNG paths named by its content catalog. The project includes these files through datafiles/sprites."
+      }
     },
     {
       "kind": "raster",
@@ -91,7 +103,11 @@
       "runtime": [
         "assets/runtime/sprites/stage1/stage1_ordinary_fae_roster.png",
         "assets/runtime/sprites/stage1/stage1_ordinary_fae_effects.png"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The existing Stage 1 forest renderer loads both packaged sprites/stage1 ordinary-fae PNG atlases through BladeStage1ForestTextureLoad and sprite_add for enemy and effect atlas drawing. The project includes these files through datafiles/sprites."
+      }
     },
     {
       "kind": "ui",
@@ -102,7 +118,11 @@
       ],
       "runtime": [
         "assets/runtime/ui/blade_frontend_panels.png"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The existing BladeFrontendUiCreate loader reads the packaged ui/blade_frontend_panels.png with sprite_add, then configures native nine-slice guides on the created sprite. The project includes this file through datafiles/ui."
+      }
     },
     {
       "kind": "model_3d",
@@ -114,7 +134,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_terrain.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_terrain.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -126,7 +150,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_tree_a.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_tree_a.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -138,7 +166,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_tree_b.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_tree_b.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -150,7 +182,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_world_tree.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_world_tree.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -162,7 +198,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_skybox.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_skybox.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -174,7 +214,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_grass_billboard.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_grass_billboard.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -186,7 +230,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_vines_billboard.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_vines_billboard.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -198,7 +246,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_bush_billboard.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_bush_billboard.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -210,7 +262,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_fae_billboard.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_fae_billboard.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     },
     {
       "kind": "model_3d",
@@ -222,7 +278,11 @@
       ],
       "runtime": [
         "assets/runtime/models/stage1/lost_forest_ball_light_billboard.vbuff"
-      ]
+      ],
+      "destination": {
+        "kind": "included-file",
+        "file_contract": "The Stage 1 forest renderer passes models/stage1/lost_forest_ball_light_billboard.vbuff to BladeStage1ForestBufferLoad, which reads the packaged file with buffer_load and creates a frozen vertex buffer with the 36-byte normal-bearing vertex layout. The project includes this file through datafiles/models."
+      }
     }
   ]
 }

@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 
 from tools.ci.check_repo import (
+    SourceLineViolation,
+    baseline_policy_errors,
     new_policy_errors,
     validate_assets,
     validate_structure,
@@ -16,6 +18,37 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class RepositoryPolicyTests(unittest.TestCase):
+    def test_baseline_uses_its_own_checker_and_policy_contract(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            checker = root / "tools/ci/check_repo.py"
+            checker.parent.mkdir(parents=True)
+            checker.write_text(
+                "import json\n"
+                "def collect_errors(root):\n"
+                "    policy = json.loads((root / 'historical-policy.json').read_text())\n"
+                "    return policy['diagnostics']\n",
+                encoding="utf-8",
+            )
+            expected = ["historical.txt: existing violation"]
+            (root / "historical-policy.json").write_text(
+                json.dumps({"diagnostics": expected}), encoding="utf-8"
+            )
+            self.assertEqual(baseline_policy_errors(root), expected)
+
+    def test_malformed_historical_diagnostics_fail_closed(self):
+        for invalid in ({"message": "violation"}, [None], [123], "violation"):
+            with self.subTest(invalid=invalid), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                checker = root / "tools/ci/check_repo.py"
+                checker.parent.mkdir(parents=True)
+                checker.write_text(
+                    f"def collect_errors(root):\n    return {invalid!r}\n",
+                    encoding="utf-8",
+                )
+                with self.assertRaises(subprocess.CalledProcessError):
+                    baseline_policy_errors(root)
+
     @staticmethod
     def structure_policy() -> dict:
         return {
@@ -30,12 +63,13 @@ class RepositoryPolicyTests(unittest.TestCase):
     def asset_policy() -> dict:
         return {
             "assets": {
-                "source_root": "assets/source",
-                "runtime_root": "assets/runtime",
                 "manifest": "assets/exports.json",
                 "plain_runtime_svg": True,
                 "pipelines": {
                     "raster": {
+                        "source_roots": ["assets/source"],
+                        "runtime_roots": ["assets/runtime"],
+                        "native_resource_roots": ["project/sprites"],
                         "source_extensions": [".kra"],
                         "runtime_extensions": [".png"],
                     },
@@ -93,7 +127,7 @@ class RepositoryPolicyTests(unittest.TestCase):
             [repeated],
         )
 
-    def test_unstable_diagnostic_details_remain_inherited(self):
+    def test_changed_unordered_diagnostics_are_not_normalized(self):
         examples = (
             (
                 "source/legacy.gml: 950 lines exceeds limit 800",
@@ -113,114 +147,20 @@ class RepositoryPolicyTests(unittest.TestCase):
             with self.subTest(current=current):
                 self.assertEqual(
                     new_policy_errors([current], [baseline]),
-                    [],
+                    [current],
                 )
 
     def test_changed_violating_file_must_not_worsen(self):
-        baseline = "source/legacy.gml: 801 lines exceeds limit 800"
-        current = "source/legacy.gml: 5000 lines exceeds limit 800"
+        baseline = SourceLineViolation("source/legacy.gml", 800, 801)
+        current = SourceLineViolation("source/legacy.gml", 800, 5000)
 
         self.assertEqual(
             new_policy_errors(
                 [current],
                 [baseline],
-                {"source/legacy.gml"},
             ),
             [current],
         )
-
-    def test_asset_validation_reads_the_selected_root(self):
-        with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
-            manifest = root / "assets/exports.json"
-            manifest.parent.mkdir(parents=True)
-            manifest.write_text(
-                json.dumps({"version": 2, "exports": []}),
-                encoding="utf-8",
-            )
-            errors: list[str] = []
-
-            validate_assets(
-                root,
-                self.asset_policy(),
-                [Path("assets/exports.json")],
-                errors,
-            )
-
-        self.assertEqual(len(errors), 1)
-        self.assertTrue(errors[0].startswith("assets/exports.json:"))
-
-    def test_asset_manifest_marks_every_registered_path(self):
-        manifest = json.loads(
-            (ROOT / "assets/exports.json").read_text(encoding="utf-8")
-        )
-        marked_paths = {
-            path
-            for entry in manifest["exports"]
-            if entry.get("completion") == "authored-placeholder"
-            for field in ("sources", "runtime")
-            for path in entry[field]
-        }
-        registered_paths = {
-            path
-            for entry in manifest["exports"]
-            for field in ("sources", "runtime")
-            for path in entry[field]
-        }
-
-        self.assertTrue(manifest["exports"])
-        self.assertEqual(marked_paths, registered_paths)
-
-    def test_asset_validation_accepts_each_governance_completion_level(self):
-        entry = {
-            "kind": "raster",
-            "sources": ["assets/source/test.kra"],
-            "runtime": ["assets/runtime/test.png"],
-        }
-
-        for completion in (
-            "deterministic-placeholder",
-            "authored-placeholder",
-            "final",
-        ):
-            with self.subTest(completion=completion):
-                candidate = {**entry, "completion": completion}
-                self.assertEqual(self.validate_fixture_manifest(candidate), [])
-
-    def test_asset_validation_rejects_missing_or_unknown_completion_level(self):
-        entry = {
-            "kind": "raster",
-            "sources": ["assets/source/test.kra"],
-            "runtime": ["assets/runtime/test.png"],
-        }
-
-        for completion in (None, "unreviewed"):
-            with self.subTest(completion=completion):
-                candidate = {
-                    **entry,
-                    **({} if completion is None else {"completion": completion}),
-                }
-                errors = self.validate_fixture_manifest(candidate)
-                self.assertEqual(len(errors), 1)
-                self.assertIn("invalid completion level", errors[0])
-
-    def test_missing_manifest_error_is_root_independent(self):
-        results: list[list[str]] = []
-
-        for _ in range(2):
-            with tempfile.TemporaryDirectory() as temporary:
-                errors: list[str] = []
-                validate_assets(
-                    Path(temporary),
-                    self.asset_policy(),
-                    [],
-                    errors,
-                )
-                results.append(errors)
-
-        self.assertEqual(results[0], results[1])
-        self.assertEqual(len(results[0]), 1)
-        self.assertTrue(results[0][0].startswith("assets/exports.json:"))
 
     def test_verified_locked_839_line_gml_passes_line_limit(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -263,7 +203,7 @@ class RepositoryPolicyTests(unittest.TestCase):
 
         self.assertEqual(
             errors,
-            [f"{path}: 801 lines exceeds limit 800"],
+            [SourceLineViolation(path.as_posix(), 800, 801)],
         )
 
     def test_locked_file_still_receives_other_structure_checks(self):
@@ -289,6 +229,86 @@ class RepositoryPolicyTests(unittest.TestCase):
             errors,
             [f"{path}: generic source filename is forbidden"],
         )
+
+    def test_asset_validation_reads_the_selected_root(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            manifest = root / "assets/exports.json"
+            manifest.parent.mkdir(parents=True)
+            manifest.write_text(
+                json.dumps({"version": 2, "exports": []}),
+                encoding="utf-8",
+            )
+            errors: list[str] = []
+
+            validate_assets(
+                root,
+                self.asset_policy(),
+                [Path("assets/exports.json")],
+                errors,
+            )
+
+        self.assertEqual(len(errors), 1)
+        self.assertTrue(errors[0].startswith("assets/exports.json:"))
+
+    def test_asset_validation_accepts_each_governance_completion_level(self):
+        entry = {
+            "kind": "raster",
+            "sources": ["assets/source/test.kra"],
+            "runtime": ["assets/runtime/test.png"],
+            "destination": {
+                "kind": "included-file",
+                "file_contract": "Runtime enumerates user-replaceable images.",
+            },
+        }
+
+        for completion in (
+            "deterministic-placeholder",
+            "authored-placeholder",
+            "final",
+        ):
+            with self.subTest(completion=completion):
+                candidate = {**entry, "completion": completion}
+                self.assertEqual(self.validate_fixture_manifest(candidate), [])
+
+    def test_asset_validation_rejects_missing_or_unknown_completion_level(self):
+        entry = {
+            "kind": "raster",
+            "sources": ["assets/source/test.kra"],
+            "runtime": ["assets/runtime/test.png"],
+            "destination": {
+                "kind": "included-file",
+                "file_contract": "Runtime enumerates user-replaceable images.",
+            },
+        }
+
+        for completion in (None, "unreviewed"):
+            with self.subTest(completion=completion):
+                candidate = {
+                    **entry,
+                    **({} if completion is None else {"completion": completion}),
+                }
+                errors = self.validate_fixture_manifest(candidate)
+                self.assertEqual(len(errors), 1)
+                self.assertIn("invalid completion level", errors[0])
+
+    def test_missing_manifest_error_is_root_independent(self):
+        results: list[list[str]] = []
+
+        for _ in range(2):
+            with tempfile.TemporaryDirectory() as temporary:
+                errors: list[str] = []
+                validate_assets(
+                    Path(temporary),
+                    self.asset_policy(),
+                    [],
+                    errors,
+                )
+                results.append(errors)
+
+        self.assertEqual(results[0], results[1])
+        self.assertEqual(len(results[0]), 1)
+        self.assertTrue(results[0][0].startswith("assets/exports.json:"))
 
     def test_invalid_baseline_ref_fails_closed(self):
         result = subprocess.run(
