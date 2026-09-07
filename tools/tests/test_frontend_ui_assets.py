@@ -43,12 +43,13 @@ class FrontendUiAssetTests(unittest.TestCase):
 
     def test_policy_and_manifest_bind_one_editable_source_to_one_runtime_export(self):
         """Require the UI pipeline and its manifest mapping to agree."""
+        pipeline = self.policy["assets"]["pipelines"]["ui"]
         self.assertEqual(
-            self.policy["assets"]["pipelines"]["ui"],
-            {
-                "source_extensions": [".svg", ".png"],
-                "runtime_extensions": [".png"],
-            },
+            set(pipeline["source_extensions"]), {".svg", ".png"}
+        )
+        self.assertEqual(set(pipeline["runtime_extensions"]), {".png"})
+        self.assertEqual(
+            set(pipeline["required_source_extensions"]), {".svg", ".png"}
         )
         self.assertEqual(len(self.ui_exports), 1)
         self.assertEqual(

@@ -139,7 +139,7 @@ class FormatCheckTests(unittest.TestCase):
         )
         format_job = text.split("  format:", 1)[1]
 
-        self.assertIn("actions/setup-python@v5", format_job)
+        self.assertRegex(format_job, r"actions/setup-python@[0-9a-f]{40}\b")
         self.assertIn('python-version: "3.12"', format_job)
         self.assertIn(
             "python3 tools/ci/check_format.py \\",

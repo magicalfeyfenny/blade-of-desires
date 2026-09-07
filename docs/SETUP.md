@@ -3,6 +3,11 @@
 Use this checklist for a repository generated from this GameMaker workflow
 template.
 
+For an existing repository, start with the read-only
+[adoption and recovery plan](ADOPTION.md). That route inventories current
+state and verifies an existing release before proposing separately authorized
+changes. Do not run the generated-repository bootstrap as an adoption probe.
+
 This document owns setup procedure. Repository-change lifecycle policy remains
 in [GOVERNANCE.md](../GOVERNANCE.md#authority).
 
@@ -49,7 +54,8 @@ labels.
 The tool requires an explicit repository name. It creates `main` from the
 current `dev` commit only when `main` is absent, makes `dev` the default,
 enables squash merging and auto-merge, disables merge commits, rebase merges,
-and automatic branch deletion, ensures the eight governance labels, and
+and automatic branch deletion, ensures the governance labels defined by
+`REQUIRED_LABELS` in the [bootstrap tool](../tools/setup_github.py), and
 installs the active `dev-protection` and `main-release` rulesets.
 
 The tool creates the labels used by the Governance
@@ -57,7 +63,9 @@ The tool creates the labels used by the Governance
 [manual](../GOVERNANCE.md#manual-and-high-risk-changes), and
 [blocked-work](../GOVERNANCE.md#milestone-commits-and-draft-publication) paths.
 It renames a legacy `blocked` label to `work:blocked`, preserving assignments
-when the new name is absent.
+when the new name is absent. See
+[Inventory authority](../GOVERNANCE.md#inventory-authority) for the shared
+inventory rule.
 
 Both rulesets grant repository administrators pull-request-only bypass.
 [Human-created changes](../GOVERNANCE.md#human-created-changes) owns the limits
@@ -106,7 +114,15 @@ evidence if any part of that smoke check fails.
 
 ## Validate the generated repository
 
-From the generated repository root, run:
+Create a local virtual environment and install the pinned test dependencies:
+
+```sh
+python3.12 -m venv .venv
+source .venv/bin/activate
+python3.12 -m pip install -r tools/tests/requirements.txt
+```
+
+Stage the intended files first. From the generated repository root, run:
 
 ```sh
 python3.12 tools/ci/check_repo.py
@@ -114,13 +130,30 @@ python3.12 -m unittest discover -s tools/tests -p 'test_*.py'
 git diff --check
 ```
 
+The checker reports the staged storage tree. Existing content checks read the
+working tree; use `--candidate-ref HEAD` to inspect a committed candidate for
+both. Configure hygiene, exact file exceptions, and any additional raw-size
+classes in `[storage]` and `[storage.lfs]`; see
+[Candidate storage](../GOVERNANCE.md#candidate-storage).
+
+For a committed candidate, obtain separate object-integrity evidence with:
+
+```sh
+python3.12 tools/ci/check_lfs_integrity.py --candidate-ref HEAD
+```
+
+Use `--fetch-remote origin` when the candidate's LFS objects must be fetched
+into the check's temporary store. The JSON result distinguishes successful
+evidence, disabled or inapplicable checks, unsupported capability, and failure.
+It does not modify the author's LFS objects or migrate repository history.
+
 ## Pinned GMTL dependency
 
 This repository uses GM-Testing-Library (GMTL) v1.2 as a pinned, read-only
 dependency. `project/gmtl.lock.json` is the canonical machine-readable
-boundary for its exact 20 resource roots and 47 files. The lock's inventory,
-SHA-256 hashes, and sizes must all verify before any locked file is exempted
-from the source line limit or Format whitespace findings.
+boundary for its exact resource roots and file inventory. The lock's roots,
+inventory, SHA-256 hashes, and sizes must all verify before a locked file is
+exempted from the source line limit or Format whitespace findings.
 
 Do not download a newer GMTL release during routine setup. An update requires
 explicit human instruction and a separate high-risk issue. Import the directed
@@ -152,8 +185,9 @@ human-owned steps:
    actionable issue work, while Governed Change executes one existing
    agent-workable issue.
 4. Add any game-specific hosted runner configuration or secrets needed by the
-   GameMaker tests. Do not infer visual or runtime success from the Python
-   policy checks.
+   GameMaker tests, then connect the suite through the
+   [required Tests extension procedure](CI.md). Do not infer visual or runtime
+   success from the Python policy checks.
 
 If the bootstrap tool completes successfully, no manual GitHub branch,
 default-branch, merge-strategy, label, or ruleset configuration remains.

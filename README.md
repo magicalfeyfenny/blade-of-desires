@@ -46,6 +46,13 @@ actual circumstances warrant it.
 `main` is release-only, and releases require explicit human authorization.
 Human-created work uses a separate protected lane that agents do not modify.
 
+For engine and asset decisions, see
+[Native GameMaker functionality](GOVERNANCE.md#native-gamemaker-functionality)
+and [Derived assets](GOVERNANCE.md#derived-assets). Storage enforcement follows
+[Candidate storage](GOVERNANCE.md#candidate-storage). The
+[adoption guide](docs/ADOPTION.md) explains audits of existing repositories,
+and the [CI guide](docs/CI.md) describes the required checks and evidence.
+
 ## Start here
 
 For day-to-day repository work, [AGENTS.md](AGENTS.md#authority-and-task-routing)

@@ -25,9 +25,28 @@ forbidden_generic_stems = [
     "common",
 ]
 
+[storage]
+enabled = true
+check_tracked_ignored = true
+# Git ignore patterns, evaluated separately from tracked .gitignore files.
+prohibited_patterns = [
+    ".DS_Store", "Thumbs.db", "__pycache__/", "*.pyc", ".pytest_cache/",
+    ".venv/", "build/", "dist/", "tmp/", ".cache/",
+]
+# Exact repository-relative files only; separate from source-library exceptions.
+exceptions = []
+
+[storage.lfs]
+enforce_pointers = true
+# Optional additional classes subject to a raw-blob size cap. No implicit class.
+raw_patterns = []
+max_raw_bytes = 10485760
+# Git's content heuristic: a NUL in the first 8000 stored bytes.
+binary_only = true
+# required | optional (unsupported capability only) | off
+fsck = "required"
+
 [assets]
-source_root = "assets/source"
-runtime_root = "assets/runtime"
 manifest = "assets/exports.json"
 content_root = "content"
 plain_runtime_svg = true
@@ -35,33 +54,59 @@ plain_runtime_svg = true
 [imports.gmtl]
 lock = "project/gmtl.lock.json"
 
+# Roots belong to each pipeline. Dedicated runtime roots require complete export
+# coverage; native resource roots are shared and validate only listed exports.
+# Extension lists allow alternatives. Add required_source_extensions or
+# required_runtime_extensions only for concrete companion-deliverable contracts.
 [assets.pipelines.vector]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = []
 source_extensions = [".svg"]
 runtime_extensions = [".svg"]
 
 [assets.pipelines.ui]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = ["project/~ blade of desires ~/sprites"]
 source_extensions = [".svg", ".png"]
 runtime_extensions = [".png"]
+# The editable SVG composes its retained PNG source image.
+required_source_extensions = [".svg", ".png"]
 
 [assets.pipelines.raster]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = ["project/~ blade of desires ~/sprites"]
 source_extensions = [".kra"]
 runtime_extensions = [".png"]
 
 [assets.pipelines.music]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = []
 source_extensions = [".mid", ".logicx"]
 runtime_extensions = [".flac"]
 sample_rate = 48000
 channels = 2
 
 [assets.pipelines.sound_effect]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = []
 source_extensions = [".logicx"]
 runtime_extensions = [".wav"]
 sample_rate = 48000
 channels = 2
 
 [assets.pipelines.model_3d]
+source_roots = ["assets/source"]
+runtime_roots = ["assets/runtime"]
+native_resource_roots = []
 source_extensions = [".blend", ".obj", ".mtl"]
 runtime_extensions = [".vbuff"]
+# Stage 1 models retain the Blender source and OBJ/MTL interchange pair.
+required_source_extensions = [".blend", ".obj", ".mtl"]
 
 [risk]
 max_changed_files = 100

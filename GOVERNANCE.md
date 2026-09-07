@@ -18,6 +18,20 @@ Except for a critical stop that must be exposed before mutation, entrypoints
 link here instead of restating shared rules. A repeated stop is a safety
 reminder, not a second source of authority.
 
+### Inventory authority
+
+Volatile test, asset, capture, resource, label, and similar inventory totals
+must not be duplicated as normative prose unless every normative copy is
+generated from or mechanically checked against one authoritative source.
+Prefer the required semantic set or behavior and link to its authority instead
+of maintaining an incidental numeric total. Ordinary inventory changes should
+not silently stale a second normative count.
+
+This rule does not remove true numeric contracts such as configured limits,
+fixed identifiers, or protocol requirements. Dated historical evidence and
+non-normative reports may record observed totals; those measurements do not
+become ongoing inventory requirements.
+
 ## Issue authority
 
 Every issue created by an agent contains a summary, acceptance criteria,
@@ -587,6 +601,34 @@ standards is not automatically a defect. The result may inform desired patterns
 or algorithms. Existing policy violations are treated as the repository
 baseline and do not block unrelated agent changes.
 
+With `check_repo.py --baseline-ref`, an inherited source-line violation may
+remain unchanged, shrink while still over the limit, or be fully corrected.
+The comparison binds the source-line rule to the exact repository-relative
+file path and configured limit. A larger count or a new over-limit file fails.
+Other violations have no inferred severity order: only identical diagnostics
+may remain inherited, with each baseline occurrence used at most once. Changed
+JSON error details or asset entry identities are not normalized away.
+
+Changes to `PROJECT_POLICY.toml`, `tools/ci/check_repo.py`, its candidate and
+storage helper modules, `project/gmtl.lock.json`, or `tools/ci/gmtl_lock.py`
+disable the ordered allowance. The candidate must
+introduce no changed or new content diagnostics against
+the historical checker and policy, both under its current rules and with its
+tracked files evaluated under the historical rules. This conservative
+path permits unchanged inherited diagnostics and full corrections, but rejects
+partial reductions alongside contract edits. Changed thresholds create distinct
+obligations; relaxing a threshold or removing a check cannot hide growth that
+still violates the old rules. Make partial reductions separately from checker
+or policy changes. An unavailable or invalid baseline fails closed.
+
+Remaining inherited violations are repository state, not completion conditions
+or an automatic cleanup backlog. Baseline failures identify only new, changed,
+or worsened violations for the proposed change.
+
+Storage rules use the separate comparison in
+[Candidate storage](#candidate-storage), including when enforcement is first
+enabled. They do not acquire the source-line ordering.
+
 Human-authored work may be followed by a bounded repository-compliance issue.
 That issue may normalize structure, validation, assets, tests, and repository
 conventions without changing intended behavior. It uses the normal risk policy.
@@ -689,17 +731,127 @@ Tags, release builds, merges into `main`, and publication are never automatic.
 
 After the first release, `main` changes only through release PRs.
 
+## Native GameMaker functionality
+
+Before designing, retaining, repairing, extending, or replacing custom
+repository-owned machinery for behavior GameMaker may provide, determine
+whether applicable native functionality satisfies the current product and
+engineering contract. This requirement applies to existing implementations
+as well as new work.
+
+### Establish engine semantics
+
+When an implementation decision depends on a named GameMaker feature or
+engine abstraction, establish its actual semantics before deciding to preserve
+or redesign a custom substitute. Inspect the applicable native contract or
+documentation for the project's engine version and targets, or establish the
+behavior through direct, relevant engine evidence. Record the source and the
+conclusion at the implementation decision boundary. Runtime evidence follows
+[Validation coverage allocation](#validation-coverage-allocation) and
+[Interactive runtime validation](#interactive-runtime-validation).
+
+This applies, for example, to nine-slice sprites, scaling, tilemaps, sequences,
+surfaces, cameras, animation, collision, particles, audio, paths, fonts,
+resource loading, and buffer APIs. The examples are not an exhaustive list.
+Function names, comments, the number or arrangement of helper calls, and
+superficial resemblance to a feature do not establish the engine contract.
+Repository precedent is evidence of what exists, not authority over what
+GameMaker means.
+
+### Custom implementation requirements
+
+If native functionality satisfies the required outcome, use it. Do not
+introduce redundant custom machinery. Remove or simplify redundant machinery
+when that cleanup is within the authorized outcome. Do not disable, bypass,
+or degrade a native facility merely to preserve a custom implementation whose
+independent necessity has not been established.
+
+A custom implementation requires a concrete current requirement the native
+facility cannot satisfy. Identify the unmet requirement and the evidence for
+the limitation. Behavior, determinism, portability, runtime data access,
+tooling, performance, compatibility, integration, authoring workflow, or
+another current contract boundary can justify the custom path. A compatibility
+claim also follows [Compatibility obligations](#compatibility-obligations).
+
+Existing code, history, architectural precedent, tests written around the
+custom mechanism, and the fact that it already works are insufficient evidence
+of necessity. Update repository-owned consumers atomically when the authorized
+outcome replaces their mechanism. Native functionality is the default when
+sufficient; a demonstrated unmet requirement remains a valid exception.
+
+### Native adoption scope
+
+Apply the decision to current requested work and independently established
+contracts. Existing custom systems or external runtime assets alone do not
+authorize cleanup, an implementation issue, or a retained backlog obligation.
+An audit may report an unsupported decision without inventing implementation
+work. A current requested outcome, current issue, or independently established
+contract must actually require the change.
+
 ## Derived assets
 
 The `[assets]` and `[assets.pipelines.*]` tables in
 [PROJECT_POLICY.toml](PROJECT_POLICY.toml) define the executable roots,
 manifest path, supported source and runtime formats, and audio parameters.
 
-Editable assets belong under the configured source root. Generated or
-exported assets belong under the configured runtime root, and every tracked
-derived runtime asset is mapped in the configured export manifest.
+### Runtime asset representation
 
-Each asset follows its named pipeline.
+Distinguish the editable authoring source, the exported artifact, and its
+runtime GameMaker representation. External authorship does not imply external
+runtime loading. An external editable source may export an artifact that is
+integrated into a native GameMaker resource; the artifact may live directly
+inside that resource without a duplicate staging copy.
+
+Use an appropriate native GameMaker runtime resource when it adequately
+represents the asset under the current contract. Typical destinations include
+Sprite resources for sprite images, Sound resources for audio, Font resources
+for fonts, Sprite and Tile Set resources for tile graphics, and Sequence
+resources for applicable sequence content. Preserve a useful canonical
+editable source outside GameMaker when the authoring workflow calls for it.
+Assets authored directly in GameMaker need no artificial external source.
+
+Included Files require an actual file-based runtime contract or content that
+no appropriate native resource adequately represents. Examples include JSON
+game data, custom model or buffer data such as `.vbuff`, runtime-enumerated
+content, user-modifiable or mod data, and other formats requiring file access.
+These examples do not restrict valid files to particular extensions. Record
+the concrete runtime reason; being externally generated, manifest-listed, or
+part of an export pipeline is insufficient. A supported export format does
+not by itself justify a runtime representation.
+
+Apply [Native GameMaker functionality](#native-gamemaker-functionality) to
+resource and loader choices, including its semantics, exception, and scope
+rules. Keep source authority, ownership, provenance, completion metadata, and
+applicable storage requirements independent of runtime representation.
+
+### Export topology
+
+Each derived asset follows its named pipeline and one entry in the configured
+canonical export manifest. Pipeline `source_roots` permit editable-source
+locations, including directory-backed source packages. Pipeline
+`runtime_roots` are dedicated file-export locations: every tracked runtime
+asset there needs manifest coverage. Pipeline `native_resource_roots` are
+shared GameMaker locations: validate manifest-owned outputs without treating
+unrelated native resources as derived exports.
+
+The manifest's `sources` identify editable sources and `runtime` identifies
+the exported artifacts at their runtime destinations. Each entry declares one
+`destination`: `native-resource` names the tracked `.yy` resource containing
+its outputs; `included-file` records a nonempty `file_contract` reason for
+runtime file access. This declaration does not replace GameMaker resource
+metadata or prove that the stated reason is sufficient. Verify the actual
+resource or packaging relationships changed by the work. See the
+[manifest examples](assets/example_manifest_entry.txt).
+
+Allowed source and runtime extensions are alternatives. Require companion
+formats only through a pipeline's explicit `required_source_extensions` or
+`required_runtime_extensions` when its actual contract requires them.
+Preserve existence, tracking, unique runtime ownership, export coverage, and
+completion metadata. Directory sources require tracked existing descendants;
+recognize valid nested LFS pointers as storage representations rather than
+parsing them as literal asset content. Materialized content remains subject to
+applicable content checks; pointer presence alone does not prove export
+fidelity or packaging.
 
 ## GameMaker structured data
 
@@ -778,8 +930,8 @@ Changing the limit or imported-dependency exemption behavior is high risk.
 
 GM-Testing-Library (GMTL) v1.2 is a pinned, read-only imported dependency.
 `project/gmtl.lock.json` is the sole ownership boundary for the imported
-snapshot. It records the upstream repository, import commit, exact 20 resource
-roots, exact 47-file inventory, and each file's SHA-256 digest and byte size.
+snapshot. It records the upstream repository, import commit, exact resource
+roots and file inventory, and each file's SHA-256 digest and byte size.
 Names, prefixes, and broad path globs do not expand that boundary.
 
 Locked GMTL files must not be edited, reformatted, split, or upgraded during
@@ -795,6 +947,56 @@ then update the lock's version, snapshot commit, resource roots, counts, file
 inventory, hashes, and sizes atomically. The candidate receives no exemptions
 unless the complete replacement snapshot verifies.
 
+## Candidate storage
+
+`[storage]` and `[storage.lfs]` in
+[PROJECT_POLICY.toml](PROJECT_POLICY.toml) configure tracked-ignore hygiene,
+prohibited artifacts, exact file exceptions, stored LFS pointers, optional
+raw-blob size classes, and LFS object-integrity evidence. Storage exceptions
+are independent of imported-source exceptions and exempt only the exact
+declared file from storage-policy diagnostics.
+
+Storage validation identifies one Git tree and uses its tracked paths, stored
+blobs, repository ignore rules, and effective attributes. Nested Git rules,
+negations, and attribute overrides apply. Untracked files, working-tree
+smudging, machine-wide rules, local Git info rules, and unrelated branches do
+not determine its verdict. The default local command examines the staged
+index for storage and the working tree for existing content checks; stage the
+intended candidate first. `--candidate-ref` selects a stored tree for both.
+CI selects its checked-out PR merge candidate explicitly.
+
+Paths with effective `filter=lfs` require canonical LFS pointers when pointer
+enforcement is enabled. Pointer recognition is shared with asset validation;
+it identifies a storage representation, not asset content or export fidelity.
+Additional raw-size classes exist only through configured `raw_patterns`.
+Patterns use Git ignore syntax, independently of repository ignore rules.
+The size cap rejects raw blobs strictly larger than its byte boundary; optional
+binary-only filtering detects a NUL within the first 8000 bytes. No filename
+class acquires an implicit LFS requirement.
+
+Storage baselining evaluates both selected trees under the candidate storage
+policy, allowing newly enabled checks to identify unchanged inherited state
+without creating cleanup obligations. Only the same violation at the exact
+path, mode, and stored blob may remain inherited. Changed, renamed, or newly
+violating blobs fail; a reduction in blob size is not a universal improvement.
+When storage settings change, the old-policy comparison also remains required
+so relaxing a setting cannot hide a changed violation. Checker-contract edits
+also run the historical storage helper, when present, against the exact stored
+trees under its historical policy. This preserves old enforcement without
+re-adding or cleaning the candidate's blobs. Candidate ignore and attribute
+changes take effect in their own trees.
+
+Object-integrity evidence is separate from pointer syntax and inherited-state
+diagnostics. Applicable CI runs `git lfs fsck --objects` for the identified
+candidate, checks declared object sizes, and records its result. Integrity
+failure or missing required capability/evidence cannot pass. Optional mode
+permits only explicitly reported unsupported capability; a supported check
+with missing or corrupt objects still fails. Disabled checks and candidates
+with no canonical pointers are reported explicitly. Integrity checks use an
+isolated LFS store so Git LFS quarantine cannot modify the author's objects;
+CI fetches only the selected candidate's objects into that store. There is no
+automatic cleanup, history scan, or LFS migration.
+
 ## CI
 
 Required checks:
@@ -806,7 +1008,15 @@ Required checks:
 
 The pinned GMTL snapshot is used as the GameMaker test framework.
 
-Game-specific test suites are added to `Tests` as they become available.
+`Tests` is the required aggregate result for the template Python suite and
+explicitly configured project test jobs. It succeeds only when every required
+constituent succeeds; failed, cancelled, skipped, or missing required evidence
+cannot pass. Retain the template suite when adding project jobs through the
+[CI extension procedure](docs/CI.md). Missing execution capability is an
+automated evidence limitation, not a new human playtesting requirement.
+
+External GitHub Actions in workflows and extension examples must be pinned to
+verified immutable full commit SHAs with readable version comments.
 
 Tests should protect contracts, not incidental representations. Do not use
 exact-text, exact-order, or exact-count assertions when a semantic assertion
