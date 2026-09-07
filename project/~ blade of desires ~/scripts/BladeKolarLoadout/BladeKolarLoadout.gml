@@ -4,6 +4,14 @@
 #macro BLADE_KOLAR_RANGED_SPEED 7.0
 #macro BLADE_KOLAR_CLOSE_BAND 58
 #macro BLADE_KOLAR_CLOSE_HIT_INTERVAL 8
+#macro BLADE_KOLAR_CHARACTERIZATION_TICKS 120
+#macro BLADE_KOLAR_CLOSE_DAMAGE_MARGIN 1.75
+#macro BLADE_KOLAR_FAR_TARGET_HP 33
+#macro BLADE_KOLAR_FAR_TARGET_WINDOW_TICKS 120
+#macro BLADE_KOLAR_COMMANDER_HP 45
+#macro BLADE_KOLAR_COMMANDER_WINDOW_TICKS 180
+#macro BLADE_KOLAR_SEPARATION_BOSS_HP 66
+#macro BLADE_KOLAR_SEPARATION_BOSS_WINDOW_TICKS 240
 
 /// @func BladeKolarOptionFormation(focused)
 /// Returns the visible option centers shared by drawing and emission.
@@ -25,6 +33,56 @@ function BladeKolarOptionFormation(_focused) {
 /// Exposes the logical close band without tying it to sprite bounds or collision.
 function BladeKolarCloseBand() {
     return BLADE_KOLAR_CLOSE_BAND;
+}
+
+/// @func BladeKolarCharacterization()
+/// Declares base-tier vertical-slice acceptance values without implying final balance.
+function BladeKolarCharacterization() {
+    return {
+        equal_duration_ticks: BLADE_KOLAR_CHARACTERIZATION_TICKS,
+        close_damage_margin: BLADE_KOLAR_CLOSE_DAMAGE_MARGIN,
+        far_target: {
+            hit_points: BLADE_KOLAR_FAR_TARGET_HP,
+            window_ticks: BLADE_KOLAR_FAR_TARGET_WINDOW_TICKS,
+        },
+        commander: {
+            hit_points: BLADE_KOLAR_COMMANDER_HP,
+            window_ticks: BLADE_KOLAR_COMMANDER_WINDOW_TICKS,
+        },
+        separation_boss: {
+            hit_points: BLADE_KOLAR_SEPARATION_BOSS_HP,
+            window_ticks: BLADE_KOLAR_SEPARATION_BOSS_WINDOW_TICKS,
+        },
+    };
+}
+
+/// @func BladeKolarBaseDamageOverTicks(focused, distance, ticks)
+/// Characterizes raw Hyper-0 loadout damage using the shared eight-tick cadence.
+function BladeKolarBaseDamageOverTicks(_focused, _distance, _ticks) {
+    if (!is_numeric(_distance) || is_nan(_distance) || is_infinity(_distance)
+        || _distance < 0) {
+        throw("BladeKolarLoadout: characterization distance must be nonnegative");
+    }
+    if (!is_numeric(_ticks) || is_nan(_ticks) || is_infinity(_ticks)
+        || _ticks < 0 || floor(_ticks) != _ticks) {
+        throw("BladeKolarLoadout: characterization ticks must be a nonnegative integer");
+    }
+    var _volley = BladeKolarVolley(_focused, 0);
+    var _cooldown = 0;
+    var _damage = 0;
+    for (var _tick = 0; _tick < _ticks; ++_tick) {
+        var _cadence = BladeFirstBeatFireCadence(_cooldown, true, 0);
+        _cooldown = _cadence.cooldown;
+        if (!_cadence.fires) continue;
+        for (var _index = 0; _index < array_length(_volley); ++_index) {
+            var _shot = _volley[_index];
+            if (_shot.channel == "ranged"
+                || _distance <= _shot.range_limit) {
+                _damage += _shot.damage;
+            }
+        }
+    }
+    return _damage;
 }
 
 /// @func BladeKolarVolley(focused, hyper_tier)
