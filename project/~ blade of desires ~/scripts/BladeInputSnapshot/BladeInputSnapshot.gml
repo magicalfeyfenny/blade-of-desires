@@ -450,6 +450,61 @@ function BladeInputSnapshotCanonical(_snapshot) {
 	return _snapshot;
 }
 
+/// @func BladeInputSnapshotCreateRecorded(simulation_frame, move_x, move_y, held_actions, pressed_actions, released_actions, has_analog, analog_x, analog_y)
+/// @description Rebuilds one presentation-neutral BIS1 value for deterministic playback.
+/// Replay data omits presentation frame and prompt-device state; this adapter supplies
+/// neutral values while preserving every gameplay-affecting input field exactly.
+function BladeInputSnapshotCreateRecorded(
+	_simulation_frame,
+	_move_x,
+	_move_y,
+	_held_actions,
+	_pressed_actions,
+	_released_actions,
+	_has_analog = false,
+	_analog_x = 0,
+	_analog_y = 0
+) {
+	var _frame = _BladeInputInteger(
+		_simulation_frame,
+		"simulation frame",
+		0,
+		int64("9223372036854775807")
+	);
+	var _movement_x = _BladeInputInteger(_move_x, "movement x", -1024, 1024);
+	var _movement_y = _BladeInputInteger(_move_y, "movement y", -1024, 1024);
+	var _held = _BladeInputInteger(
+		_held_actions, "held actions", 0, BladeInputAction.All
+	);
+	var _pressed = _BladeInputInteger(
+		_pressed_actions, "pressed actions", 0, BladeInputAction.All
+	);
+	var _released = _BladeInputInteger(
+		_released_actions, "released actions", 0, BladeInputAction.All
+	);
+	var _analog_present = _BladeInputBool(_has_analog, "analog presence");
+	var _axis_x = _BladeInputInteger(_analog_x, "analog x", -32767, 32767);
+	var _axis_y = _BladeInputInteger(_analog_y, "analog y", -32767, 32767);
+	if (!_analog_present) {
+		_axis_x = int64(0);
+		_axis_y = int64(0);
+	}
+
+	return _BladeInputSnapshotEncode(
+		_frame,
+		int64(0),
+		_movement_x,
+		_movement_y,
+		_held,
+		_pressed,
+		_released,
+		BladePromptDevice.Unknown,
+		_analog_present,
+		_axis_x,
+		_axis_y
+	);
+}
+
 /// @func BladeInputSamplerGetPendingEdges(sampler)
 /// @returns {Struct} Fresh diagnostics without consuming pending edges.
 /// Copies both pending edge masks into a diagnostic struct without clearing the sampler's latches.

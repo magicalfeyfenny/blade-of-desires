@@ -141,16 +141,40 @@ function _BladeKernelSamplePresentation(_kernel, _raw_state) {
 
 /// Process one clock tick in input, simulation/event, then state order so each
 /// transcript follows callback execution.
-function _BladeKernelRunTick(_kernel, _tick, _simulate_callback) {
-    var _input_eligible = (_tick.domain_mask & BladeClockDomain.Actor) != 0;
-    var _snapshot = BladeInputSnapshotPublishTick(
-        _kernel.input_sampler,
-        _tick.simulation_tick,
-        _input_eligible
-    );
-    array_push(
-        _kernel.gameplay_input_transcript,
-        _BladeKernelGameplayInputCanonical(_snapshot)
+function _BladeKernelRunTick(
+	_kernel,
+	_tick,
+	_simulate_callback,
+	_recorded_snapshot = undefined
+) {
+	var _input_eligible = (_tick.domain_mask & BladeClockDomain.Actor) != 0;
+	var _snapshot = _recorded_snapshot;
+	if (is_undefined(_snapshot)) {
+		_snapshot = BladeInputSnapshotPublishTick(
+			_kernel.input_sampler,
+			_tick.simulation_tick,
+			_input_eligible
+		);
+	} else {
+		var _recorded_view = BladeInputSnapshotRead(_snapshot);
+		if (_recorded_view.simulation_frame != _tick.simulation_tick) {
+			_BladeKernelFail(
+				"recorded input",
+				"simulation frame must match the executed tick"
+			);
+		}
+		if (!_input_eligible
+			&& (_recorded_view.pressed_actions != 0
+				|| _recorded_view.released_actions != 0)) {
+			_BladeKernelFail(
+				"recorded input",
+				"ineligible ticks must not contain action edges"
+			);
+		}
+	}
+	array_push(
+		_kernel.gameplay_input_transcript,
+		_BladeKernelGameplayInputCanonical(_snapshot)
     );
 
     BladeEventLogBeginTick(_kernel.event_log, _tick.simulation_tick);
@@ -340,8 +364,8 @@ function BladeKernelStepManyDirect(
 /// Delegate one direct tick to the batch path so sampling, eligibility masking,
 /// and callback behavior stay identical.
 function BladeKernelStepDirect(
-    _kernel,
-    _raw_state,
+	_kernel,
+	_raw_state,
     _eligibility,
     _simulate_callback = undefined
 ) {
@@ -350,8 +374,73 @@ function BladeKernelStepDirect(
         _raw_state,
         1,
         _eligibility,
-        _simulate_callback
-    );
+		_simulate_callback
+	);
+}
+
+/// @func BladeKernelStepRecorded(kernel, snapshot, eligibility, simulate_callback)
+/// Advances one simulation tick from a validated recorded snapshot without sampling live input.
+/// Presentation counters and the live sampler remain untouched because replay is tick-driven.
+function BladeKernelStepRecorded(
+	_kernel,
+	_snapshot,
+	_eligibility,
+	_simulate_callback = undefined
+) {
+	_BladeKernelRequire(_kernel);
+	_BladeKernelRequireCallback(_simulate_callback, "simulation callback");
+	if (!is_string(_snapshot)) {
+		_BladeKernelFail("recorded input", "must be an immutable snapshot string");
+	}
+
+	var _view = BladeInputSnapshotRead(_snapshot);
+	var _maximum = int64("9223372036854775807");
+	if (_kernel.clock.simulation_tick >= _maximum) {
+		_BladeKernelFail("recorded input", "simulation tick capacity is exhausted");
+	}
+	var _expected_frame = _kernel.clock.simulation_tick + int64(1);
+	if (_view.simulation_frame != _expected_frame) {
+		_BladeKernelFail(
+			"recorded input",
+			"simulation frame must be the next tick in sequence"
+		);
+	}
+
+	// Presentation is deliberately excluded: recorded input is consumed by simulation ticks.
+	_BladeSimulationClockPreflightDirect(
+		_kernel.clock,
+		int64(1),
+		_eligibility,
+		true
+	);
+	var _mask;
+	if (typeof(_eligibility) == "method") {
+		_mask = _BladeSimulationClockDomainMask(
+			_eligibility(BladeSimulationClockGetCounters(_kernel.clock))
+		);
+	} else {
+		_mask = _BladeSimulationClockDomainMask(_eligibility);
+	}
+	_mask &= ~BladeClockDomain.Presentation;
+
+	var _context = {
+		kernel: _kernel,
+		snapshot: _snapshot,
+		simulate_callback: _simulate_callback,
+	};
+	return BladeSimulationClockStepDirect(
+		_kernel.clock,
+		_mask,
+		method(_context, function(_tick) {
+			// The callback receives the already advanced tick, matching live kernel stepping.
+			_BladeKernelRunTick(
+				self.kernel,
+				_tick,
+				self.simulate_callback,
+				self.snapshot
+			);
+		})
+	);
 }
 
 /// @func BladeKernelGameplayCanonical(kernel)

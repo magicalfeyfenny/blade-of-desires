@@ -16,8 +16,9 @@ records.
 | Actors, attacks, projectiles, damage, terminals, and reward requests | Coordinator-owned `BladeCombatRuntime` | One run attempt or explicit room boundary | Not persisted by this layer |
 | Stage schedule, encounter ownership, typed ports, and stage events | Optional coordinator-owned `BladeStageExecutor` | One attached stage or run reset | Not persisted by this layer |
 | Pause tokens and diagnostics | Coordinator-owned `BladePauseRegistry` | One run attempt | Not persisted by this layer |
+| Deterministic replay payloads | `BladeReplayRecording` recorder and playback owner | One captured recording or playback run | Caller-saved canonical `BRP1` text; no catalog or sharing service |
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
-| Career, scores, suspended runs, checkpoints, and replays | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
+| Career, scores, suspended runs, and checkpoints | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
 
 The config service has no reference to the coordinator, combat runtime, or
 pause registry. Its
