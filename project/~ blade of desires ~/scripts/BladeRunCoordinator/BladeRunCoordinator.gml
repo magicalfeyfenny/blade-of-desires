@@ -652,6 +652,28 @@ function BladeRunCoordinatorStepDirect(
 	}
 }
 
+/// @func BladeRunCoordinatorStepRecorded(coordinator, snapshot, eligibility, simulate_callback)
+/// Advances one active-run tick from recorded input while preserving coordinator ownership.
+/// The callback surface and pause eligibility remain identical to live stepping.
+function BladeRunCoordinatorStepRecorded(
+	_coordinator,
+	_snapshot,
+	_eligibility,
+	_simulate_callback = undefined
+) {
+	_BladeRunCoordinatorBeginAdvance(_coordinator);
+	try {
+		return BladeKernelStepRecorded(
+			_coordinator.__kernel,
+			_snapshot,
+			_BladeRunCoordinatorPauseEligibility(_coordinator, _eligibility),
+			_BladeRunCoordinatorBindSimulationCallback(_coordinator, _simulate_callback)
+		);
+	} finally {
+		_coordinator.__is_advancing = false;
+	}
+}
+
 /// @func BladeRunCoordinatorStepManyDirect(coordinator, raw_state, tick_count, eligibility, simulate_callback)
 /// Runs exact active-run ticks while pause ownership constrains every supplied base mask.
 function BladeRunCoordinatorStepManyDirect(

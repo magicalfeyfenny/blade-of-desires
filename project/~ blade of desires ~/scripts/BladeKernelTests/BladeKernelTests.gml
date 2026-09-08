@@ -36,6 +36,7 @@ function BladeKernelTestsRun() {
     BladeStageRuntimeTestsRun(_state);
     BladeRunStageTestsRun(_state);
     BladeKernelIntegrationTestsRun(_state);
+    BladeReplayRecordingTestsRun(_state);
 
     return BladeKernelTestFinish(_state);
 }

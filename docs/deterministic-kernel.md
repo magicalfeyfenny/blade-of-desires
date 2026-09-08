@@ -2,8 +2,8 @@
 
 Issue #7 establishes the project-owned deterministic seam used by later Blade
 gameplay systems. The current seam is `blade.simulation.v2`, runs at 60 Hz,
-and uses `blade.xoshiro128ss.v1`. It is a simulation foundation, not a complete
-game loop or replay service.
+and uses `blade.xoshiro128ss.v1`. It is a simulation foundation and replay
+seam, not a complete game loop or replay catalog/storage service.
 
 ## Module ownership
 
@@ -18,6 +18,7 @@ game loop or replay service.
 | `BladeEventLog` | Closed event schemas, deterministic ordering, canonical records, and channel separation. |
 | `BladeSessionHeader` | Construction-time compatibility fields and their canonical header. |
 | `BladeDeterministicKernel` | Thin composition, tick dispatch, transcripts, and the final gameplay hash. |
+| `BladeReplayRecording` | Compact BRP1 recording, validation, and tick-driven playback over the run coordinator. |
 
 Gameplay code receives time, input, IDs, RNG streams, and an open event tick
 through the kernel. It must not poll platform input or call GameMaker's ambient
@@ -122,6 +123,35 @@ mutating that view cannot change the string or any earlier frame. The gameplay
 input transcript re-encodes only simulation frame, movement, action masks, and
 analog state. Presentation frame and prompt device do not enter the gameplay
 hash.
+
+## Replay recording and playback
+
+`BladeReplayRecording` owns the smallest saved replay payload needed to rerun an
+attempt through the existing coordinator and simulation callback seam. A BRP1
+payload is canonical pipe-delimited text with this fixed header:
+
+```text
+BRP1|schema_version|session_format_version|simulation_contract|prng|tick_rate|content_fingerprint|run_seed|ship_id|difficulty_id|run_mode|input_count|RI1...
+```
+
+Each `RI1` token stores one simulation frame, quantized movement, held/pressed/
+released action masks, and optional analog axes. Presentation frame and
+prompt-device identity are intentionally absent; playback rebuilds a neutral
+BIS1 value at the simulation boundary. The recorder captures the session
+header, selected ship and difficulty, mode, seed, and one token per executed
+tick. It does not store a derived score, enemy result, or render-frame data.
+
+`BladeReplayRecordingParse` checks the schema, session contracts, content
+fingerprint, stable selection namespaces, exact integer spelling, input count,
+consecutive simulation frames, and the canonical re-encoding. Unsupported or
+malformed text is rejected before a playback coordinator is created.
+`BladeReplayPlaybackCreate` constructs a fresh coordinator through the current
+content predicate. `BladeReplayPlaybackStep` consumes exactly one recorded
+simulation tick through `BladeRunCoordinatorStepRecorded` and the existing
+callback path; `BladeReplayPlaybackRunToEnd` repeats that operation without a
+wall-time accumulator or live-input sample. The caller owns where the
+serialized BRP1 text is saved, while future catalog, sharing, and persistence
+services remain outside this module.
 
 ## Named random streams
 
@@ -297,8 +327,8 @@ evidence.
 
 The deterministic kernel itself does not own pause tokens, run/player state,
 configuration, or combat transactions; the project-owned runtime layers compose
-those systems over its clocks, IDs, events, and transcripts. Save/replay files,
-migrations, playback, remapping UI, emitters, stages, encounters, patterns,
-bosses, scoring, rank, graze, hyper, deathbomb, player weapons, menus,
+those systems over its clocks, IDs, events, and transcripts. General save files,
+replay catalog/storage, migrations, remapping UI, emitters, stages, encounters,
+patterns, bosses, scoring, rank, graze, hyper, deathbomb, player weapons, menus,
 rendering, audio, UI, 3D, and assets remain outside this kernel contract. It
 does not modify the GMTL vendor boundary or lock.
