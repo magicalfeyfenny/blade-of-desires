@@ -1,9 +1,29 @@
 #!/bin/zsh
 
-# Compile Blade with GameMaker's single-dependency loader and execute the
-# project-owned deterministic-kernel runner. GMTL output is intentionally not
-# parsed: the imported demo contains known-red cases and unsound matchers.
+# Compile Blade with GameMaker's single-dependency loader and execute one
+# project-owned engine test. GMTL output is intentionally not parsed: the
+# imported demo contains known-red cases and unsound matchers.
 set -euo pipefail
+
+test_mode=${1:-kernel}
+case "$test_mode" in
+    kernel)
+        launch_argument="--run-test"
+        result_sentinel="BLADE_KERNEL_TEST_RESULT"
+        summary_prefix="BLADE_KERNEL_TESTS:"
+        temp_prefix="blade-kernel-tests"
+        ;;
+    frontend-room-lifecycle)
+        launch_argument="--run-frontend-room-lifecycle-test"
+        result_sentinel="BLADE_FRONTEND_ROOM_LIFECYCLE_RESULT"
+        summary_prefix=""
+        temp_prefix="blade-frontend-room-lifecycle-tests"
+        ;;
+    *)
+        print -u2 "Unknown GameMaker test mode: $test_mode"
+        exit 2
+        ;;
+esac
 
 # Run a command in its own process group so a timeout or interruption also
 # stops any child runner it created. macOS does not provide GNU timeout, so the
@@ -142,7 +162,7 @@ fi
 
 temp_parent=${TMPDIR:-/tmp}
 temp_parent=${temp_parent%/}
-test_root=$(mktemp -d "$temp_parent/blade-kernel-tests.XXXXXX")
+test_root=$(mktemp -d "$temp_parent/$temp_prefix.XXXXXX")
 build_log="$test_root/build.log"
 runner_log="$test_root/runner.log"
 debug_log="$test_root/debug.log"
@@ -150,7 +170,7 @@ debug_log="$test_root/debug.log"
 # Remove only the mktemp directory created above. The name and direct-parent
 # checks prevent a broader deletion if a path variable is ever malformed.
 cleanup() {
-    if [[ "${test_root:h}" == "$temp_parent" && "${test_root:t}" == blade-kernel-tests.* ]]; then
+    if [[ "${test_root:h}" == "$temp_parent" && "${test_root:t}" == $temp_prefix.* ]]; then
         rm -rf -- "$test_root"
     fi
 }
@@ -232,20 +252,22 @@ set +e
         -game "$game_data" \
         -debugoutput "$debug_log" \
         -output "$debug_log" \
-        --run-test
+        "$launch_argument"
 ) 2>&1 | tee "$runner_log"
 # Read the runner wrapper's status from the pipeline rather than tee's status.
 runner_status=${pipestatus[1]}
 set -e
 
-result_count=$(grep -c '^BLADE_KERNEL_TEST_RESULT: ' "$runner_log" || true)
-summary=$(grep '^BLADE_KERNEL_TESTS: ' "$runner_log" | tail -n 1 || true)
-result=$(grep '^BLADE_KERNEL_TEST_RESULT: ' "$runner_log" | tail -n 1 || true)
+result_count=$(grep -c "^$result_sentinel: " "$runner_log" || true)
+summary=$(grep "^$summary_prefix " "$runner_log" | tail -n 1 || true)
+result=$(grep "^$result_sentinel: " "$runner_log" | tail -n 1 || true)
 
-if [[ -z "$summary" && -f "$debug_log" ]]; then
-    summary=$(grep 'BLADE_KERNEL_TESTS: ' "$debug_log" | tail -n 1 || true)
-    result=$(grep 'BLADE_KERNEL_TEST_RESULT: ' "$debug_log" | tail -n 1 || true)
-    result_count=$(grep -c 'BLADE_KERNEL_TEST_RESULT: ' "$debug_log" || true)
+if [[ -z "$result" && -f "$debug_log" ]]; then
+    if [[ -n "$summary_prefix" ]]; then
+        summary=$(grep "^$summary_prefix " "$debug_log" | tail -n 1 || true)
+    fi
+    result=$(grep "^$result_sentinel: " "$debug_log" | tail -n 1 || true)
+    result_count=$(grep -c "^$result_sentinel: " "$debug_log" || true)
     print "$summary"
     print "$result"
 fi
@@ -260,16 +282,20 @@ if (( runner_status != 0 )); then
 fi
 
 if (( result_count != 1 )); then
-    print -u2 "Expected exactly one Blade kernel result sentinel; found $result_count."
+    print -u2 "Expected exactly one $result_sentinel sentinel; found $result_count."
     exit 1
 fi
 
-if [[ "$summary" != BLADE_KERNEL_TESTS:\ *\ passed,\ 0\ failed,\ *\ total ]]; then
-    print -u2 "Blade kernel summary was missing, empty, or reported failures."
-    exit 1
-fi
-
-if [[ "$summary" == *" 0 total" || "$result" != "BLADE_KERNEL_TEST_RESULT: PASS" ]]; then
-    print -u2 "Blade kernel tests did not report a nonzero passing run."
+if [[ "$test_mode" == kernel ]]; then
+    if [[ "$summary" != BLADE_KERNEL_TESTS:\ *\ passed,\ 0\ failed,\ *\ total ]]; then
+        print -u2 "Blade kernel summary was missing, empty, or reported failures."
+        exit 1
+    fi
+    if [[ "$summary" == *" 0 total" || "$result" != "$result_sentinel: PASS" ]]; then
+        print -u2 "Blade kernel tests did not report a nonzero passing run."
+        exit 1
+    fi
+elif [[ "$result" != "$result_sentinel: PASS" ]]; then
+    print -u2 "Front-end room lifecycle test did not pass."
     exit 1
 fi
