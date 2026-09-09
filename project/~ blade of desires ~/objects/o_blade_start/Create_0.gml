@@ -1,10 +1,15 @@
 /// Route test launches to the isolated runner and ordinary launches to gameplay.
 var _run_tests = false;
+var _run_frontend_room_lifecycle_test = false;
 for (var _index = 1; _index <= parameter_count(); ++_index) {
     var _argument = parameter_string(_index);
     if (_argument == "--run-test" || _argument == "-runTest") {
         _run_tests = true;
         break;
+    }
+    if (_argument == "--run-frontend-room-lifecycle-test"
+        || _argument == "-runFrontendRoomLifecycleTest") {
+        _run_frontend_room_lifecycle_test = true;
     }
 }
 
@@ -47,6 +52,10 @@ if (_run_tests) {
             && variable_struct_exists(_gmtl_suites, "list")) {
             variable_struct_set(_gmtl_suites, "list", []);
         }
+    }
+    if (_run_frontend_room_lifecycle_test
+        && !variable_global_exists("blade_frontend_room_lifecycle")) {
+        BladeFrontendRoomLifecycleTestRegister();
     }
     global.blade_selected_run = undefined;
     frontend_state = BladeFrontendStateCreate(_config);
