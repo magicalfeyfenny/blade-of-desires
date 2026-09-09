@@ -1,3 +1,23 @@
+if (pause_action == BladeStage1PauseAction.Retry) {
+    BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
+    state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
+    BladeFirstBeatCleanupTransientInstances();
+    room_restart();
+    exit;
+}
+
+if (pause_action == BladeStage1PauseAction.QuitToMain) {
+    // Administrative room exit deliberately never enters the defeat path.
+    BladeStage1RouteAbort(id, BladeCombatTerminalReason.RoomExit);
+    BladeFirstBeatCleanupTransientInstances();
+    global.blade_selected_run = undefined;
+    room_goto(r_blade_start);
+    exit;
+}
+
+// Keep the action gate through this entire frame so Resume cannot advance one tick early.
+if (pause_action == BladeStage1PauseAction.Resume || pause_menu.open) exit;
+
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     && keyboard_check_pressed(vk_escape)) {
     game_end();
@@ -31,7 +51,9 @@ if (bomb_clears_this_frame) {
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
 }
 
-var _power_key = variable_struct_get(keyboard_bindings, "input.bomb");
+var _power_pressed = BladeLiveInputActionPressed(
+    live_input, BladeInputAction.Bomb
+);
 
 if (BladeDifficultyRankGameplayEligible(id)) {
     BladeDifficultyRankAdvanceActive(
@@ -40,7 +62,7 @@ if (BladeDifficultyRankGameplayEligible(id)) {
 }
 
 if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
-    if (keyboard_check_pressed(_power_key)) {
+    if (_power_pressed) {
         var _response_action = BladeSurvivalPowerActionForX(economy, true);
         if (_response_action == BladeSurvivalPowerAction.DeathBombHyper) {
             var _death_bomb_hyper = BladeSurvivalTryActivateHyper(economy);
@@ -142,7 +164,7 @@ if (player_phase == BladeSurvivalPlayerPhase.Respawning) {
 
 if (state == BladeFirstBeatState.Playing
     || state == BladeFirstBeatState.Rewarding) {
-    if (keyboard_check_pressed(_power_key)) {
+    if (_power_pressed) {
         // X and Shift+X share one priority: stocked Hyper, then Bomb.
         var _power_action = BladeSurvivalPowerActionForX(economy, false);
         if (_power_action == BladeSurvivalPowerAction.Hyper) {

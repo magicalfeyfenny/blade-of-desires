@@ -109,6 +109,8 @@
     {"id":{"name":"BladeStage1RouteTests","path":"scripts/BladeStage1RouteTests/BladeStage1RouteTests.yy",},},
     {"id":{"name":"BladeStage1SelectedRouteTests","path":"scripts/BladeStage1SelectedRouteTests/BladeStage1SelectedRouteTests.yy",},},
     {"id":{"name":"BladeStage1BossTests","path":"scripts/BladeStage1BossTests/BladeStage1BossTests.yy",},},
+    {"id":{"name":"BladeStage1Pause","path":"scripts/BladeStage1Pause/BladeStage1Pause.yy",},},
+    {"id":{"name":"BladeStage1PauseTests","path":"scripts/BladeStage1PauseTests/BladeStage1PauseTests.yy",},},
     {"id":{"name":"o_blade_stage1_player","path":"objects/o_blade_stage1_player/o_blade_stage1_player.yy",},},
     {"id":{"name":"o_ciela_first_beat_player","path":"objects/o_ciela_first_beat_player/o_ciela_first_beat_player.yy",},},
     {"id":{"name":"o_maynii_first_beat_player","path":"objects/o_maynii_first_beat_player/o_maynii_first_beat_player.yy",},},
