@@ -6,7 +6,12 @@ if (room == r_stage1_first_beat
     && variable_global_exists("blade_config_service")) {
     _config = BladeConfigServiceSnapshot(global.blade_config_service);
 }
+input_config = _config;
 keyboard_bindings = _config.bindings.keyboard;
+live_input = BladeStage1PauseInputNeutral();
+pause_menu = BladeStage1PauseCreate();
+pause_action = BladeStage1PauseAction.None;
+pause_ui = undefined;
 selected_run = undefined;
 selected_ship_id = "";
 player_instance = noone;
@@ -59,5 +64,6 @@ if (room == r_stage1_first_beat) {
         _player_object
     );
     stage_audio = BladeStage1AudioCreate(_config.audio);
+    pause_ui = BladeFrontendUiCreate();
     BladeStage1RouteInitialize(id);
 }
