@@ -159,3 +159,5 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
         + "\n" + _response_prompt);
     draw_set_halign(fa_left);
 }
+
+BladeStage1PauseDraw(pause_menu, input_config, pause_ui);

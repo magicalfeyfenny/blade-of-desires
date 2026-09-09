@@ -389,16 +389,18 @@ function BladeSurvivalCommitDeath(_economy) {
 
 /// Reports whether ordinary gameplay objects may advance this frame.
 function BladeSurvivalGameplayAdvances(_controller) {
-    return (_controller.state == BladeFirstBeatState.Playing
+    return BladeStage1PauseGameplayAllowed(_controller)
+        && (_controller.state == BladeFirstBeatState.Playing
             || _controller.state == BladeFirstBeatState.Rewarding)
         && _controller.player_phase == BladeSurvivalPlayerPhase.Active;
 }
 
 /// Lets collectibles fall during response, death, and Game Over, but not after clear.
 function BladeSurvivalItemMotionAdvances(_controller) {
-    return _controller.state == BladeFirstBeatState.Playing
-        || _controller.state == BladeFirstBeatState.Rewarding
-        || _controller.state == BladeFirstBeatState.Failed;
+    return BladeStage1PauseGameplayAllowed(_controller)
+        && (_controller.state == BladeFirstBeatState.Playing
+            || _controller.state == BladeFirstBeatState.Rewarding
+            || _controller.state == BladeFirstBeatState.Failed);
 }
 
 /// Starts the single readable hit-response window when protection is absent.

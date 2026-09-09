@@ -117,15 +117,11 @@ function BladeStage1PlayerStep(_player) {
     var _controller = instance_find(o_blade_first_beat_controller, 0);
     if (_controller == noone || !BladeSurvivalGameplayAdvances(_controller)) return;
 
-    var _bindings = _controller.keyboard_bindings;
-    var _move_x = keyboard_check(
-        variable_struct_get(_bindings, "input.move_right")
-    ) - keyboard_check(variable_struct_get(_bindings, "input.move_left"));
-    var _move_y = keyboard_check(
-        variable_struct_get(_bindings, "input.move_down")
-    ) - keyboard_check(variable_struct_get(_bindings, "input.move_up"));
-    _player.focused = keyboard_check(
-        variable_struct_get(_bindings, "input.focus")
+    var _input = _controller.live_input;
+    var _move_x = bool(_input.move_x > 0) - bool(_input.move_x < 0);
+    var _move_y = bool(_input.move_y > 0) - bool(_input.move_y < 0);
+    _player.focused = BladeLiveInputActionHeld(
+        _input, BladeInputAction.Focus
     );
     var _movement = BladeFirstBeatMovePlayer(
         _controller.gameplay_plane,
@@ -140,8 +136,8 @@ function BladeStage1PlayerStep(_player) {
     _player.y = _movement.y;
 
     if (_controller.state == BladeFirstBeatState.Playing) {
-        var _fire_held = keyboard_check(
-            variable_struct_get(_bindings, "input.fire")
+        var _fire_held = BladeLiveInputActionHeld(
+            _input, BladeInputAction.Fire
         );
         var _cadence = BladeFirstBeatFireCadence(
             _player.fire_cooldown,
