@@ -12,7 +12,7 @@ The source corpora were treated as read-only. The reports are characterization a
 ## Start here
 
 - [Corpus map and method](corpus-map-and-method.md) — scope, confidence labels, inventory, lineage map, and generated-output boundaries.
-- [Cross-corpus system blueprint](system-blueprint.md) — the recommended combination of the strongest ideas into a coherent Blade architecture.
+- [Cross-corpus system blueprint](system-blueprint.md) — historical adaptation and planning evidence, not a current architecture or standalone requirements source. Use the [canonical product contract](../../content/product_contract.json), [product contract guide](../product-contract.md), [repository governance](../../GOVERNANCE.md#authority), and active issue acceptance contracts for current decisions.
 - [Extraction matrix](extraction-matrix.md) — ranked candidates, preferred source, required repairs, dependencies, ownership concerns, and proposed characterization tests.
 
 ## GameMaker families
