@@ -76,6 +76,7 @@ class GovernanceRoutingTests(unittest.TestCase):
             ROOT / "docs/SETUP.md",
             ROOT / "docs/ADOPTION.md",
             ROOT / "docs/CI.md",
+            ROOT / "docs/archaeology/README.md",
             ROOT / ".agents/skills/asset-production/SKILL.md",
             ROOT / ".agents/skills/gamemaker-production/SKILL.md",
             ROOT / ".agents/skills/governed-change/SKILL.md",
@@ -310,6 +311,54 @@ class GovernanceRoutingTests(unittest.TestCase):
         ):
             with self.subTest(marker=marker):
                 self.assertIn(marker, release)
+
+    def test_archaeology_entrypoint_qualifies_blueprint_as_historical(self):
+        """Keep the routed archive from presenting planning as current authority."""
+        index = (ROOT / "docs/archaeology/README.md").read_text(
+            encoding="utf-8"
+        )
+        blueprint_entry = next(
+            line
+            for line in index.splitlines()
+            if "(system-blueprint.md)" in line
+        )
+        entry = blueprint_entry.casefold()
+
+        for marker in ("historical", "adaptation", "planning"):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, entry)
+
+    def test_archaeology_blueprint_status_routes_to_current_authority(self):
+        """Keep the blueprint status note linked to present decision surfaces."""
+        blueprint = (ROOT / "docs/archaeology/system-blueprint.md").read_text(
+            encoding="utf-8"
+        )
+        status = blueprint.split("## Goal", 1)[0].casefold()
+
+        for marker in (
+            "historical",
+            "adaptation",
+            "planning",
+            "current product decisions",
+            "implemented runtime contracts",
+            "active issue acceptance contracts",
+            "repository governance",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, status)
+
+        linked_paths = {
+            target for target, _ in local_destinations(
+                ROOT / "docs/archaeology/system-blueprint.md"
+            )
+        }
+        for authority in (
+            ROOT / "content/product_contract.json",
+            ROOT / "docs/product-contract.md",
+            ROOT / "GOVERNANCE.md",
+        ):
+            with self.subTest(authority=authority):
+                self.assertIn(authority.resolve(), linked_paths)
 
 
 if __name__ == "__main__":
