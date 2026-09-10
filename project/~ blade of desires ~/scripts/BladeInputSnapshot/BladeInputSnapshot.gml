@@ -1,6 +1,7 @@
 /// @description Semantic input sampling and immutable per-tick snapshot values.
 
 enum BladeInputAction {
+    None = 0,
 	Fire = 1,
 	Bomb = 2,
 	Focus = 4,
