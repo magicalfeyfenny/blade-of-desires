@@ -1,5 +1,16 @@
 # Cross-Corpus System Blueprint
 
+> **Status — historical adaptation and planning evidence.** This document
+> preserves archaeology-derived proposals and design rationale; it is not a
+> current implementation specification. Current product decisions and
+> implemented runtime contracts, active issue acceptance contracts, and
+> repository governance take precedence over superseded prescriptions or
+> resolved issue references recorded here. Use the [canonical product
+> contract](../../content/product_contract.json), [product contract guide](../product-contract.md),
+> [repository governance](../../GOVERNANCE.md#authority), and the [active issue
+> tracker](https://github.com/magicalfeyfenny/blade-of-desires/issues) for
+> current decisions.
+
 ## Goal
 
 Build Blade of Desires as a deterministic vertical shmup with 2D gameplay over 3D stage presentation, data-driven stages/bosses/dialogue, a single coherent run economy, explicit system ownership, versioned persistence, and tests at the behavior and scene level.
