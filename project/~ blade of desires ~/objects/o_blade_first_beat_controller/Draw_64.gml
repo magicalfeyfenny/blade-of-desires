@@ -79,7 +79,13 @@ if (state == BladeFirstBeatState.Won) {
     draw_text(469, 188, "RUN COMPLETE");
 } else if (state == BladeFirstBeatState.Failed) {
     draw_set_color(make_color_rgb(255, 156, 126));
-    draw_text(469, 188, "ATTEMPT ENDED");
+    draw_text(
+        469,
+        188,
+        terminal_flow.phase == BladeStage1TerminalPhase.GameOver
+            ? "GAME OVER"
+            : "CONTINUE?"
+    );
 } else if (economy.bomb_ticks > 0) {
     draw_set_color(make_color_rgb(255, 224, 116));
     draw_text(469, 188, "PROTECTED\nBOMB " + string(economy.bomb_ticks));
@@ -130,14 +136,7 @@ if (state != BladeFirstBeatState.Playing) {
         );
         draw_set_halign(fa_left);
     } else if (state == BladeFirstBeatState.Failed) {
-        draw_set_alpha(0.82);
-        draw_set_color(c_black);
-        draw_rectangle(214, 134, 426, 226, false);
-        draw_set_alpha(1);
-        draw_set_halign(fa_center);
-        draw_set_color(c_white);
-        draw_text(320, 154, "GAME OVER\n\nR retry   Esc exit");
-        draw_set_halign(fa_left);
+        BladeStage1TerminalDraw(terminal_flow, input_config, pause_ui);
     }
 }
 
