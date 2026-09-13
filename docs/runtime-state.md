@@ -81,6 +81,13 @@ Run mode and lifecycle are separate:
 run. It does not write career or score data. Invalid lifecycle transitions and
 attempts to advance a terminal run fail closed.
 
+The playable Stage 1 controller keeps terminal-death decisions separate from
+the pause menu: the last committed death opens a semantic `Continue? Yes / No`
+flow, Yes rebuilds the current room as a fresh attempt with the confirmed ship
+and difficulty, and No closes the attempt before showing a fixed Game Over
+window and returning to the main menu. Neither decision uses enemy defeat
+cleanup or awards another outcome, and neither can be submitted twice.
+
 Reset first builds and validates an entirely fresh attempt. Only after that
 succeeds does it close the old combat and pause boundaries and swap the kernel,
 combat runtime, pause registry, and state together. Reset is valid from active
