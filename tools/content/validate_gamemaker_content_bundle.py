@@ -307,12 +307,9 @@ def _validate_included_files(
             continue
         raw_name = entry.get("name")
         raw_path = entry.get("filePath")
-        content_intent = (
-            isinstance(raw_name, str) and raw_name.lower().endswith(".json")
-        ) or (
-            isinstance(raw_path, str)
-            and (raw_path == "datafiles/content" or raw_path.startswith("datafiles/content/"))
-        )
+        # Non-JSON IncludedFiles entries, such as .gitkeep, are project
+        # sentinels rather than canonical content documents.
+        content_intent = isinstance(raw_name, str) and raw_name.lower().endswith(".json")
         if not content_intent:
             continue
         name = _included_name(raw_name, yyp_path, f"{entry_field}.name", errors)
