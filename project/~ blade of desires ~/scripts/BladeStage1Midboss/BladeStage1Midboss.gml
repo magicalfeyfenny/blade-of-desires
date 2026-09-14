@@ -38,6 +38,16 @@ function BladeStage1MidbossRoleName(_role) {
     throw("BladeStage1Midboss: unknown fae role " + string(_role));
 }
 
+/// Returns the stable machine identity used when a fae is puppeted.
+function BladeStage1MidbossRoleId(_role) {
+    switch (_role) {
+        case BladeStage1FaeRole.Ciela: return "actor.stage1.fae.ciela";
+        case BladeStage1FaeRole.Maynii: return "actor.stage1.fae.maynii";
+        case BladeStage1FaeRole.Kolar: return "actor.stage1.fae.kolar";
+    }
+    throw("BladeStage1Midboss: unknown fae role ID " + string(_role));
+}
+
 // Returns one fae's feedback color without coupling it to decorative sprites.
 function BladeStage1MidbossRoleColor(_role) {
     switch (_role) {
@@ -107,6 +117,7 @@ function BladeStage1MidbossRegister(
     var _difficulty_id = BladeSurvivalEconomyDifficulty(_controller.economy);
     var _rank = BladeSurvivalEconomyRank(_controller.economy);
     _member.fae_role = _role;
+    _member.cutscene_actor_id = BladeStage1MidbossRoleId(_role);
     _member.standard_pattern_id = _standard_pattern_id;
     _member.auto_cancel_bullets_on_defeat = true;
     _member.target_kind = BladeFirstBeatTargetKind.Stage1FaeMidboss;
@@ -125,6 +136,9 @@ function BladeStage1MidbossRegister(
     _member.motion_phase = _role == BladeStage1FaeRole.Maynii
         ? 0
         : (_role == BladeStage1FaeRole.Ciela ? 120 : 180);
+    BladeStage1CutsceneRegisterActor(
+        _controller, _member, _member.cutscene_actor_id
+    );
     array_push(_controller.midboss_state.members, _member);
     return _member;
 }
@@ -549,7 +563,10 @@ function BladeStage1MidbossMayniiRiverRoots(
 /// Advances one fae only while its full hurtbox is inside the canonical plane.
 function BladeStage1MidbossStep(_member) {
     var _controller = instance_find(o_blade_first_beat_controller, 0);
-    if (_controller == noone || !BladeSurvivalGameplayAdvances(_controller)) return;
+    if (_controller == noone
+        || (variable_instance_exists(_member, "cutscene_controlled")
+            && _member.cutscene_controlled)
+        || !BladeSurvivalGameplayAdvances(_controller)) return;
     if (_member.hit_flash > 0) _member.hit_flash -= 1;
 
     if (!_member.entry_complete) {
