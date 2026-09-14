@@ -51,6 +51,15 @@ class TemporaryContentBundleTests(unittest.TestCase):
             "resourceType": "GMIncludedFile",
             "resourceVersion": "2.0",
         }
+        self.sentinel_entry = {
+            "$GMIncludedFile": "",
+            "%Name": ".gitkeep",
+            "CopyToMask": -1,
+            "filePath": "datafiles/content",
+            "name": ".gitkeep",
+            "resourceType": "GMIncludedFile",
+            "resourceVersion": "2.0",
+        }
         self.write_yyp([self.product_entry, self.valid_entry])
 
     def tearDown(self):
@@ -79,6 +88,11 @@ class TemporaryContentBundleTests(unittest.TestCase):
 
     def test_valid_bundle_and_trailing_comma_yyp_are_accepted(self):
         """The canonical link and one exact stage entry validate silently."""
+        self.assertEqual(self.errors(), [])
+
+    def test_non_json_content_sentinel_is_ignored(self):
+        """A content-directory sentinel is not a canonical JSON document."""
+        self.write_yyp([self.sentinel_entry, self.product_entry, self.valid_entry])
         self.assertEqual(self.errors(), [])
 
     def test_missing_content_link_is_rejected(self):
