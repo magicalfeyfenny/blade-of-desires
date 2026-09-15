@@ -158,6 +158,9 @@ function BladeStage1BossRegister(_controller, _boss) {
     _boss.phase_ticks = 0;
     _boss.entry_ticks = BLADE_STAGE1_ASAHI_ENTRY_TICKS;
     _boss.targetable = false;
+    BladeStage1CutsceneRegisterActor(
+        _controller, _boss, _boss.cutscene_actor_id
+    );
     return true;
 }
 
@@ -379,7 +382,10 @@ function BladeStage1BossApplyDamage(_controller, _boss, _damage) {
 /// Advances Asahi's motion, timeout, recharge, and authored fire patterns.
 function BladeStage1BossStep(_boss) {
     var _controller = instance_find(o_blade_first_beat_controller, 0);
-    if (_controller == noone || !BladeSurvivalGameplayAdvances(_controller)) return;
+    if (_controller == noone
+        || (variable_instance_exists(_boss, "cutscene_controlled")
+            && _boss.cutscene_controlled)
+        || !BladeSurvivalGameplayAdvances(_controller)) return;
     if (_boss.hit_flash > 0) _boss.hit_flash -= 1;
     if (_boss.attack_tell_ticks > 0) _boss.attack_tell_ticks -= 1;
 

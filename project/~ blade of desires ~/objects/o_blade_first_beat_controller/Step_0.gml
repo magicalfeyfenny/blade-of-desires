@@ -18,6 +18,12 @@ if (pause_action == BladeStage1PauseAction.QuitToMain) {
 // Keep the action gate through this entire frame so Resume cannot advance one tick early.
 if (pause_action == BladeStage1PauseAction.Resume || pause_menu.open) exit;
 
+// Cutscene progression owns the fixed Stage tick while dialogue or puppeting is active.
+if (BladeStage1CutsceneIsActive(id)) {
+    BladeStage1CutsceneAdvance(id, live_input);
+    exit;
+}
+
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     && keyboard_check_pressed(vk_escape)) {
     game_end();
@@ -210,6 +216,7 @@ if (stage_route_enabled
     && state == BladeFirstBeatState.Playing
     && BladeSurvivalGameplayAdvances(id)) {
     BladeStage1RouteAdvance(id);
+    if (BladeStage1CutsceneIsActive(id)) exit;
 }
 
 if (boss_instance != noone && !instance_exists(boss_instance)) {

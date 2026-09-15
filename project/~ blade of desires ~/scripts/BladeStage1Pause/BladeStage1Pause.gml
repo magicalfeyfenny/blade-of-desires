@@ -146,8 +146,9 @@ function BladeStage1PauseAdvance(_menu, _input, _can_open) {
 
 /// Returns whether an active, nonterminal Stage 1 attempt may open its menu.
 function BladeStage1PauseCanOpen(_controller) {
-    return _controller.state == BladeFirstBeatState.Playing
-        || _controller.state == BladeFirstBeatState.Rewarding;
+    return !BladeStage1CutsceneIsActive(_controller)
+        && (_controller.state == BladeFirstBeatState.Playing
+        || _controller.state == BladeFirstBeatState.Rewarding);
 }
 
 /// Reads one controller field without assuming whether the caller is an instance or struct.
@@ -163,6 +164,7 @@ function _BladeStage1PauseControllerField(_controller, _name) {
 /// Blocks gameplay while the menu or a one-frame menu action owns the controller.
 function BladeStage1PauseGameplayAllowed(_controller) {
     if (_controller == noone) return false;
+    if (BladeStage1CutsceneIsActive(_controller)) return false;
 
     var _menu = _BladeStage1PauseControllerField(
         _controller, "pause_menu"
