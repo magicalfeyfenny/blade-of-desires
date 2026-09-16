@@ -633,6 +633,11 @@ function BladeFirstBeatSurvivalTestsRun(_state) {
             _controller.player_phase, BladeSurvivalPlayerPhase.Respawning,
             "terminal player cannot accept emergency input"
         );
+        BladeKernelTestAssertEqual(
+            _controller.terminal_flow.phase,
+            BladeStage1TerminalPhase.ContinuePrompt,
+            "final death opens Continue prompt"
+        );
         BladeKernelTestAssertEqual(_controller.economy.bombs, 3, "final death resets bombs");
         BladeKernelTestAssertEqual(_controller.economy.hyper_meter, 0, "final death resets Hyper");
         with (_player) instance_destroy();

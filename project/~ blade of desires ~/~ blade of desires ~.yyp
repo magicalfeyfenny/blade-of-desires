@@ -180,6 +180,8 @@
     {"id":{"name":"BladeStage1Midboss","path":"scripts/BladeStage1Midboss/BladeStage1Midboss.yy",},},
     {"id":{"name":"BladeStage1Pause","path":"scripts/BladeStage1Pause/BladeStage1Pause.yy",},},
     {"id":{"name":"BladeStage1PauseTests","path":"scripts/BladeStage1PauseTests/BladeStage1PauseTests.yy",},},
+    {"id":{"name":"BladeStage1Terminal","path":"scripts/BladeStage1Terminal/BladeStage1Terminal.yy",},},
+    {"id":{"name":"BladeStage1TerminalTests","path":"scripts/BladeStage1TerminalTests/BladeStage1TerminalTests.yy",},},
     {"id":{"name":"BladeStage1Player","path":"scripts/BladeStage1Player/BladeStage1Player.yy",},},
     {"id":{"name":"BladeStage1Route","path":"scripts/BladeStage1Route/BladeStage1Route.yy",},},
     {"id":{"name":"BladeStage1RouteTests","path":"scripts/BladeStage1RouteTests/BladeStage1RouteTests.yy",},},
