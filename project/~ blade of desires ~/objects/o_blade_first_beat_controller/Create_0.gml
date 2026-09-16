@@ -10,6 +10,7 @@ input_config = _config;
 keyboard_bindings = _config.bindings.keyboard;
 live_input = BladeStage1PauseInputNeutral();
 pause_menu = BladeStage1PauseCreate();
+terminal_flow = BladeStage1TerminalCreate();
 pause_action = BladeStage1PauseAction.None;
 pause_ui = undefined;
 selected_run = undefined;

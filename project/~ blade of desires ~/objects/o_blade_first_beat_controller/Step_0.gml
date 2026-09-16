@@ -1,3 +1,30 @@
+if (BladeStage1TerminalIsActive(terminal_flow)) {
+    var _terminal_result = BladeStage1TerminalAdvance(
+        terminal_flow, live_input
+    );
+    if (_terminal_result.action == BladeStage1TerminalAction.ContinueRun) {
+        // Native room_restart rebuilds the room and preserves the confirmed run selection.
+        BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
+        state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
+        BladeFirstBeatCleanupTransientInstances();
+        room_restart();
+        exit;
+    }
+    if (_terminal_result.action == BladeStage1TerminalAction.BeginGameOver) {
+        // Game Over is terminal before its presentation window returns to the front end.
+        BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunAborted);
+        BladeFirstBeatCleanupTransientInstances();
+        exit;
+    }
+    if (_terminal_result.action == BladeStage1TerminalAction.ReturnToMain) {
+        BladeFirstBeatCleanupTransientInstances();
+        global.blade_selected_run = undefined;
+        room_goto(r_blade_start);
+        exit;
+    }
+    exit;
+}
+
 if (pause_action == BladeStage1PauseAction.Retry) {
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
@@ -18,14 +45,12 @@ if (pause_action == BladeStage1PauseAction.QuitToMain) {
 // Keep the action gate through this entire frame so Resume cannot advance one tick early.
 if (pause_action == BladeStage1PauseAction.Resume || pause_menu.open) exit;
 
-if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
-    && keyboard_check_pressed(vk_escape)) {
+if (state == BladeFirstBeatState.Won && keyboard_check_pressed(vk_escape)) {
     game_end();
     exit;
 }
 
-if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
-    && keyboard_check_pressed(ord("R"))) {
+if (state == BladeFirstBeatState.Won && keyboard_check_pressed(ord("R"))) {
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
     BladeFirstBeatCleanupTransientInstances();
@@ -138,6 +163,7 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
                 player_phase = BladeSurvivalPlayerPhase.Respawning;
                 respawn_ticks = 0;
                 invulnerable_ticks = 0;
+                BladeStage1TerminalOpen(terminal_flow);
                 feedback_text = "NO LIVES REMAIN";
                 feedback_ticks = 120;
             } else {
