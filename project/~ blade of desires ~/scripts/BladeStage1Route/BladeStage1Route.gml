@@ -315,7 +315,7 @@ function BladeStage1RouteApplyCue(_controller, _cue_id) {
     }
 }
 
-/// Advances Stage 1 once, delivers new cues once, and ends at Stage Clear.
+/// Advances Stage 1 once, delivers new cues once, and commits its run boundary.
 function BladeStage1RouteAdvance(_controller) {
     if (!_controller.stage_route_enabled) return undefined;
     if (BladeStage1CutsceneIsActive(_controller)) return undefined;
@@ -336,6 +336,11 @@ function BladeStage1RouteAdvance(_controller) {
     }
     if (_controller.stage_executor.lifecycle == BladeStageLifecycle.Completed
         && _controller.state == BladeFirstBeatState.Playing) {
+        if (!BladeStage1RunResultComplete(
+            _controller.stage_run_result, _controller
+        )) {
+            throw("BladeStage1Route: completed schedule rejected run completion");
+        }
         _controller.state = BladeFirstBeatState.Won;
         _controller.route_label = "STAGE 1 CLEAR";
         with (o_blade_first_beat_enemy_bullet) instance_destroy();
@@ -366,5 +371,16 @@ function BladeStage1RouteAbort(_controller, _reason) {
             domain_mask: BladeClockDomain.None,
         }
     );
+    if (_reason == BladeCombatTerminalReason.RunReset) {
+        BladeStage1RunResultRecordRetry(
+            _controller.stage_run_result, _controller
+        );
+    } else if (_reason == BladeCombatTerminalReason.RoomExit
+        || _reason == BladeCombatTerminalReason.RunAborted) {
+        BladeStage1RunResultRecordAbort(
+            _controller.stage_run_result, _controller, int64(-1),
+            BladeCombatTerminalReasonToken(_reason)
+        );
+    }
     return true;
 }

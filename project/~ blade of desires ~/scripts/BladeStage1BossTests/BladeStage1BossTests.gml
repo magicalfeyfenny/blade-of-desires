@@ -313,6 +313,12 @@ function BladeStage1BossTestsRun(_state) {
             var _controller = instance_create_layer(
                 0, 0, "Instances", o_blade_first_beat_controller
             );
+            var _catalog = BladeShipSelectionLoad();
+            _controller.selected_run = BladeShipSelectionCreateRun(
+                _catalog, "ship.ciela"
+            );
+            _controller.selected_ship_id = "ship.ciela";
+            BladeStage1RouteInitialize(_controller);
             var _boss = _BladeStage1BossTestsCreate(
                 _controller, "stage1-asahi-defeat-test"
             );
@@ -387,6 +393,16 @@ function BladeStage1BossTestsRun(_state) {
             BladeKernelTestAssertFalse(
                 instance_exists(_boss),
                 "Stage Clear removes the terminal boss body"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.clear_result.outcome,
+                BladeStage1RunResultEvent.StageClear,
+                "Stage Clear retains a detached terminal result"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.clear_result.economy.score,
+                _controller.economy.score,
+                "the result captures the final scored economy"
             );
         }
     );

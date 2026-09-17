@@ -324,6 +324,9 @@ function BladeStage1BossResolvePhase(_controller, _boss, _resolution) {
     _boss.terminal_ticks = 150;
     _controller.boss_resolution = _resolution;
     if (_resolution == BladeStage1BossResolution.Defeat) {
+        BladeStage1RunResultRecordBossDefeat(
+            _controller.stage_run_result, _controller
+        );
         BladeSurvivalApplyDirectScore(_controller.economy, 50000);
         _controller.feedback_text = "ASAHI DEFEATED\nDAWN BREAKS";
         BladeStage1AudioPlayForController(
@@ -591,6 +594,11 @@ function BladeStage1BossFinalizeStageClear(_controller) {
         bombs: _bomb_bonus,
         total: _total,
     };
+    if (!BladeStage1RunResultCaptureClear(
+        _controller.stage_run_result, _controller
+    )) {
+        throw("BladeStage1Boss: Stage Clear result boundary rejected");
+    }
     with (o_blade_first_beat_enemy_bullet) instance_destroy();
     with (o_blade_player_shot) instance_destroy();
     with (o_blade_reward_item) instance_destroy();
@@ -599,5 +607,11 @@ function BladeStage1BossFinalizeStageClear(_controller) {
     _controller.boss_warning_active = false;
     _controller.feedback_text = "STAGE CLEAR\nBONUS " + string(_total);
     _controller.feedback_ticks = 240;
+    BladeStage1RunResultRecordCleanup(
+        _controller.stage_run_result,
+        _controller,
+        int64(-1),
+        "cleanup.stage_clear"
+    );
     return _controller.stage_clear_breakdown;
 }

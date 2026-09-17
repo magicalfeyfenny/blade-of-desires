@@ -185,6 +185,8 @@
     {"id":{"name":"BladeStage1Player","path":"scripts/BladeStage1Player/BladeStage1Player.yy",},},
     {"id":{"name":"BladeStage1Route","path":"scripts/BladeStage1Route/BladeStage1Route.yy",},},
     {"id":{"name":"BladeStage1RouteTests","path":"scripts/BladeStage1RouteTests/BladeStage1RouteTests.yy",},},
+    {"id":{"name":"BladeStage1RunResult","path":"scripts/BladeStage1RunResult/BladeStage1RunResult.yy",},},
+    {"id":{"name":"BladeStage1RunResultTests","path":"scripts/BladeStage1RunResultTests/BladeStage1RunResultTests.yy",},},
     {"id":{"name":"BladeStage1SelectedRouteTests","path":"scripts/BladeStage1SelectedRouteTests/BladeStage1SelectedRouteTests.yy",},},
     {"id":{"name":"BladeStageCatalogNormalization","path":"scripts/BladeStageCatalogNormalization/BladeStageCatalogNormalization.yy",},},
     {"id":{"name":"BladeStageContent","path":"scripts/BladeStageContent/BladeStageContent.yy",},},
