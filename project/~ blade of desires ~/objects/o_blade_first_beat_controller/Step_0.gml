@@ -4,19 +4,30 @@ if (BladeStage1TerminalIsActive(terminal_flow)) {
     );
     if (_terminal_result.action == BladeStage1TerminalAction.ContinueRun) {
         // Native room_restart rebuilds the room and preserves the confirmed run selection.
+        BladeStage1RunResultRecordContinue(stage_run_result, id);
         BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
         state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
+        BladeStage1RunResultRecordCleanup(
+            stage_run_result, id, int64(-1), "cleanup.terminal_continue"
+        );
         BladeFirstBeatCleanupTransientInstances();
         room_restart();
         exit;
     }
     if (_terminal_result.action == BladeStage1TerminalAction.BeginGameOver) {
         // Game Over is terminal before its presentation window returns to the front end.
+        BladeStage1RunResultRecordGameOver(stage_run_result, id);
         BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunAborted);
+        BladeStage1RunResultRecordCleanup(
+            stage_run_result, id, int64(-1), "cleanup.terminal_game_over"
+        );
         BladeFirstBeatCleanupTransientInstances();
         exit;
     }
     if (_terminal_result.action == BladeStage1TerminalAction.ReturnToMain) {
+        BladeStage1RunResultRecordCleanup(
+            stage_run_result, id, int64(-1), "cleanup.terminal_return_to_main"
+        );
         BladeFirstBeatCleanupTransientInstances();
         global.blade_selected_run = undefined;
         room_goto(r_blade_start);
@@ -28,6 +39,9 @@ if (BladeStage1TerminalIsActive(terminal_flow)) {
 if (pause_action == BladeStage1PauseAction.Retry) {
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
+    BladeStage1RunResultRecordCleanup(
+        stage_run_result, id, int64(-1), "cleanup.pause_retry"
+    );
     BladeFirstBeatCleanupTransientInstances();
     room_restart();
     exit;
@@ -36,6 +50,9 @@ if (pause_action == BladeStage1PauseAction.Retry) {
 if (pause_action == BladeStage1PauseAction.QuitToMain) {
     // Administrative room exit deliberately never enters the defeat path.
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RoomExit);
+    BladeStage1RunResultRecordCleanup(
+        stage_run_result, id, int64(-1), "cleanup.pause_quit_to_main"
+    );
     BladeFirstBeatCleanupTransientInstances();
     global.blade_selected_run = undefined;
     room_goto(r_blade_start);
@@ -53,6 +70,9 @@ if (BladeStage1CutsceneIsActive(id)) {
 
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     && keyboard_check_pressed(vk_escape)) {
+    BladeStage1RunResultRecordCleanup(
+        stage_run_result, id, int64(-1), "cleanup.terminal_escape"
+    );
     game_end();
     exit;
 }
@@ -60,6 +80,9 @@ if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
 if (state == BladeFirstBeatState.Won && keyboard_check_pressed(ord("R"))) {
     BladeStage1RouteAbort(id, BladeCombatTerminalReason.RunReset);
     state = BladeFirstBeatTransition(state, BladeFirstBeatEvent.Retry);
+    BladeStage1RunResultRecordCleanup(
+        stage_run_result, id, int64(-1), "cleanup.terminal_retry"
+    );
     BladeFirstBeatCleanupTransientInstances();
     room_restart();
     exit;
@@ -171,6 +194,7 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
                 respawn_ticks = 0;
                 invulnerable_ticks = 0;
                 BladeStage1TerminalOpen(terminal_flow);
+                BladeStage1RunResultOfferContinue(stage_run_result);
                 feedback_text = "NO LIVES REMAIN";
                 feedback_ticks = 120;
             } else {

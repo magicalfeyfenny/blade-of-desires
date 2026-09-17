@@ -88,6 +88,32 @@ and difficulty, and No closes the attempt before showing a fixed Game Over
 window and returning to the main menu. Neither decision uses enemy defeat
 cleanup or awards another outcome, and neither can be submitted twice.
 
+Stage 1 also owns a version-1 `stage_run_result` boundary separate from the
+legacy presentation `Playing / Rewarding / Won / Failed` state:
+
+| Result phase | Authoritative meaning |
+| --- | --- |
+| `Active` | The attempt may still produce gameplay, defeat, retry, abort, or Game Over events |
+| `StageClearCaptured` | The Stage Clear cue has captured one detached result before transient cleanup |
+| `RunCompleted` | The schedule's explicit complete node has committed the completed run |
+
+The clear payload copies the selected route and difficulty, session header and
+seed, stage plan identity, run-local identity counters and gameplay hashes,
+score, lives, bombs, Hyper state, rank event history, boss resolution, clear
+bonus breakdown, and the stage tick at capture. Its transition record uses the
+stable alpha destination `destination.stage1.results` and an explicitly
+undeclared `next_stage_id`; no room order or presentation label can advance the
+run. The Stage executor reaches its explicit `Completed` node while delivering
+the clear cue; only after that cue is consumed may the result boundary create
+the separate `RunCompleted` record. Duplicate clear and completion signals are
+rejected.
+
+The clear boundary applies its authored bonus, captures the detached payload,
+then performs non-rewarding actor, projectile, shot, and item cleanup. Retry,
+abort, Continue, and Game Over are recorded in the same attempt ledger as
+administrative outcomes; cleanup never promotes an encounter or grants a
+second result. The payload is runtime state only and is not yet persisted.
+
 Reset first builds and validates an entirely fresh attempt. Only after that
 succeeds does it close the old combat and pause boundaries and swap the kernel,
 combat runtime, pause registry, and state together. Reset is valid from active

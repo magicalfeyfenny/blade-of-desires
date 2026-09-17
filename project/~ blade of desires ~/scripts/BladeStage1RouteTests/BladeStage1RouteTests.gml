@@ -171,6 +171,7 @@ function BladeStage1RouteTestsRun(_state) {
             var _controller = instance_create_layer(
                 0, 0, "Instances", o_blade_first_beat_controller
             );
+            _BladeStage1RouteTestsSelect(_controller, "ship.ciela");
             _controller.stage_audio = {
                 buffers: [],
                 sounds: [],
@@ -538,6 +539,79 @@ function BladeStage1RouteTestsRun(_state) {
             BladeKernelTestAssertTrue(
                 _controller.stage_clear_awarded,
                 "the clear cue awards its stable bonus exactly once"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.phase,
+                BladeStage1RunResultPhase.RunCompleted,
+                "the explicit schedule completion commits the run boundary"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.clear_result.outcome,
+                BladeStage1RunResultEvent.StageClear,
+                "the detached clear result remains distinct from completion"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.run_completion.outcome,
+                BladeStage1RunResultEvent.RunComplete,
+                "the completed run records its own terminal outcome"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.run_completion.destination_id,
+                BLADE_STAGE1_RUN_RESULT_DESTINATION_ID,
+                "completed Stage 1 uses the stable post-clear destination"
+            );
+            var _clear_result = _controller.stage_run_result.clear_result;
+            BladeKernelTestAssertEqual(
+                _clear_result.selection.ship_id,
+                _controller.selected_run.ship_id,
+                "clear payload retains the selected ship identity"
+            );
+            BladeKernelTestAssertEqual(
+                _clear_result.selection.route_id,
+                _controller.selected_run.route_id,
+                "clear payload retains the selected route identity"
+            );
+            BladeKernelTestAssertEqual(
+                _clear_result.run_identity.run_seed,
+                BLADE_STAGE1_ROUTE_SEED,
+                "clear payload retains the deterministic Stage seed"
+            );
+            BladeKernelTestAssertEqual(
+                _clear_result.run_identity.stage_plan_fingerprint,
+                BladeStageExecutorSnapshot(
+                    _controller.stage_executor
+                ).plan_fingerprint,
+                "clear payload retains the normalized stage plan identity"
+            );
+            BladeKernelTestAssertEqual(
+                _clear_result.economy.score,
+                _controller.economy.score,
+                "clear payload retains the final scored economy"
+            );
+            BladeKernelTestAssertEqual(
+                _clear_result.stage_boundary.lifecycle,
+                BladeStageLifecycle.Completed,
+                "clear capture records the reached schedule boundary"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.event_history[0].event,
+                BladeStage1RunResultEvent.BossDefeat,
+                "boss defeat precedes the later Stage Clear boundary"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.event_history[1].event,
+                BladeStage1RunResultEvent.StageClear,
+                "Stage Clear is recorded exactly after boss resolution"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.event_history[2].event,
+                BladeStage1RunResultEvent.Cleanup,
+                "non-rewarding cleanup follows clear capture"
+            );
+            BladeKernelTestAssertEqual(
+                _controller.stage_run_result.event_history[3].event,
+                BladeStage1RunResultEvent.RunComplete,
+                "schedule completion follows cleanup without a second reward"
             );
         }
     );
