@@ -142,6 +142,14 @@ function BladeStage1RouteSpawnAsahi(_controller, _spawn, _x, _target_y) {
     _boss.anchor_x = _x;
     _boss.anchor_y = _target_y;
     BladeStage1BossRegister(_controller, _boss);
+    if (variable_instance_exists(_controller, "cutscene_enabled")
+        && _controller.cutscene_enabled) {
+        BladeStage1CutsceneStart(
+            _controller,
+            BladeStage1CutsceneAsahiIntro(),
+            "sequence.stage1.asahi_intro"
+        );
+    }
     return _boss;
 }
 
@@ -310,6 +318,7 @@ function BladeStage1RouteApplyCue(_controller, _cue_id) {
 /// Advances Stage 1 once, delivers new cues once, and ends at Stage Clear.
 function BladeStage1RouteAdvance(_controller) {
     if (!_controller.stage_route_enabled) return undefined;
+    if (BladeStage1CutsceneIsActive(_controller)) return undefined;
     var _context = { controller: _controller };
     var _result = BladeKernelStepDirect(
         _controller.stage_kernel,

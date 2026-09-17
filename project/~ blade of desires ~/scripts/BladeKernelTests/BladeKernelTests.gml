@@ -12,6 +12,7 @@ function BladeKernelTestsRun() {
     BladeFrontendStateTestsRun(_state);
     BladeFrontendUiTestsRun(_state);
     BladeStage1PauseTestsRun(_state);
+    BladeStage1CutsceneTestsRun(_state);
     BladeStage1TerminalTestsRun(_state);
     BladeShipSelectionTestsRun(_state);
     BladeDifficultyRankTestsRun(_state);

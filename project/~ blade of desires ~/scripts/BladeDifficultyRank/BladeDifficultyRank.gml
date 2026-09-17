@@ -617,6 +617,7 @@ function BladeDifficultyRankAdvanceActive(_state, _tick) {
 /// Grants rank-active ticks only while a live Stage 1 target is actually playable.
 function BladeDifficultyRankGameplayEligible(_controller) {
     if (!instance_exists(_controller)
+        || BladeStage1CutsceneIsActive(_controller)
         || _controller.state != BladeFirstBeatState.Playing
         || _controller.player_phase != BladeSurvivalPlayerPhase.Active
         || _controller.boss_warning_active

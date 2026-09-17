@@ -160,3 +160,4 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
 }
 
 BladeStage1PauseDraw(pause_menu, input_config, pause_ui);
+BladeStage1CutsceneDraw(cutscene, pause_ui, input_config);
