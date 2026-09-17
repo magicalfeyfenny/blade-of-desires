@@ -5,13 +5,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 LOCAL_LINK = re.compile(r"\[[^]]+\]\(([^)]+)\)")
-HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.MULTILINE)
+HEADING = re.compile(r"^(#{1,6})\s+(.+?)\s*#*\s*$", re.MULTILINE)
 VALIDATION_SURFACES = (
     ROOT / "GOVERNANCE.md",
     ROOT / ".agents/skills/gamemaker-production/SKILL.md",
     ROOT / ".agents/skills/governed-change/SKILL.md",
     ROOT / ".agents/skills/project-steward/SKILL.md",
     ROOT / ".github/ISSUE_TEMPLATE/work-item.yml",
+    ROOT / ".github/pull_request_template.md",
     ROOT / "templates/codex/governed-change.txt",
     ROOT / "templates/codex/project-steward.txt",
 )
@@ -53,7 +54,25 @@ def local_destinations(source):
 def heading_anchors(path):
     """Collect the anchors exposed by one Markdown file."""
     text = path.read_text(encoding="utf-8")
-    return {markdown_anchor(heading) for heading in HEADING.findall(text)}
+    return {markdown_anchor(heading) for _, heading in HEADING.findall(text)}
+
+
+def section_descendant_anchors(text, section):
+    """Read a section's nested headings up to its next peer or ancestor."""
+    headings = [
+        (len(level), markdown_anchor(heading))
+        for level, heading in HEADING.findall(text)
+    ]
+    for index, (level, anchor) in enumerate(headings):
+        if anchor != section:
+            continue
+        descendants = set()
+        for child_level, child_anchor in headings[index + 1:]:
+            if child_level <= level:
+                break
+            descendants.add(child_anchor)
+        return descendants
+    raise ValueError(f"Missing Markdown section: {section}")
 
 
 def governance_fragments(source):
@@ -75,6 +94,7 @@ class GovernanceRoutingTests(unittest.TestCase):
             ROOT / "README.md",
             ROOT / "docs/SETUP.md",
             ROOT / "docs/ADOPTION.md",
+            ROOT / "docs/POLICY_UPDATE.md",
             ROOT / "docs/CI.md",
             ROOT / "docs/archaeology/README.md",
             ROOT / ".agents/skills/asset-production/SKILL.md",
@@ -82,6 +102,7 @@ class GovernanceRoutingTests(unittest.TestCase):
             ROOT / ".agents/skills/governed-change/SKILL.md",
             ROOT / ".agents/skills/project-steward/SKILL.md",
             ROOT / ".github/ISSUE_TEMPLATE/work-item.yml",
+            ROOT / ".github/pull_request_template.md",
             ROOT / "templates/codex/governed-change.txt",
         )
 
@@ -137,7 +158,9 @@ class GovernanceRoutingTests(unittest.TestCase):
                 ).resolve(),
                 (ROOT / ".agents/skills/governed-change/SKILL.md").resolve(),
                 (ROOT / ".agents/skills/project-steward/SKILL.md").resolve(),
+                (ROOT / ".agents/skills/asset-production/SKILL.md").resolve(),
                 (ROOT / "docs/SETUP.md").resolve(),
+                (ROOT / "docs/ADOPTION.md").resolve(),
                 (ROOT / "docs/archaeology/README.md").resolve(),
             }.issubset(agent_targets)
         )
@@ -156,10 +179,11 @@ class GovernanceRoutingTests(unittest.TestCase):
         self.assertTrue(
             {
                 "native-gamemaker-functionality",
-                "runtime-asset-representation",
                 "asset-completion-and-authority",
                 "derived-assets",
                 "placeholder-backed-mixed-work",
+                "validation-coverage-allocation",
+                "interactive-runtime-validation",
             }.issubset(assets),
         )
         self.assertTrue(
@@ -171,6 +195,7 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "placeholder-backed-mixed-work",
                 "compatibility-obligations",
                 "scheduled-continuation",
+                "contract-oriented-validation",
                 "validation-coverage-allocation",
                 "interactive-runtime-validation",
                 "validation-evidence",
@@ -178,6 +203,7 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "human-created-changes",
                 "risk",
                 "completion-transition",
+                "issue-contract-evidence",
                 "low-risk-changes",
                 "manual-and-high-risk-changes",
             }.issubset(governed)
@@ -223,6 +249,72 @@ class GovernanceRoutingTests(unittest.TestCase):
                 }
                 self.assertIn(policy, linked_paths)
 
+    def test_section_descendants_stop_at_peers_and_ancestors(self):
+        """Check the boundary helper without depending on repository prose."""
+        text = "\n".join((
+            "# Document", "## First", "### Child", "#### Grandchild",
+            "### Other child", "## Peer", "### Peer child", "# Next root",
+        ))
+        self.assertEqual(
+            section_descendant_anchors(text, "first"),
+            {"child", "grandchild", "other-child"},
+        )
+        self.assertEqual(
+            section_descendant_anchors(text, "other-child"), set(),
+        )
+        self.assertEqual(
+            section_descendant_anchors(text, "peer"), {"peer-child"},
+        )
+
+    def test_common_sections_do_not_contain_specialized_routes(self):
+        """Keep specialist obligations reachable without loading them by default."""
+        governance = ROOT / "GOVERNANCE.md"
+        text = governance.read_text(encoding="utf-8")
+        anchors = heading_anchors(governance)
+        boundaries = {
+            "authority": {"inventory-authority", "policy-updates"},
+            "issue-authority": {
+                "compatibility-obligations", "scheduled-claim-eligibility",
+                "placeholder-backed-mixed-work", "scheduled-continuation",
+            },
+            "unit-of-work": {
+                "contract-oriented-validation", "validation-coverage-allocation",
+                "policy-correction-boundary-evidence",
+                "interactive-runtime-validation",
+            },
+            "validation-coverage-allocation": {
+                "policy-correction-boundary-evidence",
+            },
+        }
+        for section, specialized in boundaries.items():
+            with self.subTest(section=section):
+                self.assertIn(section, anchors)
+                self.assertTrue(specialized.issubset(anchors))
+                self.assertTrue(specialized.isdisjoint(
+                    section_descendant_anchors(text, section),
+                ))
+
+    def test_derived_asset_route_includes_representation_and_export_contracts(self):
+        """Keep the asset route's coupled obligations in its selected section."""
+        governance = (ROOT / "GOVERNANCE.md").read_text(encoding="utf-8")
+        self.assertTrue({
+            "runtime-asset-representation", "export-topology",
+        }.issubset(section_descendant_anchors(governance, "derived-assets")))
+
+    def test_governed_procedure_routes_assets_and_contract_attestation_directly(self):
+        """Reach the relevant procedures without loading unrelated production work."""
+        destinations = local_destinations(
+            ROOT / ".agents/skills/governed-change/SKILL.md"
+        )
+        self.assertIn(
+            ((ROOT / ".agents/skills/asset-production/SKILL.md").resolve(), ""),
+            destinations,
+        )
+        self.assertIn(
+            ((ROOT / "docs/CI.md").resolve(), "issue-contract-attestation"),
+            destinations,
+        )
+
     def test_readme_overview_is_structurally_non_normative(self):
         """Keep README as navigation to the two authority files."""
         readme = ROOT / "README.md"
@@ -254,6 +346,62 @@ class GovernanceRoutingTests(unittest.TestCase):
         }
 
         self.assertTrue(expected.issubset(setup_targets))
+
+    def test_policy_update_route_reaches_existing_authority_and_evidence(self):
+        """Check update-route reachability, without interpreting policy prose."""
+        procedure = (ROOT / "docs/POLICY_UPDATE.md").resolve()
+        for source in (
+            ROOT / "AGENTS.md",
+            ROOT / "docs/SETUP.md",
+            ROOT / "docs/ADOPTION.md",
+            ROOT / ".agents/skills/governed-change/SKILL.md",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(
+                    procedure, {target for target, _ in local_destinations(source)},
+                )
+
+        self.assertIn(
+            "policy-updates",
+            governance_fragments(ROOT / ".agents/skills/governed-change/SKILL.md"),
+        )
+        self.assertTrue({
+            "policy-updates", "compatibility-obligations",
+            "validation-coverage-allocation",
+        }.issubset(governance_fragments(procedure)))
+        targets = {target for target, _ in local_destinations(procedure)}
+        self.assertTrue({
+            (ROOT / "docs/ADOPTION.md").resolve(),
+            (ROOT / ".agents/skills/governed-change/SKILL.md").resolve(),
+        }.issubset(targets))
+
+    def test_adoption_comparison_routes_to_shared_authority_and_existing_update(self):
+        """Prove route reachability, leaving lineage interpretation to evidence."""
+        adoption = ROOT / "docs/ADOPTION.md"
+        update = ROOT / "docs/POLICY_UPDATE.md"
+        for source in (adoption, update):
+            with self.subTest(source=source):
+                self.assertIn("framework-adoption-lineage", governance_fragments(source))
+        self.assertTrue({
+            "validation-evidence", "issue-contract-evidence", "risk",
+        }.issubset(governance_fragments(adoption)))
+        self.assertIn(
+            (adoption.resolve(), "establish-the-framework-comparison"),
+            local_destinations(update),
+        )
+        self.assertIn(update.resolve(), {path for path, _ in local_destinations(adoption)})
+
+    def test_policy_correction_evidence_is_reachable_from_work_and_pr_routes(self):
+        """Check authority reachability, not interpretation or future obedience."""
+        for source in (
+            ROOT / ".agents/skills/governed-change/SKILL.md",
+            ROOT / ".github/pull_request_template.md",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(
+                    "policy-correction-boundary-evidence",
+                    governance_fragments(source),
+                )
 
     def test_setup_label_inventory_routes_to_its_authorities(self):
         """Link setup to the shared rule and executable label inventory."""
@@ -293,6 +441,111 @@ class GovernanceRoutingTests(unittest.TestCase):
             for pattern in SUPERSEDED_VALIDATION_PATTERNS:
                 with self.subTest(surface=surface, pattern=pattern.pattern):
                     self.assertIsNone(pattern.search(text))
+
+    def test_manual_handoff_separates_authority_from_validation(self):
+        """Keep high-risk authority gates out of the validation contract."""
+        governance = (ROOT / "GOVERNANCE.md").read_text(encoding="utf-8")
+        completion = " ".join(
+            governance.split("## Completion transition", 1)[1].split(
+                "## Low-risk changes", 1
+            )[0].casefold().split()
+        )
+        for marker in (
+            "human review, readiness, and merge",
+            "authority actions",
+            "not validation evidence",
+            "accepted issue contract",
+            "no manual or experiential validation requirement",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, completion)
+
+        pull_request = " ".join(
+            (
+                ROOT / ".github/pull_request_template.md"
+            ).read_text(encoding="utf-8").casefold().split()
+        )
+        for marker in (
+            "authority gates only",
+            "accepted issue contract explicitly requires it",
+            "no manual or experiential validation",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, pull_request)
+
+    def test_scheduled_continuation_rejects_invented_manual_blockers(self):
+        """Do not let handoff text turn authority into continuation blocking."""
+        governance = (ROOT / "GOVERNANCE.md").read_text(encoding="utf-8")
+        continuation = " ".join(
+            governance.split("## Scheduled continuation", 1)[1].split(
+                "## Branches", 1
+            )[0].casefold().split()
+        )
+        for marker in (
+            "accepted issue contract",
+            "pr body",
+            "handoff",
+            "risk label",
+            "manual-path authority gate",
+            "cannot create that requirement",
+            "agent-authored",
+            "valid completion blocker",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, continuation)
+
+        scheduled = " ".join(
+            (
+                ROOT / "templates/codex/governed-change.txt"
+            ).read_text(encoding="utf-8").casefold().split()
+        )
+        for marker in (
+            "accepted issue contract requires",
+            "authority actions, not validation blockers",
+            "agent-authored pr body or handoff",
+        ):
+                with self.subTest(marker=marker):
+                    self.assertIn(marker, scheduled)
+
+    def test_scheduled_completion_continuation_reaches_the_existing_boundaries(self):
+        """Keep scheduled completion in evidence flow and existing authority lanes."""
+        governance = (ROOT / "GOVERNANCE.md").read_text(encoding="utf-8")
+        continuation = " ".join(
+            governance.split("## Scheduled continuation", 1)[1].split(
+                "## Asset completion and authority", 1
+            )[0].casefold().split()
+        )
+        for marker in (
+            "implementation completion",
+            "not terminal states",
+            "whole-issue stage 2 evidence",
+            "issue-contract revision",
+            "immediate pre-transition re-fetch",
+            "fresh stage 3 hosted evidence",
+            "eligible low-risk continuation",
+            "existing low-risk readiness and squash auto-merge automation",
+            "high-risk and manual-path continuations",
+            "authority boundaries",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, continuation)
+
+        agents = " ".join(
+            (ROOT / "AGENTS.md").read_text(encoding="utf-8")
+            .casefold()
+            .split()
+        )
+        for marker in (
+            "completion metadata remains an evidence-backed transition",
+            "scheduled worker may carry eligible low-risk work",
+            "whole-issue stage 2 evidence",
+            "immediate pre-transition issue re-fetch",
+            "fresh stage 3 evidence",
+            "existing low-risk automation owns readiness and squash auto-merge",
+            "high-risk and manual-path work waits for human review, readiness, and merge",
+        ):
+            with self.subTest(marker=marker):
+                self.assertIn(marker, agents)
 
     def test_release_verification_names_concrete_machine_evidence(self):
         """Keep release verification tied to source, artifacts, and integrity."""

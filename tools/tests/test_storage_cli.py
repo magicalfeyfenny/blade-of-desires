@@ -13,7 +13,9 @@ from tools.tests.gmtl_fixture import write_gmtl_fixture
 
 ROOT = Path(__file__).resolve().parents[2]
 CHECKER_FILES = (
-    "check_repo.py", "candidate_git.py", "storage_policy.py", "gmtl_lock.py",
+    "check_repo.py", "candidate_git.py", "storage_policy.py",
+    "gmtl_lock.py",
+    "adoption_basis.py", "asset_manifest.py",
 )
 LFS_POINTER = (
     "version https://git-lfs.github.com/spec/v1\n"
@@ -244,7 +246,7 @@ class StorageCliTests(unittest.TestCase):
             + "\n# Simulate a candidate checker that removes all storage rules.\n"
             + "def collect_storage_errors(root, ref=None, policy=None):\n"
             + "    return []\n"
-            + "def storage_policy_errors(root, baseline_ref=None, candidate_ref=None):\n"
+            + "def storage_policy_errors(*args, **kwargs):\n"
             + "    return []\n",
             encoding="utf-8",
         )

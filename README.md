@@ -51,12 +51,41 @@ For engine and asset decisions, see
 and [Derived assets](GOVERNANCE.md#derived-assets). Storage enforcement follows
 [Candidate storage](GOVERNANCE.md#candidate-storage). The
 [adoption guide](docs/ADOPTION.md) explains audits of existing repositories,
-and the [CI guide](docs/CI.md) describes the required checks and evidence.
+the [bounded policy-update procedure](docs/POLICY_UPDATE.md) explains how to
+adopt a newer upstream revision, and the [CI guide](docs/CI.md) describes the
+required checks and evidence.
 
 ## Start here
 
+Choose the path that matches the repository before changing anything:
+
+- A valid GameMaker project with no meaningful governance: run the
+  [greenfield bootstrap](docs/SETUP.md).
+- An existing repository with independent governance, earlier framework
+  lineage, or uncertain history: use the read-only
+  [brownfield adoption plan](docs/ADOPTION.md).
+- A repository that already adopted this framework and needs a newer upstream
+  policy: use the [bounded policy-update procedure](docs/POLICY_UPDATE.md).
+
+The bootstrap detects the latter cases and stops before overwriting authority.
+It discovers an existing GameMaker project instead of moving it into a
+template-specific directory. Read [docs/SETUP.md](docs/SETUP.md) for commands,
+verification, recovery, and the setup actions that remain human-owned.
+
+## Day-to-day workflow
+
 For day-to-day repository work, [AGENTS.md](AGENTS.md#authority-and-task-routing)
 routes each task to only the governance sections and local skill it needs.
-Follow [docs/SETUP.md](docs/SETUP.md) for repository setup, and begin legacy,
-asset, or repository archaeology at
+Normal agent-governed work starts with one coherent issue, branches from the
+current `origin/dev`, and opens a draft pull request after its first tested
+milestone. Focused checks support milestones, whole-issue local evidence comes
+before completion metadata, and hosted CI verifies the exact pull-request
+candidate. See [GOVERNANCE.md](GOVERNANCE.md#authority) for the authoritative
+rules.
+
+`dev` is the integration branch. `main` is release-only. High-risk and
+human-created work stays at the human review, readiness, and merge gates;
+release and publication actions always require explicit human authority.
+
+Begin legacy, asset, or repository archaeology at
 [docs/archaeology/README.md](docs/archaeology/README.md).
