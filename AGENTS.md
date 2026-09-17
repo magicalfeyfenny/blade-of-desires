@@ -17,14 +17,17 @@ Before modifying the repository, follow only the routes relevant to the task:
 | Any repository-owned source | Read [Source structure](GOVERNANCE.md#source-structure) and `[structure]` in `PROJECT_POLICY.toml`. |
 | GMTL or imported-dependency registration | Read [Imported dependencies](GOVERNANCE.md#imported-dependencies) and `[imports.gmtl]` in `PROJECT_POLICY.toml`. |
 | GameMaker production code | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). The source route above also applies. |
-| Derived asset | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). |
+| Authored or derived asset | Use the [Asset production skill](.agents/skills/asset-production/SKILL.md). |
 | GameMaker structured data | Use the [GameMaker production skill](.agents/skills/gamemaker-production/SKILL.md). |
 | Issue and PR audit | Use the [Project Steward skill](.agents/skills/project-steward/SKILL.md) and [Issue authority](GOVERNANCE.md#issue-authority). |
 | Release | Only when explicitly authorized, read [Releases](GOVERNANCE.md#releases) and the governed lifecycle routes. |
-| Repository setup | Follow [docs/SETUP.md](docs/SETUP.md). |
+| Generated-repository setup | Follow [docs/SETUP.md](docs/SETUP.md). |
+| Existing-repository adoption or recovery | Start with the read-only [adoption procedure](docs/ADOPTION.md). |
+| Update previously adopted upstream policy | Follow the [policy-update procedure](docs/POLICY_UPDATE.md) through governed-change. |
 
-Do not load unrelated governance sections merely because the repository is
-governed.
+Read an anchored section with its subsections; follow sibling sections only
+when the task routes to them. Do not load unrelated governance sections merely
+because the repository is governed.
 
 For legacy-system, asset, and repository archaeology, start with:
 
@@ -32,8 +35,12 @@ For legacy-system, asset, and repository archaeology, start with:
 
 ## Tooling
 
-Repository tooling requires Python 3.12 or later. Use `python3.12` for policy
-and test commands.
+Repository tooling requires Python 3.12 or later. Use
+`python3 tools/ci/run_repository_checks.py` for dependency-sensitive policy
+and test commands; it follows the repository's explicit interpreter, a
+validated `.venv`, a compatible ambient interpreter with the pinned
+dependencies, and then a bounded isolated environment. Standalone commands
+must likewise use any compatible Python 3.12-or-later interpreter.
 
 ## Standing permission
 
@@ -41,8 +48,14 @@ On the current issue-scoped branch, agents may commit each coherent milestone
 after [Stage 1 evidence](GOVERNANCE.md#stage-1-milestone-evidence), push it, and
 open or update its draft PR under
 [Milestone commits and draft publication](GOVERNANCE.md#milestone-commits-and-draft-publication).
-That permission does not grant completion, readiness, merge, release, or
-publication authority.
+That permission does not grant readiness, merge, release, or publication
+authority. Completion metadata remains an evidence-backed transition under
+the [Completion transition](GOVERNANCE.md#completion-transition). A scheduled
+worker may carry eligible low-risk work through whole-issue Stage 2 evidence,
+the immediate pre-transition issue re-fetch, completion metadata, and fresh
+Stage 3 evidence; existing low-risk automation owns readiness and squash
+auto-merge, while high-risk and manual-path work waits for human review,
+readiness, and merge.
 
 ## Critical stops
 
