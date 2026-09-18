@@ -69,7 +69,7 @@ if (BladeStage1CutsceneIsActive(id)) {
 }
 
 if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
-    && keyboard_check_pressed(vk_escape)) {
+    && BladeLiveInputActionPressed(live_input, BladeInputAction.Cancel)) {
     BladeStage1RunResultRecordCleanup(
         stage_run_result, id, int64(-1), "cleanup.terminal_escape"
     );

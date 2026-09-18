@@ -60,6 +60,10 @@ if (_run_tests) {
     global.blade_selected_run = undefined;
     frontend_state = BladeFrontendStateCreate(_config);
     frontend_ui = BladeFrontendUiCreate();
-    frontend_input = BladeLiveInputSample(frontend_state.config);
+    live_input_state = BladeLiveInputStateCreate();
+    frontend_input = BladeLiveInputSample(
+        frontend_state.config,
+        live_input_state
+    );
     depth = -1000;
 }

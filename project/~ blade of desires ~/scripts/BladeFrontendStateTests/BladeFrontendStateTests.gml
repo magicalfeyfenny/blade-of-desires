@@ -30,6 +30,11 @@ function _BladeFrontendTestMainFlow() {
         _options_state.page, BladeFrontendPage.Options,
         "options choice opens the options page"
     );
+    BladeKernelTestAssertEqual(
+        BladeFrontendPageItemCount(BladeFrontendPage.Options),
+        8,
+        "options page exposes both device remap entries"
+    );
     BladeFrontendStateBack(_options_state);
     BladeKernelTestAssertEqual(
         _options_state.page, BladeFrontendPage.Main,
@@ -105,6 +110,43 @@ function _BladeFrontendTestBindingCandidates() {
         "unknown stable ID",
         "unknown binding cannot enter options"
     );
+
+    var _gamepad_accepted = BladeFrontendBindingCandidate(
+        _config,
+        "input.fire",
+        gp_face3,
+        BladePromptDevice.Gamepad
+    );
+    BladeKernelTestAssertTrue(
+        _gamepad_accepted.accepted,
+        "supported gamepad button is accepted"
+    );
+    BladeKernelTestAssertEqual(
+        variable_struct_get(_gamepad_accepted.config.bindings.gamepad, "input.fire"),
+        gp_face3,
+        "accepted gamepad button is stored by stable ID"
+    );
+    BladeKernelTestAssertEqual(
+        variable_struct_get(_config.bindings.gamepad, "input.fire"),
+        gp_face1,
+        "gamepad candidate does not mutate source"
+    );
+
+    var _gamepad_rejected = BladeFrontendBindingCandidate(
+        _config,
+        "input.fire",
+        -500,
+        BladePromptDevice.Gamepad
+    );
+    BladeKernelTestAssertFalse(
+        _gamepad_rejected.accepted,
+        "unsupported gamepad button is rejected"
+    );
+    BladeKernelTestAssertEqual(
+        variable_struct_get(_gamepad_rejected.config.bindings.gamepad, "input.fire"),
+        gp_face1,
+        "rejected gamepad button preserves prior binding"
+    );
 }
 
 /// Proves keyboard-page entry, modal cancellation, and return navigation.
@@ -126,6 +168,11 @@ function _BladeFrontendTestBindingNavigation() {
         "binding page exposes the full semantic registry"
     );
     BladeKernelTestAssertEqual(
+        _state.binding_device,
+        BladePromptDevice.KeyboardMouse,
+        "keyboard remap page selects the keyboard device"
+    );
+    BladeKernelTestAssertEqual(
         _open.action, BladeFrontendAction.None,
         "binding page transition does not start gameplay"
     );
@@ -137,6 +184,29 @@ function _BladeFrontendTestBindingNavigation() {
     BladeKernelTestAssertEqual(
         _state.page, BladeFrontendPage.Options,
         "second cancel returns to options"
+    );
+
+    var _gamepad_state = BladeFrontendStateCreate(BladeConfigCreateDefault());
+    BladeFrontendStateMove(_gamepad_state, 1);
+    BladeFrontendStateActivate(_gamepad_state);
+    for (var _gamepad_index = 0; _gamepad_index < 6; ++_gamepad_index) {
+        BladeFrontendStateMove(_gamepad_state, 1);
+    }
+    var _gamepad_open = BladeFrontendStateActivate(_gamepad_state);
+    BladeKernelTestAssertEqual(
+        _gamepad_state.page,
+        BladeFrontendPage.Bindings,
+        "gamepad remap option opens the binding page"
+    );
+    BladeKernelTestAssertEqual(
+        _gamepad_state.binding_device,
+        BladePromptDevice.Gamepad,
+        "gamepad remap page selects the gamepad device"
+    );
+    BladeKernelTestAssertEqual(
+        _gamepad_open.action,
+        BladeFrontendAction.None,
+        "gamepad binding page transition stays in options"
     );
 }
 

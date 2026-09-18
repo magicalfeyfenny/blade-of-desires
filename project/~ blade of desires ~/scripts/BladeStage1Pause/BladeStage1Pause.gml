@@ -215,26 +215,26 @@ function BladeStage1PauseDraw(_menu, _config, _ui) {
         draw_text(320, _panel_y + 7, _labels[_index]);
     }
 
-    var _confirm_label = "KEY";
-    var _cancel_label = "KEY";
-    if (is_struct(_config)
-        && variable_struct_exists(_config, "bindings")
-        && is_struct(_config.bindings)
-        && variable_struct_exists(_config.bindings, "keyboard")) {
-        var _keyboard = _config.bindings.keyboard;
-        _confirm_label = BladeFrontendKeyboardLabel(
-            variable_struct_get(_keyboard, "input.confirm")
-        );
-        _cancel_label = BladeFrontendKeyboardLabel(
-            variable_struct_get(_keyboard, "input.cancel")
-        );
-    }
+    var _confirm_keyboard = BladeFrontendConfiguredBindingLabel(
+        _config, "input.confirm", BladePromptDevice.KeyboardMouse
+    );
+    var _cancel_keyboard = BladeFrontendConfiguredBindingLabel(
+        _config, "input.cancel", BladePromptDevice.KeyboardMouse
+    );
+    var _confirm_gamepad = BladeFrontendConfiguredBindingLabel(
+        _config, "input.confirm", BladePromptDevice.Gamepad
+    );
+    var _cancel_gamepad = BladeFrontendConfiguredBindingLabel(
+        _config, "input.cancel", BladePromptDevice.Gamepad
+    );
     draw_set_color(make_color_rgb(190, 231, 220));
     draw_text(
         320,
         250,
         "UP / DOWN  NAVIGATE\n"
-            + _confirm_label + "  SELECT    " + _cancel_label + "  BACK"
+            + _confirm_keyboard + " / " + _confirm_gamepad
+            + "  SELECT    " + _cancel_keyboard + " / " + _cancel_gamepad
+            + "  BACK"
     );
     draw_set_halign(fa_left);
     draw_set_valign(fa_top);

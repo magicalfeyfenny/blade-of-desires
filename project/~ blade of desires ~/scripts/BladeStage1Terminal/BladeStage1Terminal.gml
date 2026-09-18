@@ -153,7 +153,7 @@ function BladeStage1TerminalAdvance(_flow, _input) {
     return _result;
 }
 
-/// Returns a configured keyboard label when the runtime has a valid config.
+/// Returns a configured device label when the runtime has a valid config.
 function _BladeStage1TerminalKeyboardLabel(_config, _binding_id, _fallback) {
     if (is_struct(_config)
         && variable_struct_exists(_config, "bindings")
@@ -163,6 +163,22 @@ function _BladeStage1TerminalKeyboardLabel(_config, _binding_id, _fallback) {
         if (variable_struct_exists(_keyboard, _binding_id)) {
             return BladeFrontendKeyboardLabel(
                 variable_struct_get(_keyboard, _binding_id)
+            );
+        }
+    }
+    return _fallback;
+}
+
+/// Returns a configured gamepad label without coupling terminal logic to codes.
+function _BladeStage1TerminalGamepadLabel(_config, _binding_id, _fallback) {
+    if (is_struct(_config)
+        && variable_struct_exists(_config, "bindings")
+        && is_struct(_config.bindings)
+        && variable_struct_exists(_config.bindings, "gamepad")) {
+        var _gamepad = _config.bindings.gamepad;
+        if (variable_struct_exists(_gamepad, _binding_id)) {
+            return BladeFrontendGamepadLabel(
+                variable_struct_get(_gamepad, _binding_id)
             );
         }
     }
@@ -214,12 +230,20 @@ function BladeStage1TerminalDraw(_flow, _config, _ui) {
         var _cancel_label = _BladeStage1TerminalKeyboardLabel(
             _config, "input.cancel", "BACK"
         );
+        var _confirm_gamepad = _BladeStage1TerminalGamepadLabel(
+            _config, "input.confirm", "CONFIRM"
+        );
+        var _cancel_gamepad = _BladeStage1TerminalGamepadLabel(
+            _config, "input.cancel", "BACK"
+        );
         draw_set_color(make_color_rgb(190, 231, 220));
         draw_text(
             320,
             266,
             "UP / DOWN  NAVIGATE\n"
-                + _confirm_label + "  SELECT    " + _cancel_label + "  NO"
+                + _confirm_label + " / " + _confirm_gamepad
+                + "  SELECT    " + _cancel_label + " / " + _cancel_gamepad
+                + "  NO"
         );
     } else {
         draw_set_color(c_white);

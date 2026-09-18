@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeLiveInputTests",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeLiveInputTests",
+  "parent":{
+    "name":"Tests",
+    "path":"folders/Blade/Tests.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

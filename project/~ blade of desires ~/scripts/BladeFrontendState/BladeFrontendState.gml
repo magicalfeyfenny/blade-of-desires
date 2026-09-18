@@ -17,7 +17,7 @@ function BladeFrontendMainLabels() {
     return ["START GAME", "OPTIONS", "QUIT"];
 }
 
-/// Returns the option labels; the final two entries open or leave a subpage.
+/// Returns the option labels; the final three entries open or leave a subpage.
 function BladeFrontendOptionLabels() {
     return [
         "FULLSCREEN",
@@ -26,6 +26,7 @@ function BladeFrontendOptionLabels() {
         "MUSIC VOLUME",
         "SFX VOLUME",
         "REMAP KEYBOARD",
+        "REMAP GAMEPAD",
         "BACK",
     ];
 }
@@ -68,6 +69,9 @@ function _BladeFrontendStateRequire(_state) {
         || _state.selected_index >= BladeFrontendPageItemCount(_state.page)
         || !variable_struct_exists(_state, "listening")
         || !is_bool(_state.listening)
+        || !variable_struct_exists(_state, "binding_device")
+        || (_state.binding_device != BladePromptDevice.KeyboardMouse
+            && _state.binding_device != BladePromptDevice.Gamepad)
         || !variable_struct_exists(_state, "transitioned")
         || !is_bool(_state.transitioned)) {
         throw("BladeFrontendState: state is incomplete");
@@ -82,6 +86,7 @@ function BladeFrontendStateCreate(_config) {
         page: BladeFrontendPage.Main,
         selected_index: 0,
         listening: false,
+        binding_device: BladePromptDevice.KeyboardMouse,
         transitioned: false,
         message: "",
         message_ticks: 0,
@@ -102,10 +107,15 @@ function BladeFrontendStateMove(_state, _delta) {
 }
 
 /// Opens a page and starts its cursor at the first item.
-function _BladeFrontendStateOpenPage(_state, _page) {
+function _BladeFrontendStateOpenPage(
+    _state,
+    _page,
+    _binding_device = BladePromptDevice.KeyboardMouse
+) {
     _state.page = _page;
     _state.selected_index = 0;
     _state.listening = false;
+    _state.binding_device = _binding_device;
     return _state;
 }
 
@@ -129,10 +139,22 @@ function BladeFrontendStateActivate(_state) {
 
     if (_state.page == BladeFrontendPage.Options) {
         if (_state.selected_index == 5) {
-            _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Bindings);
+            _BladeFrontendStateOpenPage(
+                _state,
+                BladeFrontendPage.Bindings,
+                BladePromptDevice.KeyboardMouse
+            );
             return { action: BladeFrontendAction.None };
         }
         if (_state.selected_index == 6) {
+            _BladeFrontendStateOpenPage(
+                _state,
+                BladeFrontendPage.Bindings,
+                BladePromptDevice.Gamepad
+            );
+            return { action: BladeFrontendAction.None };
+        }
+        if (_state.selected_index == 7) {
             _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
             return { action: BladeFrontendAction.None };
         }
@@ -220,20 +242,35 @@ function BladeFrontendOptionCandidate(_config, _index, _delta) {
 }
 
 /// Returns a valid candidate binding, or leaves the current config untouched.
-function BladeFrontendBindingCandidate(_config, _stable_id, _keyboard_code) {
+function BladeFrontendBindingCandidate(
+    _config,
+    _stable_id,
+    _code,
+    _device = BladePromptDevice.KeyboardMouse
+) {
     var _current = BladeConfigNormalize(_config);
     // Registry lookup rejects unknown IDs before a key code can be persisted.
     BladeInputBindingRecord(_stable_id);
-    if (!BladeConfigKeyboardCodeIsSupported(_keyboard_code)) {
+    if (_device != BladePromptDevice.KeyboardMouse
+        && _device != BladePromptDevice.Gamepad) {
+        throw("BladeFrontendState: unknown binding device");
+    }
+    var _supported = _device == BladePromptDevice.KeyboardMouse
+        ? BladeConfigKeyboardCodeIsSupported(_code)
+        : BladeConfigGamepadCodeIsSupported(_code);
+    if (!_supported) {
         return {
             accepted: false,
-            code: "config.input.unsupported_key",
+            code: _device == BladePromptDevice.KeyboardMouse
+                ? "config.input.unsupported_key"
+                : "config.input.unsupported_gamepad_button",
             config: _current,
         };
     }
-    variable_struct_set(
-        _current.bindings.keyboard, _stable_id, _keyboard_code
-    );
+    var _bindings = _device == BladePromptDevice.KeyboardMouse
+        ? _current.bindings.keyboard
+        : _current.bindings.gamepad;
+    variable_struct_set(_bindings, _stable_id, _code);
     return {
         accepted: true,
         code: "config.input.accepted",
@@ -351,4 +388,45 @@ function BladeFrontendKeyboardLabel(_code) {
         case vk_f12: return "F12";
     }
     return "KEY " + string(_code);
+}
+
+/// Returns a short stable label for a supported gamepad button code.
+function BladeFrontendGamepadLabel(_code) {
+    switch (_code) {
+        case gp_face1: return "A / CROSS";
+        case gp_face2: return "B / CIRCLE";
+        case gp_face3: return "X / SQUARE";
+        case gp_face4: return "Y / TRIANGLE";
+        case gp_shoulderl: return "LB / L1";
+        case gp_shoulderr: return "RB / R1";
+        case gp_shoulderlb: return "LT / L2";
+        case gp_shoulderrb: return "RT / R2";
+        case gp_start: return "START / OPTIONS";
+        case gp_select: return "SELECT / SHARE";
+        case gp_stickl: return "L3";
+        case gp_stickr: return "R3";
+        case gp_padu: return "DPAD UP";
+        case gp_padd: return "DPAD DOWN";
+        case gp_padl: return "DPAD LEFT";
+        case gp_padr: return "DPAD RIGHT";
+    }
+    return "BUTTON " + string(_code);
+}
+
+/// Returns the player-facing label for one configured binding on one device.
+function BladeFrontendConfiguredBindingLabel(_config, _stable_id, _device) {
+    var _normalized = BladeConfigNormalize(_config);
+    var _bindings = _device == BladePromptDevice.Gamepad
+        ? _normalized.bindings.gamepad
+        : _normalized.bindings.keyboard;
+    var _code = variable_struct_get(_bindings, _stable_id);
+    return _device == BladePromptDevice.Gamepad
+        ? BladeFrontendGamepadLabel(_code)
+        : BladeFrontendKeyboardLabel(_code);
+}
+
+/// Returns the title for the active binding device page.
+function BladeFrontendBindingDeviceLabel(_device) {
+    if (_device == BladePromptDevice.Gamepad) return "GAMEPAD BINDINGS";
+    return "KEYBOARD BINDINGS";
 }

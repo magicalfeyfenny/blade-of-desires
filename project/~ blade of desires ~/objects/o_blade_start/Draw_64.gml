@@ -80,6 +80,9 @@ if (frontend_state.page == BladeFrontendPage.Main) {
                 _option_value = "OPEN";
                 break;
             case 6:
+                _option_value = "OPEN";
+                break;
+            case 7:
                 _option_value = "RETURN";
                 break;
         }
@@ -89,7 +92,11 @@ if (frontend_state.page == BladeFrontendPage.Main) {
     }
 } else {
     draw_set_color(make_color_rgb(214, 242, 228));
-    draw_text(32, 52, "KEYBOARD BINDINGS");
+    draw_text(
+        32,
+        52,
+        BladeFrontendBindingDeviceLabel(frontend_state.binding_device)
+    );
     var _binding_ids = BladeFrontendBindingIds();
     var _binding_count = array_length(_binding_ids);
     var _visible_count = 7;
@@ -121,17 +128,25 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         draw_set_halign(fa_right);
         draw_text(
             584, _binding_y + 4,
-            BladeFrontendKeyboardLabel(variable_struct_get(
-                frontend_state.config.bindings.keyboard,
-                _binding_ids[_binding_index]
-            ))
+            BladeFrontendConfiguredBindingLabel(
+                frontend_state.config,
+                _binding_ids[_binding_index],
+                frontend_state.binding_device
+            )
         );
         draw_set_halign(fa_left);
     }
     if (frontend_state.listening) {
         draw_set_color(make_color_rgb(244, 224, 184));
         draw_set_halign(fa_center);
-        draw_text(320, 294, "PRESS A KEY  -  CONFIGURED CANCEL TO BACK OUT");
+        draw_text(
+            320,
+            294,
+            (frontend_state.binding_device == BladePromptDevice.Gamepad
+                ? "PRESS A BUTTON"
+                : "PRESS A KEY")
+                + "  -  CONFIGURED CANCEL TO BACK OUT"
+        );
         draw_set_halign(fa_left);
     }
 }
