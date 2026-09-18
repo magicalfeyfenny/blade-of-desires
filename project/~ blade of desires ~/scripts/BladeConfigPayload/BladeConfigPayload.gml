@@ -123,18 +123,23 @@ function BladeConfigKeyboardCodeIsSupported(_code) {
     return false;
 }
 
+/// Returns the finite set of digital gamepad codes accepted by the binding schema.
+function BladeConfigGamepadBindingCodes() {
+    return [
+        gp_face1, gp_face2, gp_face3, gp_face4,
+        gp_shoulderl, gp_shoulderr, gp_shoulderlb, gp_shoulderrb,
+        gp_start, gp_select, gp_stickl, gp_stickr,
+        gp_padu, gp_padd, gp_padl, gp_padr,
+    ];
+}
+
 /// @func BladeConfigGamepadCodeIsSupported(code)
 /// Accepts only finite integer digital buttons supported by the minimal binding schema.
 function BladeConfigGamepadCodeIsSupported(_code) {
     if (!_BladeConfigFiniteInteger(_code)) {
         return false;
     }
-    var _supported_codes = [
-        gp_face1, gp_face2, gp_face3, gp_face4,
-        gp_shoulderl, gp_shoulderr, gp_shoulderlb, gp_shoulderrb,
-        gp_start, gp_select, gp_stickl, gp_stickr,
-        gp_padu, gp_padd, gp_padl, gp_padr,
-    ];
+    var _supported_codes = BladeConfigGamepadBindingCodes();
     for (var _index = 0; _index < array_length(_supported_codes); ++_index) {
         if (_code == _supported_codes[_index]) {
             return true;

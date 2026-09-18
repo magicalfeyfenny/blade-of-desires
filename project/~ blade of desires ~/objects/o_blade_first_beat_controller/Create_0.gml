@@ -8,6 +8,7 @@ if (room == r_stage1_first_beat
 }
 input_config = _config;
 keyboard_bindings = _config.bindings.keyboard;
+live_input_state = BladeLiveInputStateCreate();
 live_input = BladeStage1PauseInputNeutral();
 pause_menu = BladeStage1PauseCreate();
 terminal_flow = BladeStage1TerminalCreate();

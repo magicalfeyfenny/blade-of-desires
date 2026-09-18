@@ -1,7 +1,7 @@
 /// Navigate and confirm through the shared configured semantic input adapter.
 if (error_text != "" || is_undefined(selector_state)) exit;
 
-var _input = BladeLiveInputSample(input_config);
+var _input = BladeLiveInputSample(input_config, live_input_state);
 if (_input.pressed_move_y < 0) {
     BladeShipSelectionMove(selector_state, catalog, -1);
 } else if (_input.pressed_move_y > 0) {

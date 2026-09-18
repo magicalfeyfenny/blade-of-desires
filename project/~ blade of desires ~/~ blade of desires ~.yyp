@@ -144,6 +144,7 @@
     {"id":{"name":"BladeKolarLoadout","path":"scripts/BladeKolarLoadout/BladeKolarLoadout.yy",},},
     {"id":{"name":"BladeKolarLoadoutTests","path":"scripts/BladeKolarLoadoutTests/BladeKolarLoadoutTests.yy",},},
     {"id":{"name":"BladeLiveInput","path":"scripts/BladeLiveInput/BladeLiveInput.yy",},},
+    {"id":{"name":"BladeLiveInputTests","path":"scripts/BladeLiveInputTests/BladeLiveInputTests.yy",},},
     {"id":{"name":"BladeMayniiLoadout","path":"scripts/BladeMayniiLoadout/BladeMayniiLoadout.yy",},},
     {"id":{"name":"BladeMayniiLoadoutTests","path":"scripts/BladeMayniiLoadoutTests/BladeMayniiLoadoutTests.yy",},},
     {"id":{"name":"BladePauseRegistry","path":"scripts/BladePauseRegistry/BladePauseRegistry.yy",},},

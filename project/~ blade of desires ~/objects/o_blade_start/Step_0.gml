@@ -1,22 +1,40 @@
 /// Advance the front-end state through the shared semantic input adapter.
 if (frontend_state.message_ticks > 0) frontend_state.message_ticks -= 1;
-frontend_input = BladeLiveInputSample(frontend_state.config);
+frontend_input = BladeLiveInputSample(
+    frontend_state.config,
+    live_input_state
+);
 
 if (frontend_state.listening) {
     var _binding_ids = BladeFrontendBindingIds();
     var _binding_id = _binding_ids[frontend_state.selected_index];
-    var _cancel_code = variable_struct_get(
-        frontend_state.config.bindings.keyboard, "input.cancel"
-    );
-    if (keyboard_check_pressed(_cancel_code)) {
+    if (BladeLiveInputActionPressed(frontend_input, BladeInputAction.Cancel)) {
         frontend_state.listening = false;
-        BladeFrontendStateSetMessage(frontend_state, "KEY LISTENING CANCELLED");
+        BladeFrontendStateSetMessage(
+            frontend_state,
+            frontend_state.binding_device == BladePromptDevice.Gamepad
+                ? "GAMEPAD LISTENING CANCELLED"
+                : "KEY LISTENING CANCELLED"
+        );
         exit;
     }
-    if (keyboard_check_pressed(vk_anykey)) {
-        var _key_code = keyboard_lastkey;
+    var _binding_code = -1;
+    var _binding_detected = false;
+    if (frontend_state.binding_device == BladePromptDevice.Gamepad) {
+        _binding_code = BladeLiveInputGamepadBindingPressed(
+            frontend_input.gamepad_id
+        );
+        _binding_detected = _binding_code >= 0;
+    } else if (keyboard_check_pressed(vk_anykey)) {
+        _binding_code = keyboard_lastkey;
+        _binding_detected = true;
+    }
+    if (_binding_detected) {
         var _binding_candidate = BladeFrontendBindingCandidate(
-            frontend_state.config, _binding_id, _key_code
+            frontend_state.config,
+            _binding_id,
+            _binding_code,
+            frontend_state.binding_device
         );
         if (_binding_candidate.accepted) {
             var _binding_save = BladeFrontendConfigSave(
@@ -27,7 +45,12 @@ if (frontend_state.listening) {
             if (_binding_save.ok) {
                 frontend_state.config = _binding_save.config;
                 BladeFrontendStateSetMessage(
-                    frontend_state, "KEY SAVED: " + BladeFrontendKeyboardLabel(_key_code)
+                    frontend_state,
+                    (frontend_state.binding_device == BladePromptDevice.Gamepad
+                        ? "GAMEPAD SAVED: "
+                            + BladeFrontendGamepadLabel(_binding_code)
+                        : "KEY SAVED: "
+                            + BladeFrontendKeyboardLabel(_binding_code))
                 );
             } else {
                 BladeFrontendStateSetMessage(
@@ -36,7 +59,10 @@ if (frontend_state.listening) {
             }
         } else {
             BladeFrontendStateSetMessage(
-                frontend_state, "UNSUPPORTED KEY - TRY AGAIN"
+                frontend_state,
+                frontend_state.binding_device == BladePromptDevice.Gamepad
+                    ? "UNSUPPORTED BUTTON - TRY AGAIN"
+                    : "UNSUPPORTED KEY - TRY AGAIN"
             );
         }
         frontend_state.listening = false;
