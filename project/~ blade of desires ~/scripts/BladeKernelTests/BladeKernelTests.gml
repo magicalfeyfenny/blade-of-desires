@@ -20,6 +20,7 @@ function BladeKernelTestsRun() {
     BladeMayniiLoadoutTestsRun(_state);
     BladeKolarLoadoutTestsRun(_state);
     BladeConfigTestsRun(_state);
+    BladeProfileTestsRun(_state);
     BladePauseRegistryTestsRun(_state);
     BladeRandomIdentityTestsRun(_state);
     BladeRunCoordinatorTestsRun(_state);
