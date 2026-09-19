@@ -18,7 +18,8 @@ records.
 | Pause tokens and diagnostics | Coordinator-owned `BladePauseRegistry` | One run attempt | Not persisted by this layer |
 | Deterministic replay payloads | `BladeReplayRecording` recorder and playback owner | One captured recording or playback run | Caller-saved canonical `BRP1` text; no catalog or sharing service |
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
-| Career, scores, suspended runs, and checkpoints | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
+| Player profile, progression flags, and arcade records | `BladeProfileService` | Per-user installation | `blade-profile.json` in GameMaker's per-user save area; strict and separate from config |
+| Suspended runs and checkpoints | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
 
 The config service has no reference to the coordinator, combat runtime, or
 pause registry. Its
@@ -293,6 +294,34 @@ When the live file is absent, load tries a valid `.previous` candidate before a
 valid `.tmp` candidate. A normalized current file remains current in memory and
 attempts a canonical rewrite; `rewrite_ok` reports whether that rewrite and
 prior-live retention succeeded.
+
+## Profile version 1
+
+The profile payload is a separate closed `blade.profile` schema at version 1.
+It contains machine-readable `clear_states`, independently persisted
+`unlocks`, `achievements`, `cg_flags`, and authoritative arcade `records`.
+Display names, room names, resource order, and the configuration payload are
+not progression authorities.
+
+`BladeProfileService` is initialized beside `BladeConfigService` but owns a
+different filename and storage transaction. A missing profile is an empty
+default. Corrupt, unreadable, or future-version bytes report an explicit load
+failure and remain untouched; the service cannot silently replace them with a
+default profile. Writes stage JSON in a sibling temporary file, reread the
+exact bytes, archive the previous live file, promote the candidate, and roll
+back when promotion fails.
+
+The current live consumer is the explicit Stage 1 `RunCompleted` boundary.
+Only a completed live `BladeStage1RunResult` with a Stage Clear payload can
+create a record, and it copies the captured score, ship ID, difficulty ID, and
+run seed rather than recalculating economy. Replay, Continue, Retry, abort,
+Game Over, cleanup-only, incomplete, and duplicate outcomes are rejected.
+Clear states retain the no-continue qualification needed by the product
+contract's future `main_campaign_1cc_any_difficulty` rule; the derived
+`unlock.extra_stage` flag appears only after all six main-campaign stage IDs
+have qualifying clears. Achievement and CG flags have independent service
+grant paths so later presentation code can query them without owning
+progression or save parsing.
 
 ## Storage and recovery boundary
 
