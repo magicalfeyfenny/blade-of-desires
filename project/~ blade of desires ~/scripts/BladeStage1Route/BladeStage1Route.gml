@@ -341,6 +341,21 @@ function BladeStage1RouteAdvance(_controller) {
         )) {
             throw("BladeStage1Route: completed schedule rejected run completion");
         }
+        _controller.profile_save_result = undefined;
+        if (variable_global_exists("blade_profile_service")
+            && is_struct(global.blade_profile_service)) {
+            _controller.profile_save_result = BladeProfileServiceApplyRunResult(
+                global.blade_profile_service,
+                _controller.stage_run_result,
+                "live"
+            );
+            if (!_controller.profile_save_result.ok) {
+                show_debug_message(
+                    "BLADE_PROFILE_APPLY: "
+                    + string(_controller.profile_save_result.code)
+                );
+            }
+        }
         _controller.state = BladeFirstBeatState.Won;
         _controller.route_label = "STAGE 1 CLEAR";
         with (o_blade_first_beat_enemy_bullet) instance_destroy();

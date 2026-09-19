@@ -46,6 +46,7 @@ boss_resolution = BladeStage1BossResolution.None;
 stage_clear_awarded = false;
 stage_clear_breakdown = { base: 0, lives: 0, bombs: 0, total: 0 };
 stage_run_result = BladeStage1RunResultCreate();
+profile_save_result = undefined;
 depth = 1000;
 
 // Only the production Stage 1 room consumes the authored deterministic route.

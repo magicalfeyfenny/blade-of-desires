@@ -23,6 +23,20 @@ if (_run_tests) {
     var _config_result = BladeConfigServiceLoad(global.blade_config_service);
     var _config = _config_result.config;
 
+    // Profile data is a separate durable owner. A malformed or future profile
+    // remains untouched and reports an explicit load failure to later UI.
+    global.blade_profile_service = BladeProfileServiceCreate(
+        BladeProfileFileStorageCreate()
+    );
+    global.blade_profile_load_result = BladeProfileServiceLoad(
+        global.blade_profile_service
+    );
+    if (!global.blade_profile_load_result.ok) {
+        show_debug_message(
+            "BLADE_PROFILE_LOAD: " + string(global.blade_profile_load_result.code)
+        );
+    }
+
     // Keep the logical surface crisp at the chosen integer presentation size.
     gpu_set_texfilter(false);
     if (_config.display.fullscreen) {
