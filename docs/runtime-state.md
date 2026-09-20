@@ -16,7 +16,8 @@ records.
 | Actors, attacks, projectiles, damage, terminals, and reward requests | Coordinator-owned `BladeCombatRuntime` | One run attempt or explicit room boundary | Not persisted by this layer |
 | Stage schedule, encounter ownership, typed ports, and stage events | Optional coordinator-owned `BladeStageExecutor` | One attached stage or run reset | Not persisted by this layer |
 | Pause tokens and diagnostics | Coordinator-owned `BladePauseRegistry` | One run attempt | Not persisted by this layer |
-| Deterministic replay payloads | `BladeReplayRecording` recorder and playback owner | One captured recording or playback run | Caller-saved canonical `BRP1` text; no catalog or sharing service |
+| Deterministic replay payloads | `BladeReplayRecording` recorder and playback owner | One captured recording or playback run | Canonical `BRP1` text in the replay catalog |
+| Saved replay catalog | `BladeReplayCatalog` and the front-end replay pages | Per-user installation and one playback run | `blade-replays/*.brp`; identity comes from the payload hash, not display text or filenames |
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
 | Player profile, progression flags, and arcade records | `BladeProfileService` | Per-user installation | `blade-profile.json` in GameMaker's per-user save area; strict and separate from config |
 | Suspended runs and checkpoints | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
@@ -26,6 +27,25 @@ pause registry. Its
 closed schema drops run-shaped fields, and the cross-boundary test proves that
 saving and loading config neither serializes nor mutates live run, player, or
 combat/pause state.
+
+## Replay catalog ownership
+
+`BladeReplayCatalog` owns discovery of the per-user `blade-replays/` directory,
+strict BRP1 parsing, metadata projection, and deterministic playback launch.
+The canonical replay hash produces a stable `replay.<sha1>` identity; a source
+filename is only a storage locator. The catalog exposes `playable`,
+`unsupported`, `corrupt`, `missing`, and `unreadable` states so an invalid or
+removed source cannot strand the front end. The current BRP1 payload has no
+terminal-result or score fields, so the catalog reports those values as
+explicitly unavailable rather than deriving them from display text.
+
+The replay catalog page refreshes the detached catalog snapshot on entry. A
+playable selection launches the existing `BladeReplayPlayback` owner and opens
+a simple playback page; every simulation tick comes from the recorded input
+stream and live input is used only for menu Cancel navigation. Catalog
+inspection and launch do not rewrite the source payload, profile, records,
+unlocks, or configuration. A failed launch returns to the catalog with its
+explicit state and a player-facing diagnostic.
 
 ## Run and player ownership
 

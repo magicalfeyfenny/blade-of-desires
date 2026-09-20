@@ -3,18 +3,21 @@
 enum BladeFrontendPage {
     Main = 1,
     Options = 2,
-    Bindings = 3
+    Bindings = 3,
+    ReplayCatalog = 4,
+    ReplayPlayback = 5,
 }
 
 enum BladeFrontendAction {
     None = 0,
     StartGame = 1,
-    Quit = 2
+    Quit = 2,
+    LaunchReplay = 3,
 }
 
 /// Returns the stable main-menu labels in their player-facing order.
 function BladeFrontendMainLabels() {
-    return ["START GAME", "OPTIONS", "QUIT"];
+    return ["START GAME", "REPLAY CATALOG", "OPTIONS", "QUIT"];
 }
 
 /// Returns the option labels; the final three entries open or leave a subpage.
@@ -42,7 +45,7 @@ function BladeFrontendBindingIds() {
 }
 
 /// Returns the number of entries on one front-end page.
-function BladeFrontendPageItemCount(_page) {
+function BladeFrontendPageItemCount(_page, _replay_view = undefined) {
     switch (_page) {
         case BladeFrontendPage.Main:
             return array_length(BladeFrontendMainLabels());
@@ -50,6 +53,15 @@ function BladeFrontendPageItemCount(_page) {
             return array_length(BladeFrontendOptionLabels());
         case BladeFrontendPage.Bindings:
             return array_length(BladeFrontendBindingIds());
+        case BladeFrontendPage.ReplayCatalog:
+            if (is_struct(_replay_view)
+                && variable_struct_exists(_replay_view, "entries")
+                && is_array(_replay_view.entries)) {
+                return max(1, array_length(_replay_view.entries));
+            }
+            return 1;
+        case BladeFrontendPage.ReplayPlayback:
+            return 1;
     }
     throw("BladeFrontendState: unknown page");
 }
@@ -61,12 +73,20 @@ function _BladeFrontendStateRequire(_state) {
         || _state.__blade_frontend_state_version != 1
         || !variable_struct_exists(_state, "config")
         || !BladeConfigIsCanonical(_state.config)
+        || !variable_struct_exists(_state, "replay_catalog")
+        || !BladeReplayCatalogIsValid(_state.replay_catalog)
+        || !variable_struct_exists(_state, "replay_view")
+        || !is_struct(_state.replay_view)
+        || !variable_struct_exists(_state.replay_view, "entries")
+        || !is_array(_state.replay_view.entries)
         || !variable_struct_exists(_state, "page")
         || _state.page < BladeFrontendPage.Main
-        || _state.page > BladeFrontendPage.Bindings
+        || _state.page > BladeFrontendPage.ReplayPlayback
         || !variable_struct_exists(_state, "selected_index")
         || _state.selected_index < 0
-        || _state.selected_index >= BladeFrontendPageItemCount(_state.page)
+        || _state.selected_index >= BladeFrontendPageItemCount(
+            _state.page, _state.replay_view
+        )
         || !variable_struct_exists(_state, "listening")
         || !is_bool(_state.listening)
         || !variable_struct_exists(_state, "binding_device")
@@ -79,8 +99,16 @@ function _BladeFrontendStateRequire(_state) {
 }
 
 /// Creates a detached front-end state with the title screen selected.
-function BladeFrontendStateCreate(_config) {
+function BladeFrontendStateCreate(_config, _replay_catalog = undefined) {
     var _normalized = BladeConfigNormalize(_config);
+    if (is_undefined(_replay_catalog)) {
+        _replay_catalog = BladeReplayCatalogCreate(
+            BladeReplayCatalogFileStorageCreate()
+        );
+    }
+    if (!BladeReplayCatalogIsValid(_replay_catalog)) {
+        throw("BladeFrontendState: replay catalog is incomplete");
+    }
     return {
         __blade_frontend_state_version: 1,
         page: BladeFrontendPage.Main,
@@ -91,6 +119,12 @@ function BladeFrontendStateCreate(_config) {
         message: "",
         message_ticks: 0,
         config: _normalized,
+        replay_catalog: _replay_catalog,
+        replay_view: BladeReplayCatalogSnapshot(_replay_catalog),
+        replay_playback: undefined,
+        replay_entry: undefined,
+        replay_completed: false,
+        replay_completion: undefined,
     };
 }
 
@@ -98,7 +132,9 @@ function BladeFrontendStateCreate(_config) {
 function BladeFrontendStateMove(_state, _delta) {
     _BladeFrontendStateRequire(_state);
     if (_state.listening || _delta == 0) return _state.selected_index;
-    var _count = BladeFrontendPageItemCount(_state.page);
+    var _count = BladeFrontendPageItemCount(
+        _state.page, _state.replay_view
+    );
     var _direction = _delta > 0 ? 1 : -1;
     _state.selected_index = (
         _state.selected_index + _direction + _count
@@ -131,6 +167,21 @@ function BladeFrontendStateActivate(_state) {
             return { action: BladeFrontendAction.StartGame };
         }
         if (_state.selected_index == 1) {
+            var _refresh = BladeReplayCatalogRefresh(_state.replay_catalog);
+            _state.replay_view = _refresh.catalog;
+            _state.replay_playback = undefined;
+            _state.replay_entry = undefined;
+            _state.replay_completed = false;
+            _state.replay_completion = undefined;
+            _BladeFrontendStateOpenPage(_state, BladeFrontendPage.ReplayCatalog);
+            if (!_refresh.ok) {
+                BladeFrontendStateSetMessage(
+                    _state, "REPLAY CATALOG UNAVAILABLE"
+                );
+            }
+            return { action: BladeFrontendAction.None };
+        }
+        if (_state.selected_index == 2) {
             _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Options);
             return { action: BladeFrontendAction.None };
         }
@@ -161,6 +212,24 @@ function BladeFrontendStateActivate(_state) {
         return { action: BladeFrontendAction.None };
     }
 
+    if (_state.page == BladeFrontendPage.ReplayCatalog) {
+        var _entry = BladeFrontendStateReplayEntry(_state);
+        if (is_undefined(_entry)) {
+            BladeFrontendStateSetMessage(_state, "REPLAY CATALOG EMPTY");
+            return { action: BladeFrontendAction.None };
+        }
+        if (_entry.state != BladeReplayCatalogEntryState.Playable) {
+            BladeFrontendStateSetMessage(
+                _state, "REPLAY UNAVAILABLE: " + _entry.state_token
+            );
+            return { action: BladeFrontendAction.None };
+        }
+        return {
+            action: BladeFrontendAction.LaunchReplay,
+            entry_index: _state.selected_index,
+        };
+    }
+
     _state.listening = true;
     return {
         action: BladeFrontendAction.None,
@@ -176,12 +245,145 @@ function BladeFrontendStateBack(_state) {
         _state.listening = false;
         return _state.page;
     }
-    if (_state.page == BladeFrontendPage.Bindings) {
+    if (_state.page == BladeFrontendPage.ReplayPlayback) {
+        var _replay_id = "";
+        if (is_struct(_state.replay_entry)
+            && variable_struct_exists(_state.replay_entry, "replay_id")) {
+            _replay_id = _state.replay_entry.replay_id;
+        }
+        _state.replay_playback = undefined;
+        _state.replay_entry = undefined;
+        _state.replay_completed = false;
+        _state.replay_completion = undefined;
+        _state.page = BladeFrontendPage.ReplayCatalog;
+        _state.selected_index = 0;
+        for (var _entry_index = 0;
+            _entry_index < array_length(_state.replay_view.entries);
+            ++_entry_index) {
+            if (_replay_id != ""
+                && _state.replay_view.entries[_entry_index].replay_id
+                    == _replay_id) {
+                _state.selected_index = _entry_index;
+                break;
+            }
+        }
+    } else if (_state.page == BladeFrontendPage.Bindings) {
         _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Options);
+    } else if (_state.page == BladeFrontendPage.ReplayCatalog) {
+        _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
     } else if (_state.page == BladeFrontendPage.Options) {
         _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
     }
     return _state.page;
+}
+
+/// Returns the currently selected detached catalog entry, if one exists.
+function BladeFrontendStateReplayEntry(_state) {
+    _BladeFrontendStateRequire(_state);
+    if (_state.page != BladeFrontendPage.ReplayCatalog
+        || array_length(_state.replay_view.entries) == 0) {
+        return undefined;
+    }
+    return _state.replay_view.entries[_state.selected_index];
+}
+
+/// Launches a playable entry through the catalog's deterministic playback owner.
+function BladeFrontendStateLaunchReplay(
+    _state, _content_id_predicate, _max_catch_up_ticks = 8
+) {
+    _BladeFrontendStateRequire(_state);
+    var _entry = BladeFrontendStateReplayEntry(_state);
+    if (is_undefined(_entry)) {
+        BladeFrontendStateSetMessage(_state, "REPLAY CATALOG EMPTY");
+        return {
+            ok: false,
+            code: "replay.catalog.empty",
+            state: BladeReplayCatalogEntryState.Missing,
+        };
+    }
+    if (_entry.state != BladeReplayCatalogEntryState.Playable) {
+        BladeFrontendStateSetMessage(
+            _state, "REPLAY UNAVAILABLE: " + _entry.state_token
+        );
+        return {
+            ok: false,
+            code: "replay.catalog.not_playable",
+            state: _entry.state,
+            entry: _entry,
+        };
+    }
+
+    var _launch = BladeReplayCatalogLaunch(
+        _state.replay_catalog,
+        _state.selected_index,
+        _content_id_predicate,
+        _max_catch_up_ticks
+    );
+    if (!_launch.ok) {
+        if (is_struct(_launch.entry)) {
+            _state.replay_view.entries[_state.selected_index] = _launch.entry;
+        }
+        BladeFrontendStateSetMessage(
+            _state, "REPLAY UNAVAILABLE: " + string(_launch.code)
+        );
+        return _launch;
+    }
+    _state.replay_playback = _launch.playback;
+    _state.replay_entry = _launch.entry;
+    _state.replay_completed = false;
+    _state.replay_completion = undefined;
+    _BladeFrontendStateOpenPage(_state, BladeFrontendPage.ReplayPlayback);
+    return _launch;
+}
+
+/// Advances one recorded tick without consulting live gameplay input.
+function BladeFrontendStateAdvanceReplay(_state) {
+    _BladeFrontendStateRequire(_state);
+    if (_state.page != BladeFrontendPage.ReplayPlayback
+        || !is_struct(_state.replay_playback)) {
+        throw("BladeFrontendState: replay playback is not active");
+    }
+    try {
+        var _step = undefined;
+        if (!_state.replay_completed
+            && !BladeReplayPlaybackFinished(_state.replay_playback)) {
+            _step = BladeReplayPlaybackStep(
+                _state.replay_playback,
+                BladeClockDomain.Stage
+                    | BladeClockDomain.Actor
+                    | BladeClockDomain.Boss
+                    | BladeClockDomain.Combat
+            );
+        }
+        if (!_state.replay_completed
+            && BladeReplayPlaybackFinished(_state.replay_playback)) {
+            _state.replay_completion = BladeReplayPlaybackComplete(
+                _state.replay_playback
+            );
+            _state.replay_completed = true;
+        }
+        return {
+            ok: true,
+            finished: _state.replay_completed,
+            step: _step,
+            completion: _state.replay_completion,
+        };
+    } catch (_caught) {
+        _state.replay_playback = undefined;
+        _state.replay_entry = undefined;
+        _state.replay_completed = false;
+        _state.replay_completion = undefined;
+        _state.page = BladeFrontendPage.ReplayCatalog;
+        _state.selected_index = 0;
+        BladeFrontendStateSetMessage(
+            _state, "REPLAY STOPPED: " + string(_caught)
+        );
+        return {
+            ok: false,
+            code: "replay.catalog.playback_failed",
+            diagnostic: string(_caught),
+        };
+    }
 }
 
 /// Latches the one allowed title-to-game transition.

@@ -5,6 +5,17 @@ frontend_input = BladeLiveInputSample(
     live_input_state
 );
 
+// Replay navigation may use live Cancel, but recorded ticks own every
+// simulation input while this page is active.
+if (frontend_state.page == BladeFrontendPage.ReplayPlayback) {
+    if (BladeLiveInputActionPressed(frontend_input, BladeInputAction.Cancel)) {
+        BladeFrontendStateBack(frontend_state);
+        exit;
+    }
+    BladeFrontendStateAdvanceReplay(frontend_state);
+    exit;
+}
+
 if (frontend_state.listening) {
     var _binding_ids = BladeFrontendBindingIds();
     var _binding_id = _binding_ids[frontend_state.selected_index];
@@ -138,4 +149,9 @@ if (_activation.action == BladeFrontendAction.StartGame) {
     }
 } else if (_activation.action == BladeFrontendAction.Quit) {
     game_end();
+} else if (_activation.action == BladeFrontendAction.LaunchReplay) {
+    BladeFrontendStateLaunchReplay(
+        frontend_state,
+        method({}, BladeStage1RouteKnownContent)
+    );
 }

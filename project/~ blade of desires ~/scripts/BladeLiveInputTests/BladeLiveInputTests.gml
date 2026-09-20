@@ -276,9 +276,10 @@ function _BladeLiveInputTestSemanticConsumers() {
         0
     );
     BladeFrontendStateMove(_frontend, _move_to_options.pressed_move_y);
+    BladeFrontendStateMove(_frontend, _move_to_options.pressed_move_y);
     BladeKernelTestAssertEqual(
         _frontend.selected_index,
-        1,
+        2,
         "controller movement navigates the title selector"
     );
     var _confirm_options = BladeLiveInputCompose(

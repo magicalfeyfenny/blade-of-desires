@@ -158,6 +158,8 @@
     {"id":{"name":"BladeRandomStream","path":"scripts/BladeRandomStream/BladeRandomStream.yy",},},
     {"id":{"name":"BladeReplayRecording","path":"scripts/BladeReplayRecording/BladeReplayRecording.yy",},},
     {"id":{"name":"BladeReplayRecordingTests","path":"scripts/BladeReplayRecordingTests/BladeReplayRecordingTests.yy",},},
+    {"id":{"name":"BladeReplayCatalog","path":"scripts/BladeReplayCatalog/BladeReplayCatalog.yy",},},
+    {"id":{"name":"BladeReplayCatalogTests","path":"scripts/BladeReplayCatalogTests/BladeReplayCatalogTests.yy",},},
     {"id":{"name":"BladeRunCombatCommands","path":"scripts/BladeRunCombatCommands/BladeRunCombatCommands.yy",},},
     {"id":{"name":"BladeRunCoordinator","path":"scripts/BladeRunCoordinator/BladeRunCoordinator.yy",},},
     {"id":{"name":"BladeRunCoordinatorTests","path":"scripts/BladeRunCoordinatorTests/BladeRunCoordinatorTests.yy",},},
