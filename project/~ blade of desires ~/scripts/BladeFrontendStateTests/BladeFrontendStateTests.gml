@@ -8,8 +8,8 @@ function _BladeFrontendTestMainFlow() {
     );
     BladeKernelTestAssertEqual(
         BladeFrontendPageItemCount(BladeFrontendPage.Main),
-        3,
-        "main page has start/options/quit"
+        4,
+        "main page has start/replay/options/quit"
     );
     var _start = BladeFrontendStateActivate(_state);
     BladeKernelTestAssertEqual(
@@ -25,6 +25,7 @@ function _BladeFrontendTestMainFlow() {
 
     var _options_state = BladeFrontendStateCreate(BladeConfigCreateDefault());
     BladeFrontendStateMove(_options_state, 1);
+    BladeFrontendStateMove(_options_state, 1);
     BladeFrontendStateActivate(_options_state);
     BladeKernelTestAssertEqual(
         _options_state.page, BladeFrontendPage.Options,
@@ -39,6 +40,42 @@ function _BladeFrontendTestMainFlow() {
     BladeKernelTestAssertEqual(
         _options_state.page, BladeFrontendPage.Main,
         "cancel returns options to the main page"
+    );
+}
+
+/// Proves the catalog is a safe front-end page even when no replay exists.
+function _BladeFrontendTestReplayCatalogNavigation() {
+    var _state = BladeFrontendStateCreate(BladeConfigCreateDefault());
+    BladeFrontendStateMove(_state, 1);
+    var _open = BladeFrontendStateActivate(_state);
+    BladeKernelTestAssertEqual(
+        _state.page, BladeFrontendPage.ReplayCatalog,
+        "replay choice opens the catalog page"
+    );
+    BladeKernelTestAssertEqual(
+        BladeFrontendPageItemCount(
+            BladeFrontendPage.ReplayCatalog, _state.replay_view
+        ),
+        1,
+        "empty catalog exposes one safe placeholder selection"
+    );
+    BladeKernelTestAssertEqual(
+        _open.action, BladeFrontendAction.None,
+        "catalog transition does not start gameplay"
+    );
+    var _empty = BladeFrontendStateActivate(_state);
+    BladeKernelTestAssertEqual(
+        _empty.action, BladeFrontendAction.None,
+        "empty catalog confirm remains on the catalog page"
+    );
+    BladeKernelTestAssertEqual(
+        _state.message, "REPLAY CATALOG EMPTY",
+        "empty catalog gives an explicit player-facing state"
+    );
+    BladeFrontendStateBack(_state);
+    BladeKernelTestAssertEqual(
+        _state.page, BladeFrontendPage.Main,
+        "catalog cancel returns to the main page"
     );
 }
 
@@ -153,6 +190,7 @@ function _BladeFrontendTestBindingCandidates() {
 function _BladeFrontendTestBindingNavigation() {
     var _state = BladeFrontendStateCreate(BladeConfigCreateDefault());
     BladeFrontendStateMove(_state, 1);
+    BladeFrontendStateMove(_state, 1);
     BladeFrontendStateActivate(_state);
     for (var _index = 0; _index < 5; ++_index) {
         BladeFrontendStateMove(_state, 1);
@@ -188,6 +226,7 @@ function _BladeFrontendTestBindingNavigation() {
 
     var _gamepad_state = BladeFrontendStateCreate(BladeConfigCreateDefault());
     BladeFrontendStateMove(_gamepad_state, 1);
+    BladeFrontendStateMove(_gamepad_state, 1);
     BladeFrontendStateActivate(_gamepad_state);
     for (var _gamepad_index = 0; _gamepad_index < 6; ++_gamepad_index) {
         BladeFrontendStateMove(_gamepad_state, 1);
@@ -215,6 +254,9 @@ function _BladeFrontendTestBindingNavigation() {
 function BladeFrontendStateTestsRun(_state) {
     BladeKernelTestRunCase(_state, "front-end title flow and one-shot start", function() {
         _BladeFrontendTestMainFlow();
+    });
+    BladeKernelTestRunCase(_state, "front-end replay catalog navigation is safe", function() {
+        _BladeFrontendTestReplayCatalogNavigation();
     });
     BladeKernelTestRunCase(_state, "front-end option candidates stay bounded", function() {
         _BladeFrontendTestOptionCandidates();

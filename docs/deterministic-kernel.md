@@ -3,7 +3,8 @@
 Issue #7 establishes the project-owned deterministic seam used by later Blade
 gameplay systems. The current seam is `blade.simulation.v2`, runs at 60 Hz,
 and uses `blade.xoshiro128ss.v1`. It is a simulation foundation and replay
-seam, not a complete game loop or replay catalog/storage service.
+seam; `BladeReplayCatalog` owns the separate per-user discovery and front-end
+playback path.
 
 ## Module ownership
 
@@ -19,6 +20,7 @@ seam, not a complete game loop or replay catalog/storage service.
 | `BladeSessionHeader` | Construction-time compatibility fields and their canonical header. |
 | `BladeDeterministicKernel` | Thin composition, tick dispatch, transcripts, and the final gameplay hash. |
 | `BladeReplayRecording` | Compact BRP1 recording, validation, and tick-driven playback over the run coordinator. |
+| `BladeReplayCatalog` | Per-user BRP1 discovery, metadata states, identity-derived storage, and playback launch. |
 
 Gameplay code receives time, input, IDs, RNG streams, and an open event tick
 through the kernel. It must not poll platform input or call GameMaker's ambient
@@ -149,9 +151,11 @@ malformed text is rejected before a playback coordinator is created.
 content predicate. `BladeReplayPlaybackStep` consumes exactly one recorded
 simulation tick through `BladeRunCoordinatorStepRecorded` and the existing
 callback path; `BladeReplayPlaybackRunToEnd` repeats that operation without a
-wall-time accumulator or live-input sample. The caller owns where the
-serialized BRP1 text is saved, while future catalog, sharing, and persistence
-services remain outside this module.
+wall-time accumulator or live-input sample. `BladeReplayCatalog` discovers
+canonical payloads under the per-user `blade-replays/` directory, projects
+metadata without trusting filenames or display labels, and returns explicit
+unsupported/corrupt/missing/unreadable states. Its front-end page launches the
+same playback owner and reserves live input for safe menu navigation only.
 
 ## Named random streams
 
@@ -328,7 +332,7 @@ evidence.
 The deterministic kernel itself does not own pause tokens, run/player state,
 configuration, or combat transactions; the project-owned runtime layers compose
 those systems over its clocks, IDs, events, and transcripts. General save files,
-replay catalog/storage, migrations, remapping UI, emitters, stages, encounters,
+migrations, remapping UI, emitters, stages, encounters,
 patterns, bosses, scoring, rank, graze, hyper, deathbomb, player weapons, menus,
 rendering, audio, UI, 3D, and assets remain outside this kernel contract. It
 does not modify the GMTL vendor boundary or lock.

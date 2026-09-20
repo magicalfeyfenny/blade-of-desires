@@ -90,6 +90,108 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         draw_text(572, _option_y + 4, _option_value);
         draw_set_halign(fa_left);
     }
+} else if (frontend_state.page == BladeFrontendPage.ReplayCatalog) {
+    draw_set_color(make_color_rgb(214, 242, 228));
+    draw_text(32, 62, "REPLAY CATALOG");
+    var _replay_entries = frontend_state.replay_view.entries;
+    if (array_length(_replay_entries) == 0) {
+        draw_set_halign(fa_center);
+        draw_set_color(make_color_rgb(190, 214, 202));
+        draw_text(320, 150, "NO SAVED REPLAYS");
+        draw_text(320, 178, "RECORDINGS APPEAR AFTER A RUN IS SAVED");
+        draw_set_halign(fa_left);
+    } else {
+        var _replay_count = array_length(_replay_entries);
+        var _replay_visible_count = 7;
+        var _replay_first_index = clamp(
+            frontend_state.selected_index - 3,
+            0,
+            max(0, _replay_count - _replay_visible_count)
+        );
+        for (var _replay_visible_index = 0;
+            _replay_visible_index < _replay_visible_count
+                && _replay_first_index + _replay_visible_index < _replay_count;
+            ++_replay_visible_index) {
+            var _replay_index = _replay_first_index + _replay_visible_index;
+            var _replay_entry = _replay_entries[_replay_index];
+            var _replay_y = 84 + _replay_visible_index * 31;
+            var _replay_selected = frontend_state.selected_index == _replay_index;
+            BladeFrontendUiDrawPanel(
+                frontend_ui,
+                _replay_selected,
+                36,
+                _replay_y,
+                568,
+                25
+            );
+            draw_set_color(
+                _replay_selected ? c_white : make_color_rgb(190, 214, 202)
+            );
+            var _replay_label = _replay_entry.state_token == "playable"
+                ? string(_replay_entry.replay_id)
+                : string(_replay_entry.file_path);
+            draw_text(48, _replay_y + 4, _replay_label);
+            draw_set_halign(fa_right);
+            draw_text(590, _replay_y + 4, string_upper(_replay_entry.state_token));
+            draw_set_halign(fa_left);
+        }
+        var _selected_replay = _replay_entries[frontend_state.selected_index];
+        draw_set_color(make_color_rgb(238, 226, 170));
+        draw_text(
+            42,
+            294,
+            _selected_replay.state_token == "playable"
+                ? "SEED " + string(_selected_replay.run_seed)
+                    + "  " + _selected_replay.ship_id
+                    + "  " + _selected_replay.difficulty_id
+                    + "  TICKS " + string(_selected_replay.progress_ticks)
+                : string(_selected_replay.reason)
+        );
+        if (_selected_replay.state_token == "playable") {
+            draw_text(
+                42,
+                314,
+                "RESULT " + _selected_replay.terminal_result
+                    + "  SCORE "
+                    + (_selected_replay.has_score
+                        ? string(_selected_replay.score)
+                        : "UNAVAILABLE")
+            );
+        }
+    }
+} else if (frontend_state.page == BladeFrontendPage.ReplayPlayback) {
+    draw_set_color(make_color_rgb(214, 242, 228));
+    draw_text(32, 62, "REPLAY PLAYBACK");
+    if (is_struct(frontend_state.replay_entry)) {
+        draw_set_color(make_color_rgb(190, 214, 202));
+        draw_text(
+            42,
+            92,
+            string(frontend_state.replay_entry.replay_id)
+                + "  " + frontend_state.replay_entry.ship_id
+                + "  " + frontend_state.replay_entry.difficulty_id
+        );
+    }
+    var _replay_snapshot = BladeReplayPlaybackSnapshot(
+        frontend_state.replay_playback
+    );
+    draw_set_color(make_color_rgb(238, 226, 170));
+    draw_text(
+        42,
+        126,
+        "TICK " + string(_replay_snapshot.next_input_index)
+            + " / " + string(_replay_snapshot.input_count)
+    );
+    draw_text(42, 150, "LIVE INPUT DISABLED");
+    draw_set_halign(fa_center);
+    draw_text(
+        320,
+        220,
+        frontend_state.replay_completed
+            ? "PLAYBACK COMPLETE"
+            : "DETERMINISTIC PLAYBACK"
+    );
+    draw_set_halign(fa_left);
 } else {
     draw_set_color(make_color_rgb(214, 242, 228));
     draw_text(

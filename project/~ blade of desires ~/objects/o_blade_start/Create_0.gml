@@ -72,7 +72,12 @@ if (_run_tests) {
         BladeFrontendRoomLifecycleTestRegister();
     }
     global.blade_selected_run = undefined;
-    frontend_state = BladeFrontendStateCreate(_config);
+    global.blade_replay_catalog = BladeReplayCatalogCreate(
+        BladeReplayCatalogFileStorageCreate()
+    );
+    frontend_state = BladeFrontendStateCreate(
+        _config, global.blade_replay_catalog
+    );
     frontend_ui = BladeFrontendUiCreate();
     live_input_state = BladeLiveInputStateCreate();
     frontend_input = BladeLiveInputSample(
