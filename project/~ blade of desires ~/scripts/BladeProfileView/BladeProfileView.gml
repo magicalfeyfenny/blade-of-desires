@@ -38,7 +38,7 @@ function BladeProfileViewDisplayLabel(_id) {
         case "stage.stage2.waters_of_unyielding_life":
             return "WATERS OF UNYIELDING LIFE";
         case "stage.stage3.under_the_vultures_shadow":
-            return "UNDER THE VULTURE'S SHADOW";
+            return "UNDER THE VULTURES' SHADOW";
         case "stage.stage4.assault_on_the_desert_rose":
             return "ASSAULT ON THE DESERT ROSE";
         case "stage.stage5.banner_of_the_bloody_lion":
