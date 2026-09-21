@@ -8,8 +8,8 @@ function _BladeFrontendTestMainFlow() {
     );
     BladeKernelTestAssertEqual(
         BladeFrontendPageItemCount(BladeFrontendPage.Main),
-        4,
-        "main page has start/replay/options/quit"
+        5,
+        "main page has start/replay/options/profile/quit"
     );
     var _start = BladeFrontendStateActivate(_state);
     BladeKernelTestAssertEqual(
@@ -40,6 +40,54 @@ function _BladeFrontendTestMainFlow() {
     BladeKernelTestAssertEqual(
         _options_state.page, BladeFrontendPage.Main,
         "cancel returns options to the main page"
+    );
+}
+
+/// Proves the profile page is read-only and returns through the shared menu path.
+function _BladeFrontendTestProfileNavigation() {
+    var _profile = BladeProfileCreateDefault();
+    BladeProfileGrantUnlock(_profile, BLADE_PROFILE_EXTRA_UNLOCK_ID);
+    var _state = BladeFrontendStateCreate(
+        BladeConfigCreateDefault(),
+        undefined,
+        {
+            ok: true,
+            status: BladeProfileLoadStatus.Loaded,
+            code: "profile.load.current",
+            profile: _profile,
+        }
+    );
+    BladeFrontendStateMove(_state, 1);
+    BladeFrontendStateMove(_state, 1);
+    BladeFrontendStateMove(_state, 1);
+    var _open = BladeFrontendStateActivate(_state);
+    BladeKernelTestAssertEqual(
+        _state.page, BladeFrontendPage.Profile,
+        "profile choice opens the profile page"
+    );
+    BladeKernelTestAssertEqual(
+        BladeFrontendPageItemCount(BladeFrontendPage.Profile),
+        1,
+        "profile page has one read-only selection"
+    );
+    BladeKernelTestAssertEqual(
+        _state.profile_view.unlock_entries[0].granted,
+        true,
+        "profile page receives the current profile projection"
+    );
+    BladeKernelTestAssertEqual(
+        _open.action, BladeFrontendAction.None,
+        "profile transition does not start gameplay"
+    );
+    var _confirm = BladeFrontendStateActivate(_state);
+    BladeKernelTestAssertEqual(
+        _confirm.action, BladeFrontendAction.None,
+        "profile confirm remains read-only"
+    );
+    BladeFrontendStateBack(_state);
+    BladeKernelTestAssertEqual(
+        _state.page, BladeFrontendPage.Main,
+        "profile cancel returns to the main page"
     );
 }
 
@@ -254,6 +302,9 @@ function _BladeFrontendTestBindingNavigation() {
 function BladeFrontendStateTestsRun(_state) {
     BladeKernelTestRunCase(_state, "front-end title flow and one-shot start", function() {
         _BladeFrontendTestMainFlow();
+    });
+    BladeKernelTestRunCase(_state, "front-end profile navigation is read-only", function() {
+        _BladeFrontendTestProfileNavigation();
     });
     BladeKernelTestRunCase(_state, "front-end replay catalog navigation is safe", function() {
         _BladeFrontendTestReplayCatalogNavigation();

@@ -125,6 +125,8 @@
     {"id":{"name":"BladeProfileService","path":"scripts/BladeProfileService/BladeProfileService.yy",},},
     {"id":{"name":"BladeProfileStorage","path":"scripts/BladeProfileStorage/BladeProfileStorage.yy",},},
     {"id":{"name":"BladeProfileTests","path":"scripts/BladeProfileTests/BladeProfileTests.yy",},},
+    {"id":{"name":"BladeProfileView","path":"scripts/BladeProfileView/BladeProfileView.yy",},},
+    {"id":{"name":"BladeProfileViewTests","path":"scripts/BladeProfileViewTests/BladeProfileViewTests.yy",},},
     {"id":{"name":"BladeDeterministicKernel","path":"scripts/BladeDeterministicKernel/BladeDeterministicKernel.yy",},},
     {"id":{"name":"BladeDifficultyRank","path":"scripts/BladeDifficultyRank/BladeDifficultyRank.yy",},},
     {"id":{"name":"BladeDifficultyRankTests","path":"scripts/BladeDifficultyRankTests/BladeDifficultyRankTests.yy",},},

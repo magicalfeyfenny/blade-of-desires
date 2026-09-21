@@ -6,6 +6,7 @@ enum BladeFrontendPage {
     Bindings = 3,
     ReplayCatalog = 4,
     ReplayPlayback = 5,
+    Profile = 6,
 }
 
 enum BladeFrontendAction {
@@ -17,7 +18,7 @@ enum BladeFrontendAction {
 
 /// Returns the stable main-menu labels in their player-facing order.
 function BladeFrontendMainLabels() {
-    return ["START GAME", "REPLAY CATALOG", "OPTIONS", "QUIT"];
+    return ["START GAME", "REPLAY CATALOG", "OPTIONS", "PROFILE", "QUIT"];
 }
 
 /// Returns the option labels; the final three entries open or leave a subpage.
@@ -62,6 +63,8 @@ function BladeFrontendPageItemCount(_page, _replay_view = undefined) {
             return 1;
         case BladeFrontendPage.ReplayPlayback:
             return 1;
+        case BladeFrontendPage.Profile:
+            return 1;
     }
     throw("BladeFrontendState: unknown page");
 }
@@ -81,7 +84,9 @@ function _BladeFrontendStateRequire(_state) {
         || !is_array(_state.replay_view.entries)
         || !variable_struct_exists(_state, "page")
         || _state.page < BladeFrontendPage.Main
-        || _state.page > BladeFrontendPage.ReplayPlayback
+        || _state.page > BladeFrontendPage.Profile
+        || !variable_struct_exists(_state, "profile_view")
+        || !BladeProfileViewIsValid(_state.profile_view)
         || !variable_struct_exists(_state, "selected_index")
         || _state.selected_index < 0
         || _state.selected_index >= BladeFrontendPageItemCount(
@@ -99,7 +104,9 @@ function _BladeFrontendStateRequire(_state) {
 }
 
 /// Creates a detached front-end state with the title screen selected.
-function BladeFrontendStateCreate(_config, _replay_catalog = undefined) {
+function BladeFrontendStateCreate(
+    _config, _replay_catalog = undefined, _profile_load_result = undefined
+) {
     var _normalized = BladeConfigNormalize(_config);
     if (is_undefined(_replay_catalog)) {
         _replay_catalog = BladeReplayCatalogCreate(
@@ -125,6 +132,7 @@ function BladeFrontendStateCreate(_config, _replay_catalog = undefined) {
         replay_entry: undefined,
         replay_completed: false,
         replay_completion: undefined,
+        profile_view: BladeProfileViewCreate(_profile_load_result),
     };
 }
 
@@ -185,6 +193,10 @@ function BladeFrontendStateActivate(_state) {
             _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Options);
             return { action: BladeFrontendAction.None };
         }
+        if (_state.selected_index == 3) {
+            _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Profile);
+            return { action: BladeFrontendAction.None };
+        }
         return { action: BladeFrontendAction.Quit };
     }
 
@@ -230,6 +242,10 @@ function BladeFrontendStateActivate(_state) {
         };
     }
 
+    if (_state.page == BladeFrontendPage.Profile) {
+        return { action: BladeFrontendAction.None };
+    }
+
     _state.listening = true;
     return {
         action: BladeFrontendAction.None,
@@ -272,6 +288,8 @@ function BladeFrontendStateBack(_state) {
     } else if (_state.page == BladeFrontendPage.ReplayCatalog) {
         _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
     } else if (_state.page == BladeFrontendPage.Options) {
+        _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
+    } else if (_state.page == BladeFrontendPage.Profile) {
         _BladeFrontendStateOpenPage(_state, BladeFrontendPage.Main);
     }
     return _state.page;
