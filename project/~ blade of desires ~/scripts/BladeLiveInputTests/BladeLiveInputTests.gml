@@ -302,6 +302,43 @@ function _BladeLiveInputTestSemanticConsumers() {
         "controller confirm activates the selected front-end option"
     );
 
+    var _profile_frontend = BladeFrontendStateCreate(BladeConfigCreateDefault());
+    var _profile_input_state = BladeLiveInputStateCreate();
+    var _profile_move = BladeLiveInputCompose(
+        _profile_input_state,
+        BladeLiveInputSourceCreate(),
+        BladeLiveInputSourceCreate(
+            0, 1024, 0, 1, 0, 0, BladePromptDevice.Gamepad
+        ),
+        0
+    );
+    for (var _profile_move_index = 0;
+        _profile_move_index < 3;
+        ++_profile_move_index) {
+        BladeFrontendStateMove(
+            _profile_frontend, _profile_move.pressed_move_y
+        );
+    }
+    var _profile_confirm = BladeLiveInputCompose(
+        _profile_input_state,
+        BladeLiveInputSourceCreate(),
+        BladeLiveInputSourceCreate(
+            0, 0, 0, 0, BladeInputAction.Confirm, BladeInputAction.Confirm,
+            BladePromptDevice.Gamepad
+        ),
+        0
+    );
+    if (BladeLiveInputActionPressed(
+        _profile_confirm, BladeInputAction.Confirm
+    )) {
+        BladeFrontendStateActivate(_profile_frontend);
+    }
+    BladeKernelTestAssertEqual(
+        _profile_frontend.page,
+        BladeFrontendPage.Profile,
+        "controller navigation reaches the same profile page"
+    );
+
     var _pause = BladeStage1PauseCreate();
     var _pause_input_state = BladeLiveInputStateCreate();
     var _pause_open = BladeLiveInputCompose(
