@@ -1,4 +1,4 @@
-/// Draw the title, main menu, options, and binding pages on the 640x360 GUI surface.
+/// Draw the title, profile, options, and binding pages on the 640x360 GUI surface.
 draw_set_halign(fa_left);
 draw_set_valign(fa_top);
 draw_set_alpha(1);
@@ -89,6 +89,127 @@ if (frontend_state.page == BladeFrontendPage.Main) {
         draw_set_halign(fa_right);
         draw_text(572, _option_y + 4, _option_value);
         draw_set_halign(fa_left);
+    }
+} else if (frontend_state.page == BladeFrontendPage.Profile) {
+    var _profile_view = frontend_state.profile_view;
+    draw_set_color(make_color_rgb(214, 242, 228));
+    draw_text(32, 62, "PROFILE");
+    if (_profile_view.state == BladeProfileViewState.Unavailable) {
+        draw_set_halign(fa_center);
+        draw_set_color(make_color_rgb(244, 194, 164));
+        draw_text(320, 126, "PROFILE UNAVAILABLE");
+        draw_set_color(make_color_rgb(190, 214, 202));
+        draw_text(320, 154, BladeProfileViewStatusLabel(_profile_view.status));
+        draw_text(320, 182, "PROFILE DATA WAS NOT CHANGED");
+        draw_set_halign(fa_left);
+    } else {
+        draw_set_color(make_color_rgb(190, 232, 205));
+        draw_text(32, 84, "STAGE CLEARS");
+        draw_text(220, 84, "UNLOCKS");
+        draw_text(430, 84, "FLAGS");
+
+        var _clear_entries = _profile_view.clear_entries;
+        var _clear_visible = min(4, array_length(_clear_entries));
+        for (var _clear_index = 0;
+            _clear_index < _clear_visible;
+            ++_clear_index) {
+            var _clear = _clear_entries[_clear_index];
+            var _clear_y = 104 + _clear_index * 22;
+            draw_set_color(make_color_rgb(190, 214, 202));
+            draw_text(32, _clear_y, _clear.stage_label);
+            draw_text(
+                32,
+                _clear_y + 12,
+                _clear.ship_label + " / " + _clear.difficulty_label
+            );
+            draw_set_halign(fa_right);
+            draw_text(190, _clear_y + 12, _clear.status_label);
+            draw_set_halign(fa_left);
+        }
+        if (array_length(_clear_entries) == 0) {
+            draw_set_color(make_color_rgb(146, 174, 164));
+            draw_text(32, 110, "NO CLEARS RECORDED");
+        } else if (array_length(_clear_entries) > _clear_visible) {
+            draw_set_color(make_color_rgb(146, 174, 164));
+            draw_text(
+                32,
+                196,
+                "+" + string(array_length(_clear_entries) - _clear_visible)
+                    + " MORE"
+            );
+        }
+
+        var _unlock_entries = _profile_view.unlock_entries;
+        for (var _unlock_index = 0;
+            _unlock_index < min(4, array_length(_unlock_entries));
+            ++_unlock_index) {
+            var _unlock = _unlock_entries[_unlock_index];
+            var _unlock_y = 104 + _unlock_index * 22;
+            draw_set_color(_unlock.granted
+                ? make_color_rgb(238, 226, 170)
+                : make_color_rgb(146, 174, 164));
+            draw_text(220, _unlock_y, _unlock.label);
+            draw_set_halign(fa_right);
+            draw_text(412, _unlock_y, _unlock.granted ? "UNLOCKED" : "LOCKED");
+            draw_set_halign(fa_left);
+        }
+
+        var _flag_row = 0;
+        for (var _achievement_index = 0;
+            _achievement_index < array_length(_profile_view.achievement_entries);
+            ++_achievement_index) {
+            if (_flag_row >= 4) break;
+            var _achievement = _profile_view.achievement_entries[_achievement_index];
+            draw_set_color(make_color_rgb(190, 214, 202));
+            draw_text(430, 104 + _flag_row * 22, "A: " + _achievement.label);
+            ++_flag_row;
+        }
+        for (var _cg_index = 0;
+            _cg_index < array_length(_profile_view.cg_entries);
+            ++_cg_index) {
+            if (_flag_row >= 4) break;
+            var _cg = _profile_view.cg_entries[_cg_index];
+            draw_set_color(make_color_rgb(190, 214, 202));
+            draw_text(430, 104 + _flag_row * 22, "CG: " + _cg.label);
+            ++_flag_row;
+        }
+        if (_flag_row == 0) {
+            draw_set_color(make_color_rgb(146, 174, 164));
+            draw_text(430, 110, "NONE RECORDED");
+        }
+
+        draw_set_color(make_color_rgb(190, 232, 205));
+        draw_text(32, 218, "ARCADE RECORDS");
+        var _record_entries = _profile_view.records;
+        var _record_visible = min(4, array_length(_record_entries));
+        for (var _record_index = 0;
+            _record_index < _record_visible;
+            ++_record_index) {
+            var _record = _record_entries[_record_index];
+            var _record_y = 238 + _record_index * 18;
+            draw_set_color(make_color_rgb(190, 214, 202));
+            draw_text(
+                32,
+                _record_y,
+                _record.stage_label + " / " + _record.ship_label
+                    + " / " + _record.difficulty_label
+            );
+            draw_set_halign(fa_right);
+            draw_text(606, _record_y, string(_record.score));
+            draw_set_halign(fa_left);
+        }
+        if (array_length(_record_entries) == 0) {
+            draw_set_color(make_color_rgb(146, 174, 164));
+            draw_text(32, 240, "NO ARCADE RECORDS");
+        } else if (array_length(_record_entries) > _record_visible) {
+            draw_set_color(make_color_rgb(146, 174, 164));
+            draw_text(
+                32,
+                312,
+                "+" + string(array_length(_record_entries) - _record_visible)
+                    + " MORE RECORDS"
+            );
+        }
     }
 } else if (frontend_state.page == BladeFrontendPage.ReplayCatalog) {
     draw_set_color(make_color_rgb(214, 242, 228));

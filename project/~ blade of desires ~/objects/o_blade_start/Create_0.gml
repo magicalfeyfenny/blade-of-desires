@@ -76,7 +76,9 @@ if (_run_tests) {
         BladeReplayCatalogFileStorageCreate()
     );
     frontend_state = BladeFrontendStateCreate(
-        _config, global.blade_replay_catalog
+        _config,
+        global.blade_replay_catalog,
+        global.blade_profile_load_result
     );
     frontend_ui = BladeFrontendUiCreate();
     live_input_state = BladeLiveInputStateCreate();

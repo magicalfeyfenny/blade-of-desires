@@ -10,6 +10,7 @@ function BladeKernelTestsRun() {
     BladeClockInputTestsRun(_state);
     BladeInputBindingTestsRun(_state);
     BladeLiveInputTestsRun(_state);
+    BladeProfileViewTestsRun(_state);
     BladeFrontendStateTestsRun(_state);
     BladeFrontendUiTestsRun(_state);
     BladeStage1PauseTestsRun(_state);
