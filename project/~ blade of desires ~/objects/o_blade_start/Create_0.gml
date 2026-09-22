@@ -82,6 +82,7 @@ if (_run_tests) {
     );
     frontend_ui = BladeFrontendUiCreate();
     live_input_state = BladeLiveInputStateCreate();
+    application_lifecycle_epoch = BladeApplicationLifecycleCurrentEpoch();
     frontend_input = BladeLiveInputSample(
         frontend_state.config,
         live_input_state

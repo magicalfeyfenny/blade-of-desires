@@ -1,4 +1,14 @@
 /// Navigate and confirm through the shared configured semantic input adapter.
+var _application = BladeApplicationLifecyclePoll();
+if (!_application.gameplay_allowed) {
+    BladeLiveInputStateReset(live_input_state);
+    exit;
+}
+if (_application.epoch != application_lifecycle_epoch) {
+    application_lifecycle_epoch = _application.epoch;
+    BladeLiveInputStateReset(live_input_state);
+    exit;
+}
 if (error_text != "" || is_undefined(selector_state)) exit;
 
 var _input = BladeLiveInputSample(input_config, live_input_state);

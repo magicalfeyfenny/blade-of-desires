@@ -295,6 +295,20 @@ function BladeFrontendStateBack(_state) {
     return _state.page;
 }
 
+/// Abandons active replay playback and clears front-end-owned transient state.
+function BladeFrontendStateShutdown(_state) {
+    _BladeFrontendStateRequire(_state);
+    if (is_struct(_state.replay_playback)) {
+        BladeReplayPlaybackAbort(_state.replay_playback);
+    }
+    _state.replay_playback = undefined;
+    _state.replay_entry = undefined;
+    _state.replay_completed = false;
+    _state.replay_completion = undefined;
+    _state.listening = false;
+    return _state;
+}
+
 /// Returns the currently selected detached catalog entry, if one exists.
 function BladeFrontendStateReplayEntry(_state) {
     _BladeFrontendStateRequire(_state);

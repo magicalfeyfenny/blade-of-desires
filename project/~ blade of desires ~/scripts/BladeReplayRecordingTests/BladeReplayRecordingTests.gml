@@ -253,6 +253,52 @@ function BladeReplayRecordingTestsRun(_state) {
 		);
 	});
 
+	BladeKernelTestRunCase(_state, "replay recording and playback abandon without terminal credit", function() {
+		var _fixture = _BladeReplayTestFixture(BladePromptDevice.KeyboardMouse);
+		var _recorder_view = BladeReplayRecorderAbort(_fixture.recorder);
+		BladeKernelTestAssertTrue(
+			_recorder_view.aborted,
+			"administrative recorder abort is visible in its detached view"
+		);
+		BladeKernelTestAssertThrows(
+			method({ recorder: _fixture.recorder }, function() {
+				BladeReplayRecordingSerialize(self.recorder);
+			}),
+			"aborted recording",
+			"aborted recording cannot become a catalog payload"
+		);
+
+		var _playback = BladeReplayPlaybackCreate(
+			_fixture.recording,
+			method({}, _BladeReplayTestKnownContent),
+			8
+		);
+		BladeReplayPlaybackStep(
+			_playback,
+			BladeClockDomain.Stage
+				| BladeClockDomain.Actor
+				| BladeClockDomain.Boss
+				| BladeClockDomain.Combat
+		);
+		var _playback_view = BladeReplayPlaybackAbort(_playback);
+		BladeKernelTestAssertTrue(
+			_playback_view.aborted,
+			"administrative playback abort is visible in its detached view"
+		);
+		BladeKernelTestAssertEqual(
+			_playback_view.run.lifecycle,
+			BladeRunLifecycle.Aborted,
+			"aborted playback coordinator cannot complete"
+		);
+		BladeKernelTestAssertThrows(
+			method({ playback: _playback }, function() {
+				BladeReplayPlaybackComplete(self.playback);
+			}),
+			"administrative abort",
+			"aborted playback rejects terminal completion"
+		);
+	});
+
 	BladeKernelTestRunCase(_state, "replay playback is tick-driven and prompt-device independent", function() {
 		var _keyboard = _BladeReplayTestFixture(BladePromptDevice.KeyboardMouse);
 		var _gamepad = _BladeReplayTestFixture(BladePromptDevice.Gamepad);
