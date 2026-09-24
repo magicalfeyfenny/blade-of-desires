@@ -56,7 +56,7 @@ class CodexAutomationTemplateTests(unittest.TestCase):
             "immediately before the completion transition",
             "exactly one physical-line `closes #<issue>` line",
             "fresh stage 3 exact-head hosted evidence",
-            "existing low-risk automation",
+            "existing automatic workflow",
         )
         positions = []
         for stage in ordered_stages:
@@ -125,8 +125,8 @@ class CodexAutomationTemplateTests(unittest.TestCase):
                 "stage 3 is not a prerequisite",
                 "blocks readiness and auto-merge",
             ),
-            "low risk actor": (
-                "existing low-risk automation",
+            "low/medium actor": (
+                "existing automatic workflow",
                 "mark the pr ready",
                 "configure squash auto-merge",
             ),
@@ -154,6 +154,30 @@ class CodexAutomationTemplateTests(unittest.TestCase):
             .casefold()
         )
         self.assertIn("tools/ci/run_repository_checks.py", prompt)
+
+    def test_scheduled_completion_routes_review_before_metadata(self):
+        """Keep the governed review command between Stage 2 and completion."""
+        prompt = " ".join(
+            (ROOT / "templates/codex/governed-change.txt")
+            .read_text(encoding="utf-8").casefold().split()
+        )
+        ordered_stages = (
+            "stage 2 whole-issue local evidence",
+            "adversarial_review_session.py run",
+            "immediately before the completion transition",
+            "fresh stage 3 exact-head hosted evidence",
+        )
+        positions = []
+        for stage in ordered_stages:
+            with self.subTest(stage=stage):
+                position = prompt.find(stage)
+                self.assertGreaterEqual(position, 0)
+                positions.append(position)
+        self.assertEqual(positions, sorted(positions))
+        self.assertIn(
+            "governance.md#adversarial-review-and-adjudication",
+            prompt,
+        )
 
 
 if __name__ == "__main__":
