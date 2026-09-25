@@ -34,14 +34,18 @@ complete change receives whole-issue local validation, and hosted CI then
 verifies the exact pull-request head, body, and labels. Completion metadata is
 added only after the whole change is locally valid.
 
-Risk determines the final path. Eligible completed low-risk work targeting
+Risk determines the final path. After whole-issue Stage 2 evidence, governed
+changes complete bounded adversarial review and adjudication before adding
+completion metadata. Eligible completed low- or medium-risk work targeting
 `dev` can be marked ready and squash-merged by repository automation after its
-final hosted evidence passes. High-risk or manually handled work remains a
-draft for human review, readiness, and merge. Automatic high risk is reserved
-for authority-bearing governance, release-bound work, and exceptional
-structural size; ordinary game code, content, project metadata, and assets can
-use the low-risk path. Any change can still be classified high risk when its
-actual circumstances warrant it.
+final hosted evidence passes; medium-risk work also needs focused,
+change-specific machine-verifiable evidence. High-risk or manually handled
+work remains a draft for human review, readiness, and merge. High risk is
+reserved for concrete structural or operational danger, including configured
+authority-bearing paths and exceptional structural size; ordinary game code,
+content, project metadata, and assets can be low or medium according to their
+scope. Size, importance, difficulty, or breadth alone does not make work high
+risk.
 
 `main` is release-only, and releases require explicit human authorization.
 Human-created work uses a separate protected lane that agents do not modify.

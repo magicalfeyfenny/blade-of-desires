@@ -8,6 +8,10 @@ description: Audit repository issues and pull requests and create bounded issues
 This is an audit and evidence-backed tracking procedure, not an implementation
 workflow. Use [Issue authority](../../../GOVERNANCE.md#issue-authority) for
 shared issue fields and assignment. When authoring or auditing feature-specific
+expected risk, follow [Risk](../../../GOVERNANCE.md#risk): High requires a
+named concrete danger and does not mean large, important, difficult, or broad.
+When a high-risk PR is voluntary, use the configured structured `High-risk basis:`
+values rather than freeform keywords. When authoring or auditing feature-specific
 validation, use
 [Validation coverage allocation](../../../GOVERNANCE.md#validation-coverage-allocation)
 and [Interactive runtime validation](../../../GOVERNANCE.md#interactive-runtime-validation).
@@ -34,27 +38,27 @@ Inspect live issues and PRs, then report only:
 - PRs without linked issues;
 - PRs labeled `work:blocked`;
 - persistent CI failures;
-- clearly abandoned or superseded tracking;
-- obviously over-decomposed issue clusters;
+- clearly abandoned or superseded tracking.
+- obviously over-decomposed issue clusters
 - acceptance criteria that prescribe technical machinery without an independent
   outcome, or contain implementation machinery, validation procedures, or
-  routine repository policy instead of independently required outcomes;
-- stale blocker or dependency language;
-- tracking whose only purpose is an abstraction that no longer has a consumer;
+  routine repository policy instead of independently required outcomes
+- stale blocker/dependency language
+- tracking whose only purpose is an abstraction that no longer has a consumer
 - asset tracking whose only unresolved outcome is human review, approval,
   acceptance, or promotion of an existing authored asset rather than concrete
-  remaining asset-production work;
+  remaining asset-production work
 - compatibility or migration requirements that do not identify independent
-  pre-work evidence for the consumer or durable contract they preserve;
+  pre-work evidence for the consumer or durable contract they preserve
 - custom substitutes without an established unmet native requirement, native
   facilities disabled or bypassed to preserve those substitutes, and engine
-  semantics assumed from repository code or superficial resemblance;
+  semantics assumed from repository code or superficial resemblance
 - externally authored assets routed to Included Files without a concrete runtime
-  reason when an adequate native GameMaker resource would satisfy the contract; and
+  reason when an adequate native GameMaker resource would satisfy the contract
 - agent-authored manual playtesting, generic gameplay smoke testing, human
   observation, experiential acceptance, readability or feel review, or
   subjective visual-review requirements that lack explicit human direction
-  requiring that specific judgment.
+  requiring that specific judgment
 
 Create an issue only from:
 

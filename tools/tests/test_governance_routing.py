@@ -200,11 +200,12 @@ class GovernanceRoutingTests(unittest.TestCase):
                 "interactive-runtime-validation",
                 "validation-evidence",
                 "milestone-commits-and-draft-publication",
+                "adversarial-review-and-adjudication",
                 "human-created-changes",
                 "risk",
                 "completion-transition",
                 "issue-contract-evidence",
-                "low-risk-changes",
+                "low-risk-and-medium-risk-changes",
                 "manual-and-high-risk-changes",
             }.issubset(governed)
         )
@@ -403,6 +404,48 @@ class GovernanceRoutingTests(unittest.TestCase):
                     governance_fragments(source),
                 )
 
+    def test_adversarial_review_route_is_reachable_from_work_and_pr_routes(self):
+        """Keep the bounded review stage on every completion-facing route."""
+        for source in (
+            ROOT / ".agents/skills/governed-change/SKILL.md",
+            ROOT / "templates/codex/governed-change.txt",
+            ROOT / ".github/pull_request_template.md",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(
+                    "adversarial-review-and-adjudication",
+                    governance_fragments(source),
+                )
+
+    def test_review_obligation_policy_has_one_authoritative_route(self):
+        """Route review policy to Governance, not copied policy text."""
+        governance = ROOT / "GOVERNANCE.md"
+        review = heading_anchors(governance)
+        self.assertIn("review-obligations", review)
+        self.assertIn(
+            "review-obligations",
+            section_descendant_anchors(
+                governance.read_text(encoding="utf-8"),
+                "adversarial-review-and-adjudication",
+            ),
+        )
+        for source in (
+            ROOT / ".agents/skills/governed-change/SKILL.md",
+            ROOT / "templates/codex/governed-change.txt",
+        ):
+            with self.subTest(source=source):
+                self.assertIn(
+                    "adversarial-review-and-adjudication",
+                    governance_fragments(source),
+                )
+
+        destinations = {
+            target for target, _ in local_destinations(
+                ROOT / ".agents/skills/governed-change/SKILL.md"
+            )
+        }
+        self.assertIn(governance.resolve(), destinations)
+
     def test_setup_label_inventory_routes_to_its_authorities(self):
         """Link setup to the shared rule and executable label inventory."""
         setup = ROOT / "docs/SETUP.md"
@@ -443,11 +486,11 @@ class GovernanceRoutingTests(unittest.TestCase):
                     self.assertIsNone(pattern.search(text))
 
     def test_manual_handoff_separates_authority_from_validation(self):
-        """Keep high-risk authority gates out of the validation contract."""
+        """Route high-risk handoff details to the central risk policy."""
         governance = (ROOT / "GOVERNANCE.md").read_text(encoding="utf-8")
         completion = " ".join(
             governance.split("## Completion transition", 1)[1].split(
-                "## Low-risk changes", 1
+                "## Low-risk and medium-risk changes", 1
             )[0].casefold().split()
         )
         for marker in (
@@ -460,18 +503,10 @@ class GovernanceRoutingTests(unittest.TestCase):
             with self.subTest(marker=marker):
                 self.assertIn(marker, completion)
 
-        pull_request = " ".join(
-            (
-                ROOT / ".github/pull_request_template.md"
-            ).read_text(encoding="utf-8").casefold().split()
+        self.assertIn(
+            "risk",
+            governance_fragments(ROOT / ".github/pull_request_template.md"),
         )
-        for marker in (
-            "authority gates only",
-            "accepted issue contract explicitly requires it",
-            "no manual or experiential validation",
-        ):
-            with self.subTest(marker=marker):
-                self.assertIn(marker, pull_request)
 
     def test_scheduled_continuation_rejects_invented_manual_blockers(self):
         """Do not let handoff text turn authority into continuation blocking."""
@@ -522,8 +557,8 @@ class GovernanceRoutingTests(unittest.TestCase):
             "issue-contract revision",
             "immediate pre-transition re-fetch",
             "fresh stage 3 hosted evidence",
-            "eligible low-risk continuation",
-            "existing low-risk readiness and squash auto-merge automation",
+            "eligible low- or medium-risk continuation",
+            "existing automatic readiness and squash auto-merge automation",
             "high-risk and manual-path continuations",
             "authority boundaries",
         ):
@@ -537,11 +572,11 @@ class GovernanceRoutingTests(unittest.TestCase):
         )
         for marker in (
             "completion metadata remains an evidence-backed transition",
-            "scheduled worker may carry eligible low-risk work",
+            "scheduled worker may carry eligible low- or medium-risk work",
             "whole-issue stage 2 evidence",
             "immediate pre-transition issue re-fetch",
             "fresh stage 3 evidence",
-            "existing low-risk automation owns readiness and squash auto-merge",
+            "existing automatic low/medium automation owns readiness and squash auto-merge",
             "high-risk and manual-path work waits for human review, readiness, and merge",
         ):
             with self.subTest(marker=marker):

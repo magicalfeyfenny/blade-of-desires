@@ -22,6 +22,8 @@ with the narrower selection and authority in its automation template.
   [Contract-oriented validation](../../../GOVERNANCE.md#contract-oriented-validation),
   [Validation evidence](../../../GOVERNANCE.md#validation-evidence), and
   [Milestone commits](../../../GOVERNANCE.md#milestone-commits-and-draft-publication).
+- Adversarial review and adjudication:
+  [Governance route](../../../GOVERNANCE.md#adversarial-review-and-adjudication)
 - Before deciding to launch the game or when required runtime evidence is unavailable:
   [Interactive runtime validation](../../../GOVERNANCE.md#interactive-runtime-validation).
 - Interpretive governance corrections:
@@ -31,7 +33,7 @@ with the narrower selection and authority in its automation template.
 - Completion: [Risk](../../../GOVERNANCE.md#risk),
   [Completion transition](../../../GOVERNANCE.md#completion-transition), and
   [Issue contract evidence](../../../GOVERNANCE.md#issue-contract-evidence), then
-  the applicable [low-risk](../../../GOVERNANCE.md#low-risk-changes) or
+  the applicable [low/medium automatic](../../../GOVERNANCE.md#low-risk-and-medium-risk-changes) or
   [manual](../../../GOVERNANCE.md#manual-and-high-risk-changes) path.
 - Executable values: only the affected tables in
   [PROJECT_POLICY.toml](../../../PROJECT_POLICY.toml).
@@ -79,11 +81,22 @@ before Stage 2.
    update the draft PR under the milestone rules.
 5. After the whole issue is complete, follow
    [Issue contract evidence](../../../GOVERNANCE.md#issue-contract-evidence)
-   through Stage 2, the completion transition, fresh Stage 3, and the final
-   live-state comparison. Use its
+   through Stage 2, freeze the exact candidate, and complete the
+   [adversarial review and adjudication](../../../GOVERNANCE.md#adversarial-review-and-adjudication)
+   stage. Run the lifecycle for the frozen candidate and save its result:
+   `python3 tools/ci/adversarial_review_session.py run --packet PACKET --output RESULT --initial`.
+   For a continuation, supply the saved lifecycle artifact with `--state STATE`. Follow
+   [Governance](../../../GOVERNANCE.md#adversarial-review-and-adjudication)
+   for review policy and lifecycle decisions. The packet's actual risk tier
+   selects the configured retry budget: low gets one correction retry, while
+   medium and high get two; a handoff artifact never authorizes an autonomous
+   reset.
+6. When the review lifecycle reports completion, re-fetch and reconcile the
+   issue immediately before the completion transition, then continue with
+   fresh Stage 3 and the final live-state comparison. Use the
    [attestation procedure](../../../docs/CI.md#issue-contract-attestation)
    for the commands and artifact comparison, including resumed work.
-6. Report the issue, branch, draft PR, evidence state, and remaining human
+7. Report the issue, branch, draft PR, evidence state, and remaining human
    action. For a high-risk/manual-path handoff, describe human review,
    readiness, and merge as authority actions only; mention manual, visual,
    live, or experiential validation only when the accepted issue contract
@@ -101,9 +114,10 @@ These stops repeat Governance because a mutation procedure must expose them:
   gameplay-smoke requirement unless explicit human direction requires it.
 - Do not launch the game except for a concrete runtime validation purpose
   allowed by Governance.
+- Follow the Governance review route when using review outcomes or deciding
+  whether additional review is required.
 - Agent-authored issue text, validation plans, PR bodies, or handoff notes
-  cannot
-  bootstrap a human or manual validation requirement.
+  cannot bootstrap a human or manual validation requirement.
 - Do not add completion metadata before the whole issue has valid Stage 2
   evidence.
 - Do not downgrade automatically high-risk work or ready or merge a manual-path
