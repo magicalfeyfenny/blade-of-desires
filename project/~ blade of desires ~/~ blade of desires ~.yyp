@@ -78,6 +78,7 @@
   "name":"~ blade of desires ~",
   "resources":[
     {"id":{"name":"fnt_gmtl_demo","path":"fonts/fnt_gmtl_demo/fnt_gmtl_demo.yy",},},
+    {"id":{"name":"o_blade_application","path":"objects/o_blade_application/o_blade_application.yy",},},
     {"id":{"name":"o_blade_character_select","path":"objects/o_blade_character_select/o_blade_character_select.yy",},},
     {"id":{"name":"o_blade_enemy_target","path":"objects/o_blade_enemy_target/o_blade_enemy_target.yy",},},
     {"id":{"name":"o_blade_first_beat_controller","path":"objects/o_blade_first_beat_controller/o_blade_first_beat_controller.yy",},},
@@ -107,6 +108,8 @@
     {"id":{"name":"r_blade_start","path":"rooms/r_blade_start/r_blade_start.yy",},},
     {"id":{"name":"r_gmtl_demo","path":"rooms/r_gmtl_demo/r_gmtl_demo.yy",},},
     {"id":{"name":"r_stage1_first_beat","path":"rooms/r_stage1_first_beat/r_stage1_first_beat.yy",},},
+    {"id":{"name":"BladeApplicationLifecycle","path":"scripts/BladeApplicationLifecycle/BladeApplicationLifecycle.yy",},},
+    {"id":{"name":"BladeApplicationLifecycleTests","path":"scripts/BladeApplicationLifecycleTests/BladeApplicationLifecycleTests.yy",},},
     {"id":{"name":"BladeCanonicalEncoding","path":"scripts/BladeCanonicalEncoding/BladeCanonicalEncoding.yy",},},
     {"id":{"name":"BladeClockInputTests","path":"scripts/BladeClockInputTests/BladeClockInputTests.yy",},},
     {"id":{"name":"BladeCombatGeometry","path":"scripts/BladeCombatGeometry/BladeCombatGeometry.yy",},},

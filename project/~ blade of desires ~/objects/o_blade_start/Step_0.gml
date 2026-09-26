@@ -1,4 +1,14 @@
 /// Advance the front-end state through the shared semantic input adapter.
+var _application = BladeApplicationLifecyclePoll();
+if (!_application.gameplay_allowed) {
+    BladeLiveInputStateReset(live_input_state);
+    exit;
+}
+if (_application.epoch != application_lifecycle_epoch) {
+    application_lifecycle_epoch = _application.epoch;
+    BladeLiveInputStateReset(live_input_state);
+    exit;
+}
 if (frontend_state.message_ticks > 0) frontend_state.message_ticks -= 1;
 frontend_input = BladeLiveInputSample(
     frontend_state.config,
@@ -148,7 +158,7 @@ if (_activation.action == BladeFrontendAction.StartGame) {
         room_goto(r_blade_character_select);
     }
 } else if (_activation.action == BladeFrontendAction.Quit) {
-    game_end();
+    BladeApplicationLifecycleRequestQuit("menu.quit");
 } else if (_activation.action == BladeFrontendAction.LaunchReplay) {
     BladeFrontendStateLaunchReplay(
         frontend_state,

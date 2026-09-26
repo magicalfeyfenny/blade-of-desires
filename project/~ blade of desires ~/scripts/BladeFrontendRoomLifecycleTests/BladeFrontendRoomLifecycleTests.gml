@@ -59,6 +59,10 @@ function BladeFrontendRoomLifecycleTestBegin() {
     global.blade_frontend_room_lifecycle = {
         status: "pending",
     };
+    global.blade_application_lifecycle_test_observation = {
+        has_focus: true,
+        platform_paused: false,
+    };
 
     try {
         if (room != r_blade_start) {
@@ -84,6 +88,7 @@ function BladeFrontendRoomLifecycleTestBegin() {
             "input.confirm"
         );
         _BladeFrontendRoomLifecycleTestStepWithKey(_start, _confirm_code);
+        _BladeFrontendRoomLifecycleTestStepWithKey(_start, _confirm_code);
     } catch (_caught) {
         BladeFrontendRoomLifecycleTestFail(
             "startup-to-selector transition: " + string(_caught)
@@ -107,10 +112,14 @@ function BladeFrontendRoomLifecycleTestReturnToStart() {
                 _selector.input_config.bindings.keyboard,
                 "input.cancel"
             );
-            _BladeFrontendRoomLifecycleTestStepWithKey(
-                _selector,
-                _cancel_code
-            );
+            global.blade_application_lifecycle_test_observation.has_focus = false;
+            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
+            if (room != r_blade_character_select) {
+                throw("focus loss advanced the selector");
+            }
+            global.blade_application_lifecycle_test_observation.has_focus = true;
+            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
+            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
         } finally {
             global.__gmtl_internal.running = _previous_running;
         }
