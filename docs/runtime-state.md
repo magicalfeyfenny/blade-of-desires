@@ -33,6 +33,19 @@ The lifecycle states are `Active`, `Suspended`, `ShuttingDown`, and
 `Terminated`; every boundary increments an epoch so each input owner can
 discard edges captured before the boundary.
 
+The native signals have different lifetimes. GameMaker documents
+[`window_has_focus()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/Cameras_And_Display/The_Game_Window/window_has_focus.htm)
+as the current focus state on macOS, Windows, HTML5, and GX.games, while
+[`os_is_paused()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/OS_And_Compiler/os_is_paused.htm)
+is only a one-step focus-loss signal on macOS, Windows, Linux, and HTML5. The
+owner therefore keeps the window-focus result as its durable suspension state
+and uses the pause signal as supplemental evidence. On desktop,
+[`game_end()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/General_Game_Control/game_end.htm)
+triggers the Game End event at the end of the current step, so normal quit
+releases run-owned state before calling it and native window close uses the
+same idempotent cleanup path. Mobile quit behavior is platform-specific and
+outside this desktop contract.
+
 Focus loss or platform suspension enters `Suspended`. The front end stops
 sampling input, and Stage 1's central gameplay gate rejects movement, timers,
 combat, rewards, and schedule ticks for the inactive frame and every following
