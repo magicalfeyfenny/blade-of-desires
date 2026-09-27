@@ -161,3 +161,20 @@ if (player_phase == BladeSurvivalPlayerPhase.HitResponse) {
 
 BladeStage1PauseDraw(pause_menu, input_config, pause_ui);
 BladeStage1CutsceneDraw(cutscene, pause_ui, input_config);
+
+if (is_struct(frame_pacing_profile) && !frame_pacing_profile.finished) {
+    var _enemy_count = instance_number(o_blade_first_beat_enemy)
+        + instance_number(o_blade_stage1_fae_midboss)
+        + instance_number(o_blade_stage1_asahi);
+    BladeStage1FramePacingRecord(
+        frame_pacing_profile.metrics,
+        delta_time,
+        _enemy_count,
+        instance_number(o_blade_first_beat_enemy_bullet),
+        instance_number(o_blade_player_shot)
+    );
+    if (BladeReplayPlaybackFinished(frame_pacing_profile.playback)) {
+        BladeStage1FramePacingFinish(id);
+        game_end();
+    }
+}

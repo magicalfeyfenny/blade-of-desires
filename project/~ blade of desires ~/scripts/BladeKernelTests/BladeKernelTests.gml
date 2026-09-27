@@ -45,6 +45,7 @@ function BladeKernelTestsRun() {
     BladeKernelIntegrationTestsRun(_state);
     BladeReplayRecordingTestsRun(_state);
     BladeReplayCatalogTestsRun(_state);
+    BladeStage1FramePacingTestsRun(_state);
 
     return BladeKernelTestFinish(_state);
 }

@@ -127,6 +127,98 @@ function BladeStage1ForestCameraDepthVisible(
     return _depth >= -max(0, _radius) * _forward_length;
 }
 
+/// Counts same-camera prop submissions that rearward depth culling rejects.
+function _BladeStage1ForestCameraDepthCountItems(
+    _renderer, _items, _max_camera_y_distance, _kind
+) {
+    var _tested = 0;
+    var _rejected = 0;
+    for (var _index = 0; _index < array_length(_items); ++_index) {
+        var _item = _items[_index];
+        if (abs(_item.y - _renderer.camera_y) > _max_camera_y_distance) {
+            continue;
+        }
+        _tested += 1;
+        var _radius = _kind == "tree"
+            ? BLADE_STAGE1_FOREST_TREE_CULL_RADIUS * _item.scale
+            : max(_item.width, _item.height);
+        if (!BladeStage1ForestCameraDepthVisible(
+            _renderer, _item.x, _item.y, _item.z, _radius
+        )) {
+            _rejected += 1;
+        }
+    }
+    return { tested: _tested, rejected: _rejected };
+}
+
+/// Measures current rearward-prop submission reduction at one captured camera.
+function BladeStage1ForestCameraDepthCullSnapshot(_renderer) {
+    if (!instance_exists(_renderer)) {
+        return {
+            camera_depth_tested_props: 0,
+            camera_depth_skipped_props: 0,
+            camera_depth_visible_props: 0,
+            camera_depth_skipped_percent: 0,
+            by_kind: {},
+        };
+    }
+
+    var _trees = _BladeStage1ForestCameraDepthCountItems(
+        _renderer, _renderer.tree_placements, 95, "tree"
+    );
+    var _foliage = _BladeStage1ForestCameraDepthCountItems(
+        _renderer, _renderer.foliage_placements, 85, "foliage"
+    );
+    var _fae = _BladeStage1ForestCameraDepthCountItems(
+        _renderer, _renderer.fae_placements, 80, "fae"
+    );
+    var _trails = _BladeStage1ForestCameraDepthCountItems(
+        _renderer, _renderer.fae_trail_placements, 80, "trail"
+    );
+    var _lights = _BladeStage1ForestCameraDepthCountItems(
+        _renderer, _renderer.ball_light_placements, 80, "ball_light"
+    );
+    var _tested = _trees.tested + _foliage.tested + _fae.tested
+        + _trails.tested + _lights.tested;
+    var _rejected = _trees.rejected + _foliage.rejected + _fae.rejected
+        + _trails.rejected + _lights.rejected;
+
+    var _world_tree_x = BladeStage1ForestRouteCenter(248);
+    var _world_tree_z = BladeStage1ForestSurfaceZ(_world_tree_x, 248);
+    _tested += 1;
+    var _world_tree_rejected = !BladeStage1ForestCameraDepthVisible(
+        _renderer,
+        _world_tree_x,
+        248,
+        _world_tree_z,
+        BLADE_STAGE1_FOREST_WORLD_TREE_CULL_RADIUS
+    );
+    if (_world_tree_rejected) _rejected += 1;
+
+    return {
+        camera_x: _renderer.camera_x,
+        camera_y: _renderer.camera_y,
+        camera_z: _renderer.camera_z,
+        camera_depth_tested_props: _tested,
+        camera_depth_skipped_props: _rejected,
+        camera_depth_visible_props: _tested - _rejected,
+        camera_depth_skipped_percent: _tested == 0
+            ? 0
+            : 100 * _rejected / _tested,
+        by_kind: {
+            trees: _trees,
+            foliage: _foliage,
+            fae: _fae,
+            trails: _trails,
+            ball_lights: _lights,
+            world_tree: {
+                tested: 1,
+                rejected: _world_tree_rejected ? 1 : 0,
+            },
+        },
+    };
+}
+
 /// Maps each authored route cue to one bounded, player-visible camera segment.
 function BladeStage1ForestApplyRouteCue(_renderer, _cue_id) {
     switch (_cue_id) {

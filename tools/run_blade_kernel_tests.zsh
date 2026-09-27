@@ -19,6 +19,12 @@ case "$test_mode" in
         summary_prefix=""
         temp_prefix="blade-frontend-room-lifecycle-tests"
         ;;
+    frame-pacing)
+        launch_argument="--run-stage1-frame-pacing-test"
+        result_sentinel="BLADE_STAGE1_FRAME_PACING_RUN"
+        summary_prefix=""
+        temp_prefix="blade-stage1-frame-pacing-tests"
+        ;;
     *)
         print -u2 "Unknown GameMaker test mode: $test_mode"
         exit 2
@@ -164,8 +170,6 @@ temp_parent=${TMPDIR:-/tmp}
 temp_parent=${temp_parent%/}
 test_root=$(mktemp -d "$temp_parent/$temp_prefix.XXXXXX")
 build_log="$test_root/build.log"
-runner_log="$test_root/runner.log"
-debug_log="$test_root/debug.log"
 
 # Remove only the mktemp directory created above. The name and direct-parent
 # checks prevent a broader deletion if a path variable is ever malformed.
@@ -245,57 +249,179 @@ if [[ ! -s "$game_data" ]]; then
     exit 1
 fi
 
-set +e
-(
-    cd "$test_root"
-    run_with_timeout "$runner_timeout_seconds" "$runner_bin" \
-        -game "$game_data" \
-        -debugoutput "$debug_log" \
-        -output "$debug_log" \
-        "$launch_argument"
-) 2>&1 | tee "$runner_log"
-# Read the runner wrapper's status from the pipeline rather than tee's status.
-runner_status=${pipestatus[1]}
-set -e
+run_count=1
+if [[ "$test_mode" == frame-pacing ]]; then
+    run_count=${BLADE_STAGE1_FRAME_PACING_RUNS:-3}
+    require_positive_integer "BLADE_STAGE1_FRAME_PACING_RUNS" "$run_count"
+    if (( run_count < 3 )); then
+        print -u2 "Frame-pacing characterization requires at least three runs."
+        exit 2
+    fi
+fi
 
-result_count=$(grep -c "^$result_sentinel: " "$runner_log" || true)
-summary=$(grep "^$summary_prefix " "$runner_log" | tail -n 1 || true)
-result=$(grep "^$result_sentinel: " "$runner_log" | tail -n 1 || true)
+for (( run_index = 1; run_index <= run_count; run_index++ )); do
+    runner_log="$test_root/runner-$run_index.log"
+    debug_log="$test_root/debug-$run_index.log"
+    print "Blade GameMaker runtime pass $run_index of $run_count"
 
-if [[ -z "$result" && -f "$debug_log" ]]; then
+    set +e
+    (
+        cd "$test_root"
+        run_with_timeout "$runner_timeout_seconds" "$runner_bin" \
+            -game "$game_data" \
+            -debugoutput "$debug_log" \
+            -output "$debug_log" \
+            "$launch_argument"
+    ) 2>&1 | tee "$runner_log"
+    # Read the runner wrapper's status from the pipeline rather than tee's status.
+    runner_status=${pipestatus[1]}
+    set -e
+
+    result_count=$(grep -c "^$result_sentinel: " "$runner_log" || true)
+    summary=""
     if [[ -n "$summary_prefix" ]]; then
-        summary=$(grep "^$summary_prefix " "$debug_log" | tail -n 1 || true)
+        summary=$(grep "^$summary_prefix " "$runner_log" | tail -n 1 || true)
     fi
-    result=$(grep "^$result_sentinel: " "$debug_log" | tail -n 1 || true)
-    result_count=$(grep -c "^$result_sentinel: " "$debug_log" || true)
-    print "$summary"
-    print "$result"
-fi
+    result=$(grep "^$result_sentinel: " "$runner_log" | tail -n 1 || true)
 
-if (( runner_status != 0 )); then
-    if (( runner_status == 124 )); then
-        print -u2 "GameMaker runner timed out after $runner_timeout_seconds seconds."
+    if [[ -z "$result" && -f "$debug_log" ]]; then
+        if [[ -n "$summary_prefix" ]]; then
+            summary=$(grep "^$summary_prefix " "$debug_log" | tail -n 1 || true)
+        fi
+        result=$(grep "^$result_sentinel: " "$debug_log" | tail -n 1 || true)
+        result_count=$(grep -c "^$result_sentinel: " "$debug_log" || true)
+        print "$summary"
+        print "$result"
+    fi
+
+    if (( runner_status != 0 )); then
+        if (( runner_status == 124 )); then
+            print -u2 "GameMaker runner timed out after $runner_timeout_seconds seconds."
+            exit 1
+        fi
+        print -u2 "GameMaker runner exited with status $runner_status."
+        exit "$runner_status"
+    fi
+
+    if (( result_count != 1 )); then
+        print -u2 "Expected exactly one $result_sentinel sentinel; found $result_count."
         exit 1
     fi
-    print -u2 "GameMaker runner exited with status $runner_status."
-    exit "$runner_status"
-fi
 
-if (( result_count != 1 )); then
-    print -u2 "Expected exactly one $result_sentinel sentinel; found $result_count."
-    exit 1
-fi
-
-if [[ "$test_mode" == kernel ]]; then
-    if [[ "$summary" != BLADE_KERNEL_TESTS:\ *\ passed,\ 0\ failed,\ *\ total ]]; then
-        print -u2 "Blade kernel summary was missing, empty, or reported failures."
+    if [[ "$test_mode" == kernel ]]; then
+        if [[ "$summary" != BLADE_KERNEL_TESTS:\ *\ passed,\ 0\ failed,\ *\ total ]]; then
+            print -u2 "Blade kernel summary was missing, empty, or reported failures."
+            exit 1
+        fi
+        if [[ "$summary" == *" 0 total" || "$result" != "$result_sentinel: PASS" ]]; then
+            print -u2 "Blade kernel tests did not report a nonzero passing run."
+            exit 1
+        fi
+    elif [[ "$test_mode" == frame-pacing ]]; then
+        if [[ "$result" != "$result_sentinel: "*'"replay_id"'* ]]; then
+            print -u2 "Frame-pacing run did not emit replay measurements."
+            exit 1
+        fi
+        print "$result"
+    elif [[ "$result" != "$result_sentinel: PASS" ]]; then
+        print -u2 "Front-end room lifecycle test did not pass."
         exit 1
     fi
-    if [[ "$summary" == *" 0 total" || "$result" != "$result_sentinel: PASS" ]]; then
-        print -u2 "Blade kernel tests did not report a nonzero passing run."
-        exit 1
-    fi
-elif [[ "$result" != "$result_sentinel: PASS" ]]; then
-    print -u2 "Front-end room lifecycle test did not pass."
-    exit 1
+done
+
+if [[ "$test_mode" == frame-pacing ]]; then
+    python3.12 - "$test_root" "$run_count" <<'PY'
+import json
+from pathlib import Path
+import sys
+
+test_root = Path(sys.argv[1])
+run_count = int(sys.argv[2])
+sentinel = "BLADE_STAGE1_FRAME_PACING_RUN: "
+required_equal = (
+    "replay_id",
+    "run_seed",
+    "input_ticks",
+    "replay_state_hash",
+    "stage_state_hash",
+    "stage_ticks",
+    "stage_lifecycle",
+    "camera_depth_culling",
+)
+measurements = []
+
+for run_index in range(1, run_count + 1):
+    payload = None
+    for log_name in (f"runner-{run_index}.log", f"debug-{run_index}.log"):
+        log_path = test_root / log_name
+        if not log_path.is_file():
+            continue
+        results = [
+            line[len(sentinel):]
+            for line in log_path.read_text(errors="replace").splitlines()
+            if line.startswith(sentinel)
+        ]
+        if results:
+            if len(results) != 1:
+                raise SystemExit(
+                    f"Run {run_index} emitted {len(results)} profiling records."
+                )
+            payload = json.loads(results[0])
+            break
+    if payload is None:
+        raise SystemExit(f"Run {run_index} has no profiling record.")
+    if payload.get("sample_count", 0) <= 0:
+        raise SystemExit(f"Run {run_index} has no measured frame samples.")
+    if payload.get("stage_ticks") != payload.get("input_ticks"):
+        raise SystemExit(
+            f"Run {run_index} ended Stage 1 at tick {payload.get('stage_ticks')} "
+            f"before replay tick {payload.get('input_ticks')}."
+        )
+    measurements.append(payload)
+
+reference = measurements[0]
+for run_index, payload in enumerate(measurements[1:], start=2):
+    changed = [
+        field for field in required_equal
+        if payload.get(field) != reference.get(field)
+    ]
+    if changed:
+        raise SystemExit(
+            f"Run {run_index} changed replay or Stage 1 state: "
+            + ", ".join(changed)
+        )
+
+print(
+    f"Stage 1 frame-pacing runs matched: {run_count} runs, "
+    f"replay={reference['replay_id']}, ticks={reference['stage_ticks']}, "
+    f"replay_hash={reference['replay_state_hash']}, "
+    f"stage_hash={reference['stage_state_hash']}"
+)
+
+def metric_range(field: str, scale: float = 1.0, suffix: str = "") -> str:
+    values = [float(payload[field]) * scale for payload in measurements]
+    return f"{min(values):.3f}..{max(values):.3f}{suffix}"
+
+percentiles = reference["p50_frame_time_us"]
+p95 = reference["p95_frame_time_us"]
+p99 = reference["p99_frame_time_us"]
+print(
+    f"Frame profile: {reference['sample_count']} samples/run after "
+    f"{reference['warmup_frames']} warmup frames; "
+    f"mean={metric_range('mean_frame_time_us', 0.001, ' ms')}; "
+    f"p50={percentiles['lower_us']:.0f}..{percentiles['upper_us']:.0f} us; "
+    f"p95={p95['lower_us']:.0f}..{p95['upper_us']:.0f} us; "
+    f"p99={p99['lower_us']:.0f}..{p99['upper_us']:.0f} us; "
+    f"over budget={metric_range('over_budget_percent', 1.0, '%')}; "
+    f"max={metric_range('max_frame_time_us', 0.001, ' ms')}"
+)
+print(
+    "Camera-depth culling at the final replay camera: "
+    f"{reference['camera_depth_culling']['camera_depth_skipped_props']:.0f} "
+    "of "
+    f"{reference['camera_depth_culling']['camera_depth_tested_props']:.0f} "
+    "eligible submissions skipped ("
+    f"{reference['camera_depth_culling']['camera_depth_skipped_percent']:.2f}%)."
+)
+PY
 fi

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"BladeStage1FramePacing",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"BladeStage1FramePacing",
+  "parent":{
+    "name":"Blade",
+    "path":"folders/Blade.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

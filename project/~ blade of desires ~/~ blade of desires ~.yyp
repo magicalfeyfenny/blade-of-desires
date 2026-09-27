@@ -162,6 +162,8 @@
     {"id":{"name":"BladeReplayRecordingTests","path":"scripts/BladeReplayRecordingTests/BladeReplayRecordingTests.yy",},},
     {"id":{"name":"BladeReplayCatalog","path":"scripts/BladeReplayCatalog/BladeReplayCatalog.yy",},},
     {"id":{"name":"BladeReplayCatalogTests","path":"scripts/BladeReplayCatalogTests/BladeReplayCatalogTests.yy",},},
+    {"id":{"name":"BladeStage1FramePacing","path":"scripts/BladeStage1FramePacing/BladeStage1FramePacing.yy",},},
+    {"id":{"name":"BladeStage1FramePacingTests","path":"scripts/BladeStage1FramePacingTests/BladeStage1FramePacingTests.yy",},},
     {"id":{"name":"BladeRunCombatCommands","path":"scripts/BladeRunCombatCommands/BladeRunCombatCommands.yy",},},
     {"id":{"name":"BladeRunCoordinator","path":"scripts/BladeRunCoordinator/BladeRunCoordinator.yy",},},
     {"id":{"name":"BladeRunCoordinatorTests","path":"scripts/BladeRunCoordinatorTests/BladeRunCoordinatorTests.yy",},},

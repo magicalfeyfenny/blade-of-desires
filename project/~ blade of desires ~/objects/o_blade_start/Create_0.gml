@@ -7,9 +7,29 @@ for (var _index = 1; _index <= parameter_count(); ++_index) {
         _run_tests = true;
         break;
     }
+    if (_argument == "--run-stage1-frame-pacing-test") {
+        _run_tests = true;
+        break;
+    }
     if (_argument == "--run-frontend-room-lifecycle-test"
         || _argument == "-runFrontendRoomLifecycleTest") {
         _run_frontend_room_lifecycle_test = true;
+    }
+}
+
+// GMTL's bundled demos run after startup. Blade keeps the pinned library
+// read-only and clears only those registered demo callbacks before either a
+// test room or production objects can receive their simulated frames.
+if (variable_global_exists("__gmtl_internal")
+    && is_struct(global.__gmtl_internal)
+    && variable_struct_exists(global.__gmtl_internal, "suites")) {
+    var _gmtl_suites = variable_struct_get(
+        global.__gmtl_internal,
+        "suites"
+    );
+    if (is_struct(_gmtl_suites)
+        && variable_struct_exists(_gmtl_suites, "list")) {
+        variable_struct_set(_gmtl_suites, "list", []);
     }
 }
 
@@ -50,23 +70,6 @@ if (_run_tests) {
         window_center();
     }
 
-    // GMTL ships demo suites that run ten frames after startup. Blade keeps the
-    // pinned library read-only and clears only those registered demo callbacks
-    // before production objects exist, so their simulated frames cannot drive play.
-    // GMTL deletes this temporary suite state after the tests finish, so a later
-    // return to this room must treat the missing state as normal cleanup.
-    if (variable_global_exists("__gmtl_internal")
-        && is_struct(global.__gmtl_internal)
-        && variable_struct_exists(global.__gmtl_internal, "suites")) {
-        var _gmtl_suites = variable_struct_get(
-            global.__gmtl_internal,
-            "suites"
-        );
-        if (is_struct(_gmtl_suites)
-            && variable_struct_exists(_gmtl_suites, "list")) {
-            variable_struct_set(_gmtl_suites, "list", []);
-        }
-    }
     if (_run_frontend_room_lifecycle_test
         && !variable_global_exists("blade_frontend_room_lifecycle")) {
         BladeFrontendRoomLifecycleTestRegister();

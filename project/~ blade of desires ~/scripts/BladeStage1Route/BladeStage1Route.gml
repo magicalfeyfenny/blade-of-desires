@@ -26,6 +26,18 @@ function BladeStage1RouteKnownContent(_content_id) {
         || _content_id == BLADE_STAGE1_ASAHI_CONTENT_ID;
 }
 
+/// Uses replay metadata only for a measurement launch; normal runs retain the route seed.
+function BladeStage1RouteRunSeed(_controller) {
+    var _profile = _controller.frame_pacing_profile;
+    if (is_struct(_profile)
+        && variable_struct_exists(_profile, "replay_entry")
+        && is_struct(_profile.replay_entry)
+        && variable_struct_exists(_profile.replay_entry, "run_seed")) {
+        return _profile.replay_entry.run_seed;
+    }
+    return BLADE_STAGE1_ROUTE_SEED;
+}
+
 /// Maps generic fae slots through the selected run's canonical unchosen pair.
 function BladeStage1RouteResolveParticipant(
     _kind_id, _participant_id, _x_q10, _y_q10
@@ -195,7 +207,7 @@ function BladeStage1RouteInitialize(_controller) {
     var _fingerprint = "sha1:" + sha1_file(_product_path);
     _controller.stage_kernel = BladeDeterministicKernelCreate(
         _fingerprint,
-        BLADE_STAGE1_ROUTE_SEED,
+        BladeStage1RouteRunSeed(_controller),
         method({}, BladeStage1RouteKnownContent),
         8
     );

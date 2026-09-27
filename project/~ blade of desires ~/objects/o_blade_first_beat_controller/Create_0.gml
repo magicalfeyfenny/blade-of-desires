@@ -18,6 +18,14 @@ cutscene = BladeStage1CutsceneCreate();
 cutscene_actor_registry = [];
 cutscene_enabled = room == r_stage1_first_beat;
 selected_run = undefined;
+frame_pacing_profile = undefined;
+if (variable_global_exists("blade_stage1_frame_pacing_profile")
+    && is_struct(global.blade_stage1_frame_pacing_profile)) {
+    frame_pacing_profile = global.blade_stage1_frame_pacing_profile;
+    frame_pacing_profile.metrics = BladeStage1FramePacingCreate();
+    frame_pacing_profile.input_state = BladeLiveInputStateCreate();
+    frame_pacing_profile.finished = false;
+}
 selected_ship_id = "";
 player_instance = noone;
 economy = BladeSurvivalEconomyCreate();
