@@ -37,6 +37,16 @@ function _BladeFrontendRoomLifecycleTestStepWithKey(_instance, _key_code) {
     }
 }
 
+/// Keeps one simulated key held across lifecycle observations and Step calls.
+function _BladeFrontendRoomLifecycleTestStepWithHeldKey(_instance, _key_code) {
+    variable_struct_set(
+        global.__gmtl_internal.keys,
+        string(_key_code),
+        true
+    );
+    simulateEvent(ev_step, ev_step_normal, _instance);
+}
+
 /// Recognizes the cleanup boundary without depending on GMTL's private shape.
 function _BladeFrontendRoomLifecycleTestSuitesRetired() {
     if (!variable_global_exists("__gmtl_internal")
@@ -113,13 +123,31 @@ function BladeFrontendRoomLifecycleTestReturnToStart() {
                 "input.cancel"
             );
             global.blade_application_lifecycle_test_observation.has_focus = false;
-            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
+            _BladeFrontendRoomLifecycleTestStepWithHeldKey(
+                _selector, _cancel_code
+            );
             if (room != r_blade_character_select) {
                 throw("focus loss advanced the selector");
             }
             global.blade_application_lifecycle_test_observation.has_focus = true;
-            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
-            _BladeFrontendRoomLifecycleTestStepWithKey(_selector, _cancel_code);
+            _BladeFrontendRoomLifecycleTestStepWithHeldKey(
+                _selector, _cancel_code
+            );
+            _BladeFrontendRoomLifecycleTestStepWithHeldKey(
+                _selector, _cancel_code
+            );
+            if (room != r_blade_character_select) {
+                throw("held cancel advanced the selector after resume");
+            }
+            variable_struct_set(
+                global.__gmtl_internal.keys,
+                string(_cancel_code),
+                false
+            );
+            simulateEvent(ev_step, ev_step_normal, _selector);
+            _BladeFrontendRoomLifecycleTestStepWithKey(
+                _selector, _cancel_code
+            );
         } finally {
             global.__gmtl_internal.running = _previous_running;
         }

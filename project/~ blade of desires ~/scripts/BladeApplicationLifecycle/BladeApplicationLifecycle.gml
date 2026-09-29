@@ -218,7 +218,10 @@ function BladeApplicationLifecyclePoll() {
 }
 
 /// Abandons all active run ownership before a normal application quit.
-function BladeApplicationLifecycleShutdownActiveRun() {
+/// A front-end state may be supplied by deterministic lifecycle integration checks.
+function BladeApplicationLifecycleShutdownActiveRun(
+    _frontend_state_override = undefined
+) {
     var _controller = instance_find(o_blade_first_beat_controller, 0);
     if (_controller != noone) {
         var _already_handled = variable_instance_exists(
@@ -247,11 +250,17 @@ function BladeApplicationLifecycleShutdownActiveRun() {
         }
     }
 
-    var _front_end = instance_find(o_blade_start, 0);
-    if (_front_end != noone
-        && variable_instance_exists(_front_end, "frontend_state")
-        && is_struct(_front_end.frontend_state)) {
-        BladeFrontendStateShutdown(_front_end.frontend_state);
+    var _frontend_state = _frontend_state_override;
+    if (is_undefined(_frontend_state)) {
+        var _front_end = instance_find(o_blade_start, 0);
+        if (_front_end != noone
+            && variable_instance_exists(_front_end, "frontend_state")
+            && is_struct(_front_end.frontend_state)) {
+            _frontend_state = _front_end.frontend_state;
+        }
+    }
+    if (is_struct(_frontend_state)) {
+        BladeFrontendStateShutdown(_frontend_state);
     }
     if (variable_global_exists("blade_selected_run")) {
         global.blade_selected_run = undefined;
@@ -267,14 +276,31 @@ function BladeApplicationLifecycleShutdownActiveRun() {
     return true;
 }
 
-/// Performs the complete normal-quit boundary and lets GameMaker close the app.
-function BladeApplicationLifecycleRequestQuit(_reason = "application.quit") {
+/// Performs the normal-quit boundary and requests exit after owner cleanup.
+/// An optional exit callback lets deterministic integration checks observe the
+/// same cleanup path without ending their test process.
+function BladeApplicationLifecycleRequestQuit(
+    _reason = "application.quit",
+    _request_exit = undefined,
+    _frontend_state_override = undefined
+) {
+    if (!is_undefined(_request_exit)
+        && typeof(_request_exit) != "method") {
+        throw("BladeApplicationLifecycle: exit request must be callable");
+    }
+    if (!is_undefined(_frontend_state_override)) {
+        _BladeFrontendStateRequire(_frontend_state_override);
+    }
     var _lifecycle = BladeApplicationLifecycleGlobal();
     if (!is_undefined(_lifecycle)) {
         BladeApplicationLifecycleRequestShutdown(_lifecycle, _reason);
     }
-    BladeApplicationLifecycleShutdownActiveRun();
-    game_end();
+    BladeApplicationLifecycleShutdownActiveRun(_frontend_state_override);
+    if (is_undefined(_request_exit)) {
+        game_end();
+    } else {
+        _request_exit();
+    }
     return true;
 }
 

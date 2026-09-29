@@ -137,6 +137,11 @@ function _BladeLiveInputTestDeviceEdges() {
         0,
         "switching devices does not duplicate a held direction edge"
     );
+    BladeKernelTestAssertEqual(
+        _switched.move_x,
+        int64(0),
+        "device change suppresses held movement until neutral"
+    );
 
     var _disconnected = BladeLiveInputCompose(
         _state,
@@ -170,13 +175,50 @@ function _BladeLiveInputTestDeviceEdges() {
         5
     );
     BladeKernelTestAssertTrue(
-        BladeLiveInputActionPressed(_reconnected, BladeInputAction.Fire),
-        "reconnecting after release produces a new fire edge"
+        !BladeLiveInputActionPressed(_reconnected, BladeInputAction.Fire),
+        "reconnecting with a held fire button cannot create an action edge"
     );
     BladeKernelTestAssertEqual(
         _reconnected.pressed_move_x,
+        0,
+        "reconnecting with held movement cannot create a direction edge"
+    );
+    BladeKernelTestAssertEqual(
+        _reconnected.move_x,
+        int64(0),
+        "reconnected held movement stays suppressed until neutral"
+    );
+
+    BladeLiveInputCompose(
+        _state,
+        BladeLiveInputSourceCreate(),
+        BladeLiveInputSourceCreate(),
+        5
+    );
+    var _pressed_after_release = BladeLiveInputCompose(
+        _state,
+        BladeLiveInputSourceCreate(),
+        BladeLiveInputSourceCreate(
+            -1024,
+            0,
+            -1,
+            0,
+            BladeInputAction.Fire,
+            BladeInputAction.Fire,
+            BladePromptDevice.Gamepad
+        ),
+        5
+    );
+    BladeKernelTestAssertTrue(
+        BladeLiveInputActionPressed(
+            _pressed_after_release, BladeInputAction.Fire
+        ),
+        "a new fire press is accepted after a neutral controller sample"
+    );
+    BladeKernelTestAssertEqual(
+        _pressed_after_release.pressed_move_x,
         -1,
-        "reconnecting with a new direction produces one left edge"
+        "a new direction edge is accepted after a neutral controller sample"
     );
 }
 
@@ -187,7 +229,7 @@ function _BladeLiveInputTestAnalogEdges() {
         _state,
         BladeLiveInputSourceCreate(),
         BladeLiveInputSourceCreate(),
-        -1
+        1
     );
     var _analog = BladeLiveInputSourceCreate(
         512,
