@@ -19,6 +19,12 @@ case "$test_mode" in
         summary_prefix=""
         temp_prefix="blade-frontend-room-lifecycle-tests"
         ;;
+    application-lifecycle)
+        launch_argument="--run-application-lifecycle-test"
+        result_sentinel="BLADE_KERNEL_TEST_RESULT"
+        summary_prefix="BLADE_KERNEL_TESTS:"
+        temp_prefix="blade-application-lifecycle-tests"
+        ;;
     *)
         print -u2 "Unknown GameMaker test mode: $test_mode"
         exit 2
@@ -286,7 +292,7 @@ if (( result_count != 1 )); then
     exit 1
 fi
 
-if [[ "$test_mode" == kernel ]]; then
+if [[ "$test_mode" == kernel || "$test_mode" == application-lifecycle ]]; then
     if [[ "$summary" != BLADE_KERNEL_TESTS:\ *\ passed,\ 0\ failed,\ *\ total ]]; then
         print -u2 "Blade kernel summary was missing, empty, or reported failures."
         exit 1

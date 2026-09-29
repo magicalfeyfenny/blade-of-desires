@@ -6,6 +6,7 @@ error_text = "";
 frontend_ui = BladeFrontendUiCreate();
 input_config = BladeConfigCreateDefault();
 live_input_state = BladeLiveInputStateCreate();
+application_lifecycle_epoch = BladeApplicationLifecycleCurrentEpoch();
 if (variable_global_exists("blade_config_service")) {
     input_config = BladeConfigServiceSnapshot(global.blade_config_service);
 }

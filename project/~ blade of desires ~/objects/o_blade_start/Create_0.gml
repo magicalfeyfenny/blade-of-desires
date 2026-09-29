@@ -3,7 +3,9 @@ var _run_tests = false;
 var _run_frontend_room_lifecycle_test = false;
 for (var _index = 1; _index <= parameter_count(); ++_index) {
     var _argument = parameter_string(_index);
-    if (_argument == "--run-test" || _argument == "-runTest") {
+    if (_argument == "--run-test"
+        || _argument == "-runTest"
+        || _argument == "--run-application-lifecycle-test") {
         _run_tests = true;
         break;
     }
@@ -82,6 +84,7 @@ if (_run_tests) {
     );
     frontend_ui = BladeFrontendUiCreate();
     live_input_state = BladeLiveInputStateCreate();
+    application_lifecycle_epoch = BladeApplicationLifecycleCurrentEpoch();
     frontend_input = BladeLiveInputSample(
         frontend_state.config,
         live_input_state

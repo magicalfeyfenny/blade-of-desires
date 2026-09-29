@@ -11,6 +11,7 @@ records.
 
 | Data | Authority | Lifetime | Persistence |
 | --- | --- | --- | --- |
+| Application focus, suspension, and shutdown | Persistent `o_blade_application` and `BladeApplicationLifecycle` | One application process | Not persisted; active runs are never serialized at this boundary |
 | Ship, difficulty, and input-binding IDs | Product contract and input-binding registry | Repository version | Canonical repository data; never rewritten by the game |
 | Run and player state | `BladeRunCoordinator` | One run attempt | Not persisted by this layer |
 | Actors, attacks, projectiles, damage, terminals, and reward requests | Coordinator-owned `BladeCombatRuntime` | One run attempt or explicit room boundary | Not persisted by this layer |
@@ -21,6 +22,48 @@ records.
 | Display, audio, and bindings | `BladeConfigService` | Per-user installation | `blade-config.json` in GameMaker's per-user save area |
 | Player profile, progression flags, and arcade records | `BladeProfileService` | Per-user installation | `blade-profile.json` in GameMaker's per-user save area; strict and separate from config |
 | Suspended runs and checkpoints | Not implemented | Future subsystem | Must use distinct schemas, filenames, serializers, and services |
+
+## Application lifecycle ownership
+
+`BladeApplicationLifecycle` is the process-level authority for native focus,
+platform suspension, and normal desktop shutdown. The persistent
+`o_blade_application` object polls `window_has_focus()` and
+`os_is_paused()` and exposes a detached observation to room-owned consumers.
+The lifecycle states are `Active`, `Suspended`, `ShuttingDown`, and
+`Terminated`; every boundary increments an epoch so each input owner can
+discard edges captured before the boundary.
+
+The native signals have different lifetimes. GameMaker documents
+[`window_has_focus()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/Cameras_And_Display/The_Game_Window/window_has_focus.htm)
+as the current focus state on macOS, Windows, HTML5, and GX.games, while
+[`os_is_paused()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/OS_And_Compiler/os_is_paused.htm)
+is only a one-step focus-loss signal on macOS, Windows, Linux, and HTML5. The
+owner therefore keeps the window-focus result as its durable suspension state
+and uses the pause signal as supplemental evidence. On desktop,
+[`game_end()`](https://manual.gamemaker.io/lts/en/GameMaker_Language/GML_Reference/General_Game_Control/game_end.htm)
+triggers the Game End event at the end of the current step, so normal quit
+releases run-owned state before calling it and native window close uses the
+same idempotent cleanup path. Mobile quit behavior is platform-specific and
+outside this desktop contract.
+
+Focus loss or platform suspension enters `Suspended`. The front end stops
+sampling input, and Stage 1's central gameplay gate rejects movement, timers,
+combat, rewards, and schedule ticks for the inactive frame and every following
+inactive frame. A clean focus return enters `Active`; the affected room owner
+resets its live-input latch and discards the first boundary frame before
+sampling again. This is distinct from the player pause menu, cutscene
+puppeting, terminal Continue/Game Over, and Retry: those remain run-owned
+semantic states and do not change application lifecycle state.
+
+Menu quit, terminal quit, and the native Game End event all use the same
+administrative shutdown path. An active Stage 1 route is aborted with no
+completion or reward credit, the run-result ledger records
+`cleanup.application_shutdown`, transient gameplay instances are released,
+the selected run is cleared, and active replay recording/playback owners are
+abandoned. Configuration and profile writes remain owned by their existing
+synchronous transactional services; shutdown does not invent a save-anywhere
+or suspended-run format. The lifecycle reaches `Terminated` only after these
+owners have been released.
 
 The config service has no reference to the coordinator, combat runtime, or
 pause registry. Its

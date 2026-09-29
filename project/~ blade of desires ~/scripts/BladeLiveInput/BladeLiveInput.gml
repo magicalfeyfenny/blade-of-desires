@@ -14,6 +14,7 @@ function BladeLiveInputStateCreate() {
         last_move_x: int64(0),
         last_move_y: int64(0),
         last_gamepad_id: -1,
+        input_suppressed_until_neutral: false,
     };
 }
 
@@ -27,12 +28,16 @@ function _BladeLiveInputStateRequire(_state) {
         || !variable_struct_exists(_state, "last_held_actions")
         || !variable_struct_exists(_state, "last_move_x")
         || !variable_struct_exists(_state, "last_move_y")
-        || !variable_struct_exists(_state, "last_gamepad_id")) {
+        || !variable_struct_exists(_state, "last_gamepad_id")
+        || !variable_struct_exists(
+            _state, "input_suppressed_until_neutral"
+        )
+        || !is_bool(_state.input_suppressed_until_neutral)) {
         throw("BladeLiveInput: state is incomplete");
     }
 }
 
-/// Resets one owner-local edge latch when a room or input context is rebuilt.
+/// Resets one owner-local latch and quarantines held controls until neutral.
 function BladeLiveInputStateReset(_state) {
     _BladeLiveInputStateRequire(_state);
     _state.has_sample = false;
@@ -40,6 +45,7 @@ function BladeLiveInputStateReset(_state) {
     _state.last_move_x = int64(0);
     _state.last_move_y = int64(0);
     _state.last_gamepad_id = -1;
+    _state.input_suppressed_until_neutral = true;
     return _state;
 }
 
@@ -127,7 +133,7 @@ function _BladeLiveInputActionEdges(
 }
 
 /// Merges keyboard and gamepad semantic source states into one stable frame.
-/// Device changes affect only source selection and prompt metadata, never action identity.
+/// A changed gamepad source is quarantined until controls return to neutral.
 function BladeLiveInputCompose(_state, _keyboard, _gamepad, _gamepad_id) {
     _BladeLiveInputStateRequire(_state);
     _BladeLiveInputSourceRequire(_keyboard);
@@ -149,6 +155,18 @@ function BladeLiveInputCompose(_state, _keyboard, _gamepad, _gamepad_id) {
     var _raw_pressed_actions = int64(
         _keyboard.pressed_actions | _gamepad.pressed_actions
     );
+    var _suppress_input = _state.input_suppressed_until_neutral
+        || (_state.has_sample && _gamepad_id != _state.last_gamepad_id);
+    if (_suppress_input) {
+        if (!_keyboard.active && !_gamepad.active) {
+            _suppress_input = false;
+        }
+        _move_x = int64(0);
+        _move_y = int64(0);
+        _held_actions = int64(0);
+        _raw_pressed_actions = int64(0);
+    }
+    _state.input_suppressed_until_neutral = _suppress_input;
     var _pressed_actions = _BladeLiveInputActionEdges(
         _held_actions,
         _raw_pressed_actions,
@@ -174,6 +192,10 @@ function BladeLiveInputCompose(_state, _keyboard, _gamepad, _gamepad_id) {
             _keyboard.pressed_move_y + _gamepad.pressed_move_y
         );
     }
+    if (_suppress_input) {
+        _pressed_move_x = 0;
+        _pressed_move_y = 0;
+    }
 
     var _prompt_device = BladePromptDevice.Unknown;
     if (_gamepad.active) {
@@ -191,9 +213,9 @@ function BladeLiveInputCompose(_state, _keyboard, _gamepad, _gamepad_id) {
         pressed_actions: _pressed_actions,
         prompt_device: _prompt_device,
         gamepad_id: _gamepad_id,
-        has_analog: _gamepad.has_analog,
-        analog_x: _gamepad.analog_x,
-        analog_y: _gamepad.analog_y,
+        has_analog: _suppress_input ? false : _gamepad.has_analog,
+        analog_x: _suppress_input ? int64(0) : _gamepad.analog_x,
+        analog_y: _suppress_input ? int64(0) : _gamepad.analog_y,
     };
 
     _state.has_sample = true;
