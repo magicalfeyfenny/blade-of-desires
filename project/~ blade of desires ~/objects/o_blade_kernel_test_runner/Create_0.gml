@@ -20,6 +20,12 @@ for (var i = 1; i <= parameter_count(); i++) {
 }
 
 if (_run_frame_pacing_profile) {
+    // Keep deterministic replay instrumentation independent of runner-window focus.
+    // Native focus and pause boundaries are covered by the lifecycle integration suite.
+    global.blade_application_lifecycle_test_observation = {
+        has_focus: true,
+        platform_paused: false,
+    };
     if (BladeStage1FramePacingProfilePrepare()) {
         room_goto(r_stage1_first_beat);
     } else {
