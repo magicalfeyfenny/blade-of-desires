@@ -22,7 +22,6 @@ from tools.ci.adversarial_review import (
     validate_review_result,
 )
 from tools.ci.adversarial_review_session import (
-    _session_prompt,
     run_adversarial_review,
     run_review_lifecycle,
 )
@@ -135,10 +134,6 @@ def review_result(review_packet: dict, findings: list[dict]) -> dict:
     }
 
 
-def correction() -> dict:
-    return {"summary": "Apply the supported current-pass correction."}
-
-
 def adjudication_result(
     adjudication_packet: dict,
     decisions: list[dict],
@@ -155,13 +150,11 @@ def adjudication_result(
     }
 
 
-def decision(finding_id: str, disposition: str, value: dict | None = None) -> dict:
+def decision(finding_id: str, disposition: str) -> dict:
     return {
         "finding_id": finding_id,
         "disposition": disposition,
         "basis": f"supported basis for {finding_id}",
-        "correction": value,
-        "correction_accepted": value is not None,
     }
 
 
@@ -256,33 +249,6 @@ class ReviewPacketTests(unittest.TestCase):
 
         self.assertEqual(calls, [])
 
-    def test_medium_reviewer_checks_evidence_support_not_command_names(self):
-        current = candidate()
-        value = build_review_packet(
-            issue_contract(),
-            current,
-            governance(),
-            {
-                "issue_contract_revision": REVISION,
-                "candidate_identity": candidate_identity(current),
-                "checks": [
-                    {
-                        "name": "full repository test suite",
-                        "result": "passed",
-                        "evidence": ["full suite passed"],
-                        "establishes": ["a specific issue behavior"],
-                    }
-                ],
-            },
-            {"included": INCLUDED, "exclusions": []},
-            risk="medium",
-        )
-
-        prompt = _session_prompt("reviewer", value)
-        self.assertIn("actually supports a specific accepted issue behavior", prompt)
-        self.assertIn("does not make generic repository policy", prompt)
-        self.assertIn("Do not parse shell commands", prompt)
-
     def test_packet_rejects_stale_or_hidden_context(self):
         stale = packet()
         stale["stage2_evidence"]["issue_contract_revision"] = "b" * 64
@@ -324,53 +290,13 @@ class ReviewPacketTests(unittest.TestCase):
                 risk="high",
             )
 
-    def test_policy_update_review_prompts_preserve_authority_boundaries(self):
+    def test_adjudication_packet_preserves_risk_and_rejects_legacy_schema(self):
         review_packet = packet()
-        reviewer_prompt = _session_prompt("reviewer", review_packet)
         adjudication_packet = build_adjudication_packet(
             review_packet,
             [finding("F-upstream-concern", "inherited upstream concern")],
         )
         self.assertEqual(adjudication_packet["risk"], review_packet["risk"])
-        adjudicator_prompt = _session_prompt(
-            "adjudicator", adjudication_packet
-        )
-
-        self.assertIn("newly selected immutable upstream revision", reviewer_prompt)
-        self.assertIn("unexplained divergence is a downstream reconciliation defect", reviewer_prompt)
-        self.assertIn("concern inherited unchanged", reviewer_prompt)
-        self.assertIn("independent local obligation", reviewer_prompt)
-        self.assertIn("Issue authority is repository-local", reviewer_prompt)
-        self.assertIn(
-            "does not authorize creating, modifying, claiming, or executing issues, branches, PRs, files, or other work in the upstream repository",
-            reviewer_prompt,
-        )
-        self.assertIn(
-            "existence of a related upstream issue does not grant authority",
-            reviewer_prompt,
-        )
-        self.assertIn(
-            "separate explicit human direction naming the target repository and the work to perform",
-            reviewer_prompt,
-        )
-        self.assertIn(
-            "not an actionable downstream correction by itself; disposition it as follow-up or reject",
-            adjudicator_prompt,
-        )
-        self.assertIn("reconciliation defect", adjudicator_prompt)
-        self.assertIn(
-            "violations of independently established local obligations may be actionable",
-            adjudicator_prompt,
-        )
-        self.assertIn("repository-local issue authority", adjudicator_prompt)
-        self.assertIn(
-            "Do not create, modify, claim, or execute issues, branches, PRs, files, or other work in the upstream repository as part of this issue",
-            adjudicator_prompt,
-        )
-        self.assertIn(
-            "separate explicit human direction naming the target repository and the work to perform",
-            adjudicator_prompt,
-        )
 
         old_adjudication_packet = dict(adjudication_packet)
         old_adjudication_packet["schema"] = "adversarial-adjudication-packet:v2"
@@ -416,8 +342,8 @@ class FindingAndDispositionTests(unittest.TestCase):
         result = adjudication_result(
             adjudication_packet,
             [
-                decision("F-blocker", "blocker", correction()),
-                decision("F-patch", "patch-now", correction()),
+                decision("F-blocker", "blocker"),
+                decision("F-patch", "patch-now"),
                 decision("F-follow", "follow-up"),
                 decision("F-reject", "reject"),
             ],
@@ -433,25 +359,24 @@ class FindingAndDispositionTests(unittest.TestCase):
         with self.assertRaises(ReviewContractError):
             validate_adjudication_result(missing, adjudication_packet)
 
-    def test_correction_remedy_has_no_path_authority(self):
+    def test_legacy_correction_fields_are_rejected(self):
         review_packet = packet()
         findings = [finding("F1", "supported defect")]
         adjudication_packet = build_adjudication_packet(review_packet, findings)
-        no_path_limit = adjudication_result(
-            adjudication_packet,
-            [decision("F1", "patch-now", correction())],
+        legacy = adjudication_result(
+            adjudication_packet, [decision("F1", "patch-now")]
         )
-        validated = validate_adjudication_result(no_path_limit, adjudication_packet)
-        self.assertEqual(
-            validated["dispositions"][0]["correction"], correction()
-        )
-
-        forbidden_for_reject = adjudication_result(
-            adjudication_packet,
-            [decision("F1", "reject", correction())],
-        )
+        legacy["schema"] = "adversarial-adjudication-result:v4"
         with self.assertRaises(ReviewContractError):
-            validate_adjudication_result(forbidden_for_reject, adjudication_packet)
+            validate_adjudication_result(legacy, adjudication_packet)
+
+        legacy["schema"] = ADJUDICATION_RESULT_SCHEMA
+        legacy["dispositions"][0]["correction"] = {
+            "summary": "obsolete implementation instruction"
+        }
+        legacy["dispositions"][0]["correction_accepted"] = True
+        with self.assertRaises(ReviewContractError):
+            validate_adjudication_result(legacy, adjudication_packet)
 
     def test_unresolved_blocker_requires_human_handoff(self):
         review_packet = packet()
@@ -556,17 +481,13 @@ class EvidenceTransportTests(unittest.TestCase):
                 evidence_ids = set(item["supporting_evidence"])
                 if "candidate" in evidence_ids:
                     disposition = "blocker"
-                    value = correction()
                 elif "governance.0" in evidence_ids:
                     disposition = "follow-up"
-                    value = None
                 elif "scope" in evidence_ids:
                     disposition = "follow-up"
-                    value = None
                 else:
                     disposition = "reject"
-                    value = None
-                decisions.append(decision(item["finding_id"], disposition, value))
+                decisions.append(decision(item["finding_id"], disposition))
             return adjudication_result(payload, decisions)
 
         result = run_adversarial_review(review_packet, session_runner=evidence_runner)

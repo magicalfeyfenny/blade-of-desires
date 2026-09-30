@@ -3,6 +3,7 @@
 /// game_end gives the shell runner a process that exits after the result.
 var _run_tests = false;
 var _run_frame_pacing_profile = false;
+var _run_application_lifecycle_tests = false;
 for (var i = 1; i <= parameter_count(); i++) {
     var _argument = parameter_string(i);
     if (_argument == "--run-stage1-frame-pacing-test") {
@@ -11,7 +12,10 @@ for (var i = 1; i <= parameter_count(); i++) {
     }
     if (_argument == "--run-test" || _argument == "-runTest") {
         _run_tests = true;
-        break;
+    }
+    if (_argument == "--run-application-lifecycle-test") {
+        _run_tests = true;
+        _run_application_lifecycle_tests = true;
     }
 }
 
@@ -29,5 +33,13 @@ if (!_run_tests) {
     exit;
 }
 
-BladeKernelTestsRun();
+if (_run_application_lifecycle_tests) {
+    var _state = BladeKernelTestStateCreate();
+    BladeLiveInputTestsRun(_state);
+    BladeApplicationLifecycleTestsRun(_state);
+    BladeApplicationLifecycleIntegrationTestsRun(_state);
+    BladeKernelTestFinish(_state);
+} else {
+    BladeKernelTestsRun();
+}
 game_end();

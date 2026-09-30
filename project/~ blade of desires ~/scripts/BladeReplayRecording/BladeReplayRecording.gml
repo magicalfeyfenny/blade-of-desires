@@ -193,6 +193,7 @@ function _BladeReplayRecorderRequire(_recorder) {
 		"simulation_contract_version", "prng_version", "tick_rate",
 		"content_fingerprint", "run_seed", "ship_id", "difficulty_id",
 		"run_mode", "input_snapshots", "last_simulation_tick",
+		"aborted",
 	];
 	for (var _index = 0; _index < array_length(_fields); ++_index) {
 		if (!variable_struct_exists(_recorder, _fields[_index])) {
@@ -201,6 +202,9 @@ function _BladeReplayRecorderRequire(_recorder) {
 	}
 	if (!is_array(_recorder.input_snapshots)) {
 		_BladeReplayFail("recorder input", "must be an array");
+	}
+	if (!is_bool(_recorder.aborted)) {
+		_BladeReplayFail("recorder", "aborted flag must be Boolean");
 	}
 	return _recorder;
 }
@@ -287,6 +291,7 @@ function BladeReplayRecorderCreate(_coordinator) {
 		run_mode: _run.mode,
 		input_snapshots: [],
 		last_simulation_tick: int64(0),
+		aborted: false,
 	};
 }
 
@@ -298,6 +303,9 @@ function BladeReplayRecorderAppend(
 	_tick
 ) {
 	_BladeReplayRecorderRequire(_recorder);
+	if (_recorder.aborted) {
+		_BladeReplayFail("recorder", "cannot append after administrative abort");
+	}
 	if (!is_struct(_run_snapshot)
 		|| _run_snapshot.lifecycle != BladeRunLifecycle.Active) {
 		_BladeReplayFail("recorder run", "requires the matching active run snapshot");
@@ -380,9 +388,19 @@ function BladeReplayRecorderBind(_recorder, _simulate_callback = undefined) {
 	});
 }
 
+/// Marks an in-progress recording abandoned so it cannot become a playable payload.
+function BladeReplayRecorderAbort(_recorder) {
+	_BladeReplayRecorderRequire(_recorder);
+	_recorder.aborted = true;
+	return BladeReplayRecorderSnapshot(_recorder);
+}
+
 /// Serializes the current recorder as one immutable replay payload.
 function BladeReplayRecordingSerialize(_recorder) {
 	_BladeReplayRecorderRequire(_recorder);
+	if (_recorder.aborted) {
+		_BladeReplayFail("recorder", "aborted recording cannot be serialized");
+	}
 	return _BladeReplayEncode(
 		_recorder.format_version,
 		_recorder.content_fingerprint,
@@ -407,6 +425,7 @@ function BladeReplayRecorderSnapshot(_recorder) {
 		run_mode: _recorder.run_mode,
 		input_count: int64(array_length(_recorder.input_snapshots)),
 		last_simulation_tick: _recorder.last_simulation_tick,
+		aborted: _recorder.aborted,
 	};
 }
 
@@ -514,7 +533,9 @@ function _BladeReplayPlaybackRequire(_playback) {
 		|| _playback.__blade_replay_playback_version != 1
 		|| !variable_struct_exists(_playback, "recording")
 		|| !variable_struct_exists(_playback, "coordinator")
-		|| !variable_struct_exists(_playback, "next_input_index")) {
+		|| !variable_struct_exists(_playback, "next_input_index")
+		|| !variable_struct_exists(_playback, "aborted")
+		|| !is_bool(_playback.aborted)) {
 		_BladeReplayFail("playback", "expected a complete version 1 playback owner");
 	}
 }
@@ -542,6 +563,7 @@ function BladeReplayPlaybackCreate(
 		recording: _recording,
 		coordinator: _coordinator,
 		next_input_index: int64(0),
+		aborted: false,
 	};
 }
 
@@ -549,6 +571,25 @@ function BladeReplayPlaybackCreate(
 function BladeReplayPlaybackFinished(_playback) {
 	_BladeReplayPlaybackRequire(_playback);
 	return _playback.next_input_index >= _playback.recording.input_count;
+}
+
+/// Returns whether administrative shutdown already abandoned this playback owner.
+function BladeReplayPlaybackAborted(_playback) {
+	_BladeReplayPlaybackRequire(_playback);
+	return _playback.aborted;
+}
+
+/// Abandons a playback coordinator without allowing it to reach a terminal reward.
+function BladeReplayPlaybackAbort(_playback) {
+	_BladeReplayPlaybackRequire(_playback);
+	if (!_playback.aborted) {
+		if (BladeRunCoordinatorSnapshot(_playback.coordinator).lifecycle
+			== BladeRunLifecycle.Active) {
+			BladeRunCoordinatorAbort(_playback.coordinator);
+		}
+		_playback.aborted = true;
+	}
+	return BladeReplayPlaybackSnapshot(_playback);
 }
 
 /// Returns the coordinator for explicit stage attachment by an integration owner.
@@ -580,6 +621,9 @@ function BladeReplayPlaybackStep(
 	_simulate_callback = undefined
 ) {
 	_BladeReplayPlaybackRequire(_playback);
+	if (_playback.aborted) {
+		_BladeReplayFail("playback", "cannot step after administrative abort");
+	}
 	if (BladeReplayPlaybackFinished(_playback)) {
 		_BladeReplayFail("playback", "input stream is exhausted");
 	}
@@ -622,6 +666,9 @@ function BladeReplayPlaybackRunToEnd(
 /// Completes a replayed normal or practice attempt only after its entire input stream was consumed.
 function BladeReplayPlaybackComplete(_playback) {
 	_BladeReplayPlaybackRequire(_playback);
+	if (_playback.aborted) {
+		_BladeReplayFail("playback", "cannot complete after administrative abort");
+	}
 	if (!BladeReplayPlaybackFinished(_playback)) {
 		_BladeReplayFail("playback", "cannot complete before input stream exhaustion");
 	}
@@ -638,6 +685,7 @@ function BladeReplayPlaybackSnapshot(_playback) {
 		input_count: _playback.recording.input_count,
 		next_input_index: _playback.next_input_index,
 		finished: BladeReplayPlaybackFinished(_playback),
+		aborted: _playback.aborted,
 		run: BladeRunCoordinatorSnapshot(_playback.coordinator),
 	};
 }

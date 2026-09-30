@@ -555,6 +555,13 @@ A wording, formatting, ordering, or representation change that preserves the
 intended contract should not require unrelated test changes merely to satisfy
 stale textual expectations.
 
+A correction requested during review or implementation does not by itself
+require a regression test. Add or change tests only to establish behavior
+required by the accepted issue contract or standing Governance when that
+behavior is mechanically observable. Do not test Governance prose or wording
+merely to preserve the form of a prior correction; such tests add maintenance
+burden and brittleness without establishing behavior.
+
 ## Validation coverage allocation
 
 Prefer automated validation whenever the required property is
@@ -770,9 +777,11 @@ accidental or obsolete behavior.
 
 The reviewer and adjudicator act in fresh, independent, read-only contexts.
 Adjudication receives supporting source evidence to assess reviewer claims;
-those claims are not authority or implementation instructions. The
-implementation route may act only on validated adjudication and accepted
-remediation.
+those claims are not authority or implementation instructions. Current-cycle
+`blocker` and `patch-now` dispositions determine whether a correction candidate
+is required. The implementation route may act only on validated adjudication;
+the implementer chooses a remedy under the accepted issue and standing
+Governance.
 
 `blocker` is a supported accepted-issue or Governance violation that must be
 corrected before completion. `patch-now` is a supported violation within the
@@ -788,12 +797,12 @@ Governance, then obtain fresh review against those obligations. Do not carry a
 prior correction forward as a new requirement.
 
 The actual PR risk tier is bound into the review packet and lifecycle artifact.
-The executable correction retry budgets are low: one retry, medium: two
-retries, and high: two retries. The initial review pass is not a retry. An
-exhausted budget produces human handoff; high risk does not receive a larger
-budget merely because the work is more consequential. A human-authorized new
-candidate after handoff starts a fresh lifecycle and fresh tier budget, while a
-handoff artifact cannot be used as an autonomous continuation.
+The configured correction retry budget for that tier is in
+`PROJECT_POLICY.toml` at `[risk].correction_retries`. The initial review pass is
+not a retry. An exhausted budget produces human handoff; consequence does not
+authorize retries beyond the configured budget. A human-authorized new
+candidate after handoff starts a fresh lifecycle with the configured tier
+budget, while a handoff artifact cannot be used as an autonomous continuation.
 
 Use a supported disposition whenever possible. Human handoff is for unresolved
 issue or authority ambiguity, or when required review or adjudication evidence
@@ -803,6 +812,31 @@ governing issue immediately before the completion transition, then continue
 with completion metadata, Stage 3, and the applicable risk path. This review
 route does not add manual, visual, human-observation, or experiential
 validation.
+
+### Persisted outcome reporting
+
+The validated lifecycle artifact is the evidence source for claims about review
+results. A completion or human-handoff report identifies the final candidate
+and lifecycle status, then reports the saved `review_cycles`.
+
+For each finding, report its ID, concise summary, validated disposition, and
+adjudication basis when one is available. Explicitly describe `not-needed` as a
+successful zero-finding review. Carry meaningful prior-cycle follow-ups into
+the final report so a human can distinguish current results from historical
+concerns. Earlier outcomes remain evidence; they do not become new issue
+requirements or keep a later, revalidated candidate actionable.
+
+When `adjudication_status` is `unavailable`, report validated reviewer findings
+as unadjudicated observations and include the recorded session failure. Do not
+present those observations as dispositions or implementation instructions.
+Use the saved artifact for reporting; do not run another review solely to
+reconstruct or report prior findings.
+
+Whether another candidate is required depends on actionable dispositions in
+the current cycle. Prior-cycle `blocker` or `patch-now` findings do not
+independently require further correction after a changed candidate has fresh
+evidence and review. Non-remediating findings remain reportable under the
+[review lifecycle](#review-lifecycle) and do not authorize candidate mutation.
 
 ## Milestone commits and draft publication
 

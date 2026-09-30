@@ -10,6 +10,7 @@ function BladeKernelTestsRun() {
     BladeClockInputTestsRun(_state);
     BladeInputBindingTestsRun(_state);
     BladeLiveInputTestsRun(_state);
+    BladeApplicationLifecycleTestsRun(_state);
     BladeProfileViewTestsRun(_state);
     BladeFrontendStateTestsRun(_state);
     BladeFrontendUiTestsRun(_state);
@@ -46,6 +47,7 @@ function BladeKernelTestsRun() {
     BladeReplayRecordingTestsRun(_state);
     BladeReplayCatalogTestsRun(_state);
     BladeStage1FramePacingTestsRun(_state);
+    BladeApplicationLifecycleIntegrationTestsRun(_state);
 
     return BladeKernelTestFinish(_state);
 }

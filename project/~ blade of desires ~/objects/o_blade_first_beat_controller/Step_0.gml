@@ -1,3 +1,10 @@
+/// A focus/suspend boundary owns this frame before ordinary terminal or gameplay logic.
+if (application_lifecycle_frame_blocked) {
+    application_lifecycle_frame_blocked = false;
+    exit;
+}
+if (!BladeApplicationLifecycleGameplayAllowed()) exit;
+
 if (BladeStage1TerminalIsActive(terminal_flow)) {
     var _terminal_result = BladeStage1TerminalAdvance(
         terminal_flow, live_input
@@ -73,7 +80,7 @@ if ((state == BladeFirstBeatState.Won || state == BladeFirstBeatState.Failed)
     BladeStage1RunResultRecordCleanup(
         stage_run_result, id, int64(-1), "cleanup.terminal_escape"
     );
-    game_end();
+    BladeApplicationLifecycleRequestQuit("terminal.quit");
     exit;
 }
 
